@@ -37,6 +37,10 @@ const FIREBASE_CONFIG = {
 const SUPER_ADMIN_EMAIL = "esraigroup@gmail.com";
 const ADMIN_EMAILS = ["esraigroup@gmail.com"]; // add more admin emails here
 
+// If your Firestore database is NOT the default one, put its name here.
+// Leave as "(default)" if you created the standard database.
+const FIRESTORE_DB_ID = "tankbazaar";
+
 let firebaseReady = false, fbAuth = null, fbDb = null;
 (function initFirebase() {
   const configured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY";
@@ -47,7 +51,10 @@ let firebaseReady = false, fbAuth = null, fbDb = null;
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     fbAuth = firebase.auth();
-    fbDb = firebase.firestore();
+    // Support a named (non-default) Firestore database.
+    fbDb = (FIRESTORE_DB_ID && FIRESTORE_DB_ID !== "(default)")
+      ? firebase.app().firestore(FIRESTORE_DB_ID)
+      : firebase.firestore();
     firebaseReady = true;
   } catch (e) { console.error('Firebase init failed:', e); }
 })();
