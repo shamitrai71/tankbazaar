@@ -2842,22 +2842,40 @@ function initAuthListener() {
 async function onUserSignedIn(u) {
   const role = roleForEmail(u.email);
   const provider = (u.providerData[0] && u.providerData[0].providerId) || 'password';
-  // Load or create the user's Firestore profile + analytics
-  let profile = {};
+
+  // Log the user in IMMEDIATELY so the UI never bounces back to logged-out,
+  // even if Firestore is slow or unreachable.
+  currentUser = {
+    uid: u.uid, email: u.email,
+    name: u.displayName || u.email.split('@')[0],
+    photo: u.photoURL || '',
+    role: role, provider: provider, profile: {},
+  };
+  applyLoggedInUI();
+
+  // Then sync the Firestore profile + analytics (non-blocking for the UI).
   try {
     const ref = fbDb.collection('users').doc(u.uid);
-    const snap = await ref.get();
     const now = firebase.firestore.FieldValue.serverTimestamp();
+    let snap;
+    try { snap = await ref.get(); }
+    catch (readErr) {
+      console.warn('Profile read failed (will still attempt create):', readErr.code || readErr.message);
+      snap = { exists: false };
+    }
+
     if (snap.exists) {
-      profile = snap.data();
-      await ref.update({
+      const profile = snap.data();
+      await ref.set({
         lastLogin: now,
         loginCount: (profile.loginCount || 0) + 1,
-        role: role,                       // keep role in sync with admin list
-      });
+        role: role,
+      }, { merge: true });
       profile.loginCount = (profile.loginCount || 0) + 1;
+      currentUser.profile = profile;
+      currentUser.name = profile.name || currentUser.name;
     } else {
-      profile = {
+      const profile = {
         uid: u.uid, email: u.email,
         name: u.displayName || u.email.split('@')[0],
         photoURL: u.photoURL || '',
@@ -2868,17 +2886,14 @@ async function onUserSignedIn(u) {
         createdAt: now, lastLogin: now, loginCount: 1, pageViews: 0,
       };
       await ref.set(profile);
+      currentUser.profile = profile;
     }
-  } catch (e) { console.warn('Profile load failed:', e.message); }
-
-  currentUser = {
-    uid: u.uid, email: u.email,
-    name: profile.name || u.displayName || u.email.split('@')[0],
-    photo: u.photoURL || profile.photoURL || '',
-    role: role, provider: provider, profile: profile,
-  };
-  applyLoggedInUI();
-  trackPageView();
+    applyLoggedInUI();
+    trackPageView();
+  } catch (e) {
+    console.error('Firestore profile sync failed:', e.code || '', e.message);
+    toast('Signed in, but profile sync failed: ' + (e.code || e.message), 'error');
+  }
 }
 
 function applyLoggedInUI() {
