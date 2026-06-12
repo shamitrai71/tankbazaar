@@ -56,6 +56,8 @@ let firebaseReady = false, fbAuth = null, fbDb = null;
       ? firebase.app().firestore(FIRESTORE_DB_ID)
       : firebase.firestore();
     firebaseReady = true;
+    console.log('%c[TANK BAZAAR] Firebase ready · project=' + FIREBASE_CONFIG.projectId +
+                ' · database=' + FIRESTORE_DB_ID, 'color:#2fa37c');
   } catch (e) { console.error('Firebase init failed:', e); }
 })();
 </script>
@@ -2771,16 +2773,27 @@ function hideLoginGate() {
   const err = document.getElementById('loginError'); if (err) err.style.display = 'none';
 }
 
-// Provider sign-in
+// Provider sign-in (uses redirect — robust against COOP & popup blockers)
 function signInWith(provider) {
   if (!firebaseReady) { toast('Configure Firebase to enable sign-in.', 'error'); return; }
   let p;
   if (provider === 'google') { p = new firebase.auth.GoogleAuthProvider(); }
   else if (provider === 'apple') { p = new firebase.auth.OAuthProvider('apple.com'); p.addScope('email'); p.addScope('name'); }
   else if (provider === 'microsoft') { p = new firebase.auth.OAuthProvider('microsoft.com'); p.addScope('email'); }
+  // Try popup first (better UX on desktop); fall back to redirect if it's blocked.
   fbAuth.signInWithPopup(p)
     .then(() => { hideLoginGate(); })
-    .catch(err => { toast(err.message, 'error'); console.error(err); });
+    .catch(err => {
+      const code = err.code || '';
+      if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' ||
+          code === 'auth/cancelled-popup-request' || code === 'auth/operation-not-supported-in-this-environment' ||
+          code === 'auth/web-storage-unsupported') {
+        // Popup failed (COOP, blocker, mobile) — use full-page redirect instead.
+        fbAuth.signInWithRedirect(p);
+      } else {
+        toast(err.message, 'error'); console.error(err);
+      }
+    });
 }
 
 function emailSignIn() {
@@ -2829,6 +2842,11 @@ function initAuthListener() {
     document.getElementById('signInBtn').style.display = '';
     return;
   }
+  // Complete any pending redirect sign-in (Google/Apple/Microsoft via redirect)
+  fbAuth.getRedirectResult()
+    .then(res => { if (res && res.user) { hideLoginGate(); } })
+    .catch(err => { if (err && err.code) { console.error('Redirect sign-in error:', err.code, err.message); toast(err.message, 'error'); } });
+
   fbAuth.onAuthStateChanged(async (u) => {
     if (u) {
       await onUserSignedIn(u);
