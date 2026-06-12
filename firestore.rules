@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read/write only their own profile.
+    // Admins (custom claim or listed email) can read all and manage roles.
+    match /users/{uid} {
+      allow read: if request.auth != null &&
+                  (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null &&
+                    (request.auth.uid == uid || isAdmin());
+      allow delete: if request.auth != null &&
+                    (request.auth.uid == uid || isAdmin());
+    }
+
+    // Analytics events: any signed-in user may write their own; admins read.
+    match /analytics/{doc} {
+      allow create: if request.auth != null;
+      allow read: if isAdmin();
+    }
+
+    // Pending admin grants: admins only.
+    match /pendingAdmins/{email} {
+      allow read, write: if isAdmin();
+    }
+
+    // Terminal & content data: public read, admin write.
+    match /terminals/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        request.auth.token.email == 'esraigroup@gmail.com'
+      );
+    }
+  }
+}
