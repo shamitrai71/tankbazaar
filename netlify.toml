@@ -1,5 +1,10 @@
 [build]
   publish = "."
+  # The Firebase web apiKey is designed to be public (it identifies the project,
+  # it is not a credential). Firestore rules + Authorized Domains enforce security.
+  # Tell Netlify's secrets scanner to ignore this expected public value.
+  [build.environment]
+    SECRETS_SCAN_OMIT_KEYS = "AIzaSyDvX0Iy9GVuk42t-MZDQ08CAFpmSCHwDh4"
 
 # Single-page app: always serve index.html
 [[redirects]]
