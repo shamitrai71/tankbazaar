@@ -2982,14 +2982,14 @@ function userLogout() {
 function trackPageView() {
   if (!firebaseReady || !currentUser) return;
   try {
-    fbDb.collection('users').doc(currentUser.uid).update({
+    fbDb.collection('users').doc(currentUser.uid).set({
       pageViews: firebase.firestore.FieldValue.increment(1),
       lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true }).catch(()=>{});
     fbDb.collection('analytics').add({
       uid: currentUser.uid, email: currentUser.email,
       event: 'page_view', ts: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    }).catch(()=>{});
   } catch (e) {}
 }
 
@@ -3027,7 +3027,7 @@ function fmtDate(ts) {
   } catch(e) { return null; }
 }
 
-function saveProfile() {
+async function saveProfile() {
   if (!currentUser) return;
   const get = id => (document.getElementById(id)?.value || '').trim();
   const updated = {
@@ -3042,11 +3042,21 @@ function saveProfile() {
   currentUser.name = updated.name || currentUser.name;
   Object.assign(currentUser.profile, updated);
   applyLoggedInUI();
-  if (firebaseReady) {
-    fbDb.collection('users').doc(currentUser.uid).update(updated)
-      .then(() => toast('Profile saved.'))
-      .catch(err => toast(err.message, 'error'));
-  } else { toast('Profile saved (preview).'); }
+
+  if (!firebaseReady) { toast('Profile saved (preview).'); return; }
+
+  toast('Saving…');
+  // merge-set creates the doc if missing and updates if present; retried for resilience.
+  const ok = await retryWrite(
+    () => fbDb.collection('users').doc(currentUser.uid).set(updated, { merge: true }),
+    'save-profile'
+  );
+  if (ok) {
+    console.log('%c[TANK BAZAAR] ✅ Profile updated in Firestore', 'color:#6fd98f;font-weight:bold');
+    toast('Profile saved.');
+  } else {
+    toast('Could not save profile — network issue. Please try again.', 'error');
+  }
 }
 
 function deleteMyAccount() {
