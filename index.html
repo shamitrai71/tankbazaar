@@ -65,8 +65,14 @@ let firebaseReady = false, fbAuth = null, fbDb = null;
       console.warn('Could not apply Firestore long-polling settings:', settingsErr.message);
     }
     firebaseReady = true;
-    console.log('%c[TANK BAZAAR] Firebase ready · project=' + FIREBASE_CONFIG.projectId +
-                ' · database=' + FIRESTORE_DB_ID, 'color:#2fa37c');
+    console.log('%c[TANK BAZAAR] BUILD v8 · Firebase ready · project=' + FIREBASE_CONFIG.projectId +
+                ' · database=' + FIRESTORE_DB_ID, 'color:#2fa37c;font-weight:bold');
+    // Enable local persistence so writes commit to cache immediately (promise
+    // resolves without waiting for a server ACK that may be blocked), then sync
+    // in the background. This makes profile saves reliable on flaky networks.
+    fbDb.enablePersistence({ synchronizeTabs: true }).catch(function(err){
+      console.warn('[TANK BAZAAR] persistence not enabled:', err.code || err.message);
+    });
   } catch (e) { console.error('Firebase init failed:', e); }
 })();
 </script>
@@ -2867,6 +2873,7 @@ function initAuthListener() {
 }
 
 async function onUserSignedIn(u) {
+  console.log('%c[TANK BAZAAR] ⏳ Syncing profile for ' + u.email, 'color:#d9a441;font-weight:bold');
   const role = roleForEmail(u.email);
   const provider = (u.providerData[0] && u.providerData[0].providerId) || 'password';
 
@@ -2932,20 +2939,22 @@ async function onUserSignedIn(u) {
   }
 }
 
-// Retry a Firestore write a few times, waiting for the long-polling connection
-// to finish establishing. Returns true on success.
+// Retry a Firestore write a few times, waiting for the connection to come up.
+// Each attempt has a timeout so a hung (never-resolving) write is caught.
 async function retryWrite(fn, label, attempts) {
-  attempts = attempts || 5;
+  attempts = attempts || 4;
   for (let i = 1; i <= attempts; i++) {
     try {
-      await fn();
+      await Promise.race([
+        fn(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000)),
+      ]);
       return true;
     } catch (e) {
       const code = e.code || e.message || '';
-      console.warn(`[TANK BAZAAR] write "${label}" attempt ${i}/${attempts} failed: ${code}`);
+      console.warn(`[TANK BAZAAR] write "${label}" attempt ${i}/${attempts}: ${code}`);
       if (i === attempts) return false;
-      // Wait a bit longer each time for the connection to come up.
-      await new Promise(r => setTimeout(r, 800 * i));
+      await new Promise(r => setTimeout(r, 600 * i));
     }
   }
   return false;
