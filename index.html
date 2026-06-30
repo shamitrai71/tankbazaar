@@ -2870,8 +2870,7 @@ async function onUserSignedIn(u) {
   const role = roleForEmail(u.email);
   const provider = (u.providerData[0] && u.providerData[0].providerId) || 'password';
 
-  // Log the user in IMMEDIATELY so the UI never bounces back to logged-out,
-  // even if Firestore is slow or unreachable.
+  // Log the user in IMMEDIATELY so the UI never bounces back to logged-out.
   currentUser = {
     uid: u.uid, email: u.email,
     name: u.displayName || u.email.split('@')[0],
@@ -2880,47 +2879,76 @@ async function onUserSignedIn(u) {
   };
   applyLoggedInUI();
 
-  // Then sync the Firestore profile + analytics (non-blocking for the UI).
-  try {
-    const ref = fbDb.collection('users').doc(u.uid);
-    const now = firebase.firestore.FieldValue.serverTimestamp();
-    let snap;
-    try { snap = await ref.get(); }
-    catch (readErr) {
-      console.warn('Profile read failed (will still attempt create):', readErr.code || readErr.message);
-      snap = { exists: false };
-    }
+  // Sync profile with retries. We use a merge-set (creates if absent, updates if
+  // present) so we don't depend on a fragile initial read during connection warm-up.
+  const ref = fbDb.collection('users').doc(u.uid);
+  const FieldValue = firebase.firestore.FieldValue;
 
-    if (snap.exists) {
-      const profile = snap.data();
-      await ref.set({
-        lastLogin: now,
-        loginCount: (profile.loginCount || 0) + 1,
-        role: role,
-      }, { merge: true });
-      profile.loginCount = (profile.loginCount || 0) + 1;
-      currentUser.profile = profile;
-      currentUser.name = profile.name || currentUser.name;
-    } else {
-      const profile = {
-        uid: u.uid, email: u.email,
-        name: u.displayName || u.email.split('@')[0],
-        photoURL: u.photoURL || '',
-        provider: provider, role: role,
-        company: '', title: '', phone: '', country: '',
-        segment: '', companySize: '', interests: [], regions: [],
-        newsletter: true, allowAnalytics: true,
-        createdAt: now, lastLogin: now, loginCount: 1, pageViews: 0,
-      };
-      await ref.set(profile);
-      currentUser.profile = profile;
-    }
-    applyLoggedInUI();
+  // 1) Ensure the base profile doc exists (merge = won't overwrite existing fields).
+  const baseProfile = {
+    uid: u.uid, email: u.email,
+    name: u.displayName || u.email.split('@')[0],
+    photoURL: u.photoURL || '',
+    provider: provider, role: role,
+    lastLogin: FieldValue.serverTimestamp(),
+    status: 'active',
+  };
+
+  const ok = await retryWrite(() => ref.set(baseProfile, { merge: true }), 'profile-base');
+
+  if (ok) {
+    // 2) Bump login counter. (createdAt is set once below only if the doc is new.)
+    await retryWrite(() => ref.set({
+      loginCount: FieldValue.increment(1),
+    }, { merge: true }), 'profile-counters').catch(()=>{});
+
+    // 3) Read back the profile for the UI; set first-time defaults if new.
+    try {
+      const snap = await ref.get();
+      if (snap.exists) {
+        const data = snap.data();
+        // First-time enrichment: add createdAt + default fields only if missing.
+        if (!data.createdAt) {
+          await ref.set({
+            createdAt: FieldValue.serverTimestamp(),
+            company: data.company || '', title: data.title || '', phone: data.phone || '',
+            country: data.country || '', segment: data.segment || '', companySize: data.companySize || '',
+            interests: data.interests || [], regions: data.regions || [],
+            newsletter: data.newsletter !== false, allowAnalytics: data.allowAnalytics !== false,
+            pageViews: data.pageViews || 0,
+          }, { merge: true }).catch(()=>{});
+        }
+        currentUser.profile = data;
+        currentUser.name = data.name || currentUser.name;
+        applyLoggedInUI();
+      }
+    } catch (e) { /* non-fatal */ }
+
+    console.log('%c[TANK BAZAAR] ✅ Profile saved to Firestore', 'color:#6fd98f;font-weight:bold');
     trackPageView();
-  } catch (e) {
-    console.error('Firestore profile sync failed:', e.code || '', e.message);
-    toast('Signed in, but profile sync failed: ' + (e.code || e.message), 'error');
+  } else {
+    console.error('[TANK BAZAAR] ❌ Profile write failed after retries');
+    toast('Signed in, but could not save profile (network). It will retry next login.', 'error');
   }
+}
+
+// Retry a Firestore write a few times, waiting for the long-polling connection
+// to finish establishing. Returns true on success.
+async function retryWrite(fn, label, attempts) {
+  attempts = attempts || 5;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      await fn();
+      return true;
+    } catch (e) {
+      const code = e.code || e.message || '';
+      console.warn(`[TANK BAZAAR] write "${label}" attempt ${i}/${attempts} failed: ${code}`);
+      if (i === attempts) return false;
+      // Wait a bit longer each time for the connection to come up.
+      await new Promise(r => setTimeout(r, 800 * i));
+    }
+  }
+  return false;
 }
 
 function applyLoggedInUI() {
