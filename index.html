@@ -59,13 +59,13 @@ let firebaseReady = false, fbAuth = null, fbDb = null;
     // networks, ISPs, proxies and VPNs block Firestore's streaming transport,
     // which surfaces as "unavailable / client is offline".
     try {
-      fbDb.settings({ experimentalForceLongPolling: true });
-      console.log('%c[TANK BAZAAR] Firestore long-polling FORCED', 'color:#d9a441');
+      fbDb.settings({ experimentalForceLongPolling: true, useFetchStreams: false });
+      console.log('%c[TANK BAZAAR] Firestore long-polling FORCED (fetch streams off)', 'color:#d9a441');
     } catch (settingsErr) {
       console.warn('Could not apply Firestore long-polling settings:', settingsErr.message);
     }
     firebaseReady = true;
-    console.log('%c[TANK BAZAAR] BUILD v8 · Firebase ready · project=' + FIREBASE_CONFIG.projectId +
+    console.log('%c[TANK BAZAAR] BUILD v9 · Firebase ready · project=' + FIREBASE_CONFIG.projectId +
                 ' · database=' + FIRESTORE_DB_ID, 'color:#2fa37c;font-weight:bold');
     // Enable local persistence so writes commit to cache immediately (promise
     // resolves without waiting for a server ACK that may be blocked), then sync
