@@ -2370,10 +2370,10 @@ loadScript(
         <div class="admin-page-title">Admin Dashboard</div>
         <div class="admin-page-sub">Welcome back. Here's a live snapshot of TANK BAZAAR.</div>
         <div class="admin-kpi-row">
-          <div class="admin-kpi"><div class="admin-kpi-label">Total Users</div><div class="admin-kpi-val">1,284</div><div class="admin-kpi-sub">↑ 47 this week</div></div>
-          <div class="admin-kpi o"><div class="admin-kpi-label">Active Admins</div><div class="admin-kpi-val admin-kpi-val-o" style="color:var(--accent2);" id="adminCountKpi">3</div><div class="admin-kpi-sub">incl. super admin</div></div>
-          <div class="admin-kpi g"><div class="admin-kpi-label">Terminals Listed</div><div class="admin-kpi-val" style="color:var(--accent3);" id="termCountKpi">24</div><div class="admin-kpi-sub">↑ 2 added today</div></div>
-          <div class="admin-kpi y"><div class="admin-kpi-label">Monthly Visits</div><div class="admin-kpi-val" style="color:var(--gold);">48.2K</div><div class="admin-kpi-sub">↑ 12.4% MoM</div></div>
+          <div class="admin-kpi"><div class="admin-kpi-label">Total Users</div><div class="admin-kpi-val" id="totalUsersKpi">—</div><div class="admin-kpi-sub" id="totalUsersSub">&nbsp;</div></div>
+          <div class="admin-kpi o"><div class="admin-kpi-label">Active Admins</div><div class="admin-kpi-val admin-kpi-val-o" style="color:var(--accent2);" id="adminCountKpi">—</div><div class="admin-kpi-sub">incl. super admin</div></div>
+          <div class="admin-kpi g"><div class="admin-kpi-label">Terminals Listed</div><div class="admin-kpi-val" style="color:var(--accent3);" id="termCountKpi">—</div><div class="admin-kpi-sub" id="termCountSub">&nbsp;</div></div>
+          <div class="admin-kpi y"><div class="admin-kpi-label">Total Page Views</div><div class="admin-kpi-val" style="color:var(--gold);" id="pageViewsKpi">—</div><div class="admin-kpi-sub" id="pageViewsSub">across all users</div></div>
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;">
           <div class="admin-card">
@@ -3183,6 +3183,8 @@ async function loadUsersFromFirestore() {
       email: d.email || '',
       role: d.role || 'member',
       joined: fmtDate(d.createdAt) || '—',
+      createdAtRaw: d.createdAt || null,
+      lastLoginRaw: d.lastLogin || null,
       last: fmtDate(d.lastLogin) || '—',
       status: d.status || 'active',
       country: d.country || '—',
@@ -3569,40 +3571,94 @@ function renderActivityFeed() {
 }
 
 // ── DASHBOARD CHARTS ─────────────────────────────────────────────
-let dashChartsInit = false;
+let regChartInst = null, rolesChartInst = null;
+
+function refreshDashboardKpis() {
+  // Total users
+  const total = usersData.length;
+  const el = id => document.getElementById(id);
+  if (el('totalUsersKpi')) el('totalUsersKpi').textContent = total.toLocaleString();
+
+  // New users in the last 7 days
+  const weekAgo = Date.now() - 7*24*60*60*1000;
+  const newThisWeek = usersData.filter(u => u.createdAtRaw && new Date(u.createdAtRaw).getTime() >= weekAgo).length;
+  if (el('totalUsersSub')) el('totalUsersSub').innerHTML = newThisWeek ? `↑ ${newThisWeek} this week` : '&nbsp;';
+
+  // Active admins
+  const admins = usersData.filter(u => u.role === 'admin' || u.role === 'superadmin').length;
+  if (el('adminCountKpi')) el('adminCountKpi').textContent = admins;
+
+  // Terminals
+  if (el('termCountKpi')) el('termCountKpi').textContent = terminals.length;
+  if (el('termCountSub')) el('termCountSub').textContent = `${new Set(terminals.map(t=>t.country)).size} countries`;
+
+  // Total page views across all users
+  const totalViews = usersData.reduce((s,u)=> s + (u.views||0), 0);
+  if (el('pageViewsKpi')) el('pageViewsKpi').textContent = totalViews.toLocaleString();
+}
+
 function initDashCharts() {
-  if (dashChartsInit) return;
-  dashChartsInit = true;
-  const days = Array.from({length:30},(_,i)=>{const d=new Date(); d.setDate(d.getDate()-29+i); return d.getDate()+'/'+( d.getMonth()+1);});
+  refreshDashboardKpis();
+
+  // ── User Registrations — last 30 days (from real createdAt) ──
+  const days = [], counts = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+    const next = new Date(d); next.setDate(d.getDate() + 1);
+    days.push(d.getDate() + '/' + (d.getMonth()+1));
+    counts.push(usersData.filter(u => {
+      if (!u.createdAtRaw) return false;
+      const t = new Date(u.createdAtRaw).getTime();
+      return t >= d.getTime() && t < next.getTime();
+    }).length);
+  }
   const regCtx = document.getElementById('regChart').getContext('2d');
-  new Chart(regCtx, {
+  if (regChartInst) regChartInst.destroy();
+  regChartInst = new Chart(regCtx, {
     type:'line',
-    data:{ labels:days, datasets:[{label:'Registrations', data:days.map(()=>Math.floor(20+Math.random()*60)), borderColor:'#d9a441', backgroundColor:'rgba(217,164,65,0.06)', tension:0.4, fill:true, pointRadius:2}]},
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#7d9388',font:{size:8},maxRotation:0,maxTicksLimit:8},grid:{color:'#24362c'}}, y:{ticks:{color:'#7d9388',font:{size:8}},grid:{color:'#24362c'}} }}
+    data:{ labels:days, datasets:[{label:'Registrations', data:counts, borderColor:'#d9a441', backgroundColor:'rgba(217,164,65,0.06)', tension:0.4, fill:true, pointRadius:2}]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#7d9388',font:{size:8},maxRotation:0,maxTicksLimit:8},grid:{color:'#24362c'}}, y:{ticks:{color:'#7d9388',font:{size:8},precision:0},grid:{color:'#24362c'}} }}
   });
+
+  // ── User Roles Breakdown (real) ──
   const rolesCtx = document.getElementById('rolesChart').getContext('2d');
   const rc = usersData.reduce((a,u)=>{ a[u.role]=(a[u.role]||0)+1; return a; },{});
-  new Chart(rolesCtx, {
-    type:'doughnut',
-    data:{ labels:Object.keys(rc), datasets:[{data:Object.values(rc), backgroundColor:['#e8c170cc','#2fa37ccc','#d9a441cc','#7d9388cc'], borderWidth:1, borderColor:['#e8c170','#2fa37c','#d9a441','#7d9388']}]},
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'right',labels:{color:'#7d9388',font:{size:9},boxWidth:10}} }}
+  if (rolesChartInst) rolesChartInst.destroy();
+  if (Object.keys(rc).length) {
+    rolesChartInst = new Chart(rolesCtx, {
+      type:'doughnut',
+      data:{ labels:Object.keys(rc), datasets:[{data:Object.values(rc), backgroundColor:['#e8c170cc','#2fa37ccc','#d9a441cc','#7d9388cc'], borderWidth:1, borderColor:['#e8c170','#2fa37c','#d9a441','#7d9388']}]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'right',labels:{color:'#7d9388',font:{size:9},boxWidth:10}} }}
+    });
+  } else {
+    rolesCtx.canvas.parentElement.innerHTML = '<div style="color:var(--text-dim);font-size:11px;text-align:center;padding-top:60px;">No users yet</div>';
+  }
+
+  // ── Top Countries (real, from user profiles) ──
+  const countryCounts = {};
+  usersData.forEach(u => {
+    const c = (u.country && u.country !== '—') ? u.country : null;
+    if (c) countryCounts[c] = (countryCounts[c]||0) + 1;
   });
-  const countries = [
-    {c:'India',n:234}, {c:'UAE',n:189}, {c:'Netherlands',n:142}, {c:'Singapore',n:128}, {c:'USA',n:98}
-  ];
-  document.getElementById('topCountries').innerHTML = countries.map(x=>`
+  const topCountries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const tcEl = document.getElementById('topCountries');
+  tcEl.innerHTML = topCountries.length ? topCountries.map(([c,n])=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(36,54,44,0.5);">
-      <span style="font-size:11px;color:var(--text);">${x.c}</span>
-      <span style="font-size:11px;color:var(--accent);">${x.n}</span>
+      <span style="font-size:11px;color:var(--text);">${c}</span>
+      <span style="font-size:11px;color:var(--accent);">${n}</span>
     </div>
-  `).join('');
-  const pages = [{p:'Map View',v:18421},{p:'Benchmark',v:12834},{p:'Market Share',v:9822},{p:'Ship Tracking',v:7341},{p:'Product Flow',v:5102}];
-  document.getElementById('pageViews').innerHTML = pages.map(x=>`
+  `).join('') : '<div style="color:var(--text-dim);font-size:11px;padding:8px 0;">No country data yet — users add it in their profile.</div>';
+
+  // ── Top Users by Page Views (real) ──
+  const topUsers = [...usersData].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+  const maxViews = Math.max(1, ...topUsers.map(u=>u.views||0));
+  const pvEl = document.getElementById('pageViews');
+  pvEl.innerHTML = topUsers.length ? topUsers.map(u=>`
     <div style="margin-bottom:8px;">
-      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span style="color:var(--text-muted);">${x.p}</span><span style="color:var(--accent);">${x.v.toLocaleString()}</span></div>
-      <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:100%;width:${Math.round(x.v/18421*100)}%;background:var(--accent);border-radius:2px;"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span style="color:var(--text-muted);">${u.name}</span><span style="color:var(--accent);">${(u.views||0).toLocaleString()}</span></div>
+      <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:100%;width:${Math.round((u.views||0)/maxViews*100)}%;background:var(--accent);border-radius:2px;"></div></div>
     </div>
-  `).join('');
+  `).join('') : '<div style="color:var(--text-dim);font-size:11px;padding:8px 0;">No page-view data yet.</div>';
 }
 
 // ── MAPS & DATA CONFIG ───────────────────────────────────────────
