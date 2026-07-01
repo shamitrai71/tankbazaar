@@ -65,14 +65,12 @@ let firebaseReady = false, fbAuth = null, fbDb = null;
       console.warn('Could not apply Firestore long-polling settings:', settingsErr.message);
     }
     firebaseReady = true;
-    console.log('%c[TANK BAZAAR] BUILD v9 · Firebase ready · project=' + FIREBASE_CONFIG.projectId +
+    console.log('%c[TANK BAZAAR] BUILD v10 (REST writes) · Firebase ready · project=' + FIREBASE_CONFIG.projectId +
                 ' · database=' + FIRESTORE_DB_ID, 'color:#2fa37c;font-weight:bold');
     // Enable local persistence so writes commit to cache immediately (promise
     // resolves without waiting for a server ACK that may be blocked), then sync
     // in the background. This makes profile saves reliable on flaky networks.
-    fbDb.enablePersistence({ synchronizeTabs: true }).catch(function(err){
-      console.warn('[TANK BAZAAR] persistence not enabled:', err.code || err.message);
-    });
+
   } catch (e) { console.error('Firebase init failed:', e); }
 })();
 </script>
@@ -2872,6 +2870,105 @@ function initAuthListener() {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// FIRESTORE REST API LAYER
+// The streaming/WebChannel SDK transport is blocked on some networks
+// (writes hang). The REST API uses plain HTTPS POST/PATCH/GET — the same
+// mechanism the Firebase console uses — so it works wherever HTTPS works.
+// ═══════════════════════════════════════════════════════════════
+const FS_REST = {
+  base() {
+    return `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}` +
+           `/databases/${FIRESTORE_DB_ID}/documents`;
+  },
+  async token() {
+    return fbAuth.currentUser ? await fbAuth.currentUser.getIdToken() : null;
+  },
+  // Convert a plain JS object to Firestore REST "fields" format.
+  toFields(obj) {
+    const fields = {};
+    for (const [k, v] of Object.entries(obj)) {
+      fields[k] = FS_REST.toValue(v);
+    }
+    return fields;
+  },
+  toValue(v) {
+    if (v === null || v === undefined) return { nullValue: null };
+    if (typeof v === 'boolean') return { booleanValue: v };
+    if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    if (typeof v === 'string') return { stringValue: v };
+    if (v instanceof Date) return { timestampValue: v.toISOString() };
+    if (Array.isArray(v)) return { arrayValue: { values: v.map(FS_REST.toValue) } };
+    if (typeof v === 'object') return { mapValue: { fields: FS_REST.toFields(v) } };
+    return { stringValue: String(v) };
+  },
+  // Convert a Firestore REST document back to a plain JS object.
+  fromFields(fields) {
+    const obj = {};
+    if (!fields) return obj;
+    for (const [k, v] of Object.entries(fields)) obj[k] = FS_REST.fromValue(v);
+    return obj;
+  },
+  fromValue(v) {
+    if ('nullValue' in v) return null;
+    if ('booleanValue' in v) return v.booleanValue;
+    if ('integerValue' in v) return parseInt(v.integerValue, 10);
+    if ('doubleValue' in v) return v.doubleValue;
+    if ('stringValue' in v) return v.stringValue;
+    if ('timestampValue' in v) return v.timestampValue;
+    if ('arrayValue' in v) return (v.arrayValue.values || []).map(FS_REST.fromValue);
+    if ('mapValue' in v) return FS_REST.fromFields(v.mapValue.fields);
+    return null;
+  },
+  // PATCH with merge semantics: only the given fields are written, others preserved.
+  async setMerge(collection, docId, data) {
+    const token = await FS_REST.token();
+    const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+    const url = `${FS_REST.base()}/${collection}/${docId}?${mask}`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ fields: FS_REST.toFields(data) }),
+    });
+    if (!res.ok) throw new Error('REST ' + res.status + ': ' + (await res.text()).slice(0, 200));
+    return res.json();
+  },
+  async get(collection, docId) {
+    const token = await FS_REST.token();
+    const url = `${FS_REST.base()}/${collection}/${docId}`;
+    const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('REST ' + res.status);
+    const doc = await res.json();
+    return FS_REST.fromFields(doc.fields);
+  },
+  async list(collection) {
+    const token = await FS_REST.token();
+    const out = [];
+    let pageToken = '';
+    do {
+      const url = `${FS_REST.base()}/${collection}?pageSize=300` + (pageToken ? `&pageToken=${pageToken}` : '');
+      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!res.ok) throw new Error('REST ' + res.status);
+      const data = await res.json();
+      (data.documents || []).forEach(d => {
+        const obj = FS_REST.fromFields(d.fields);
+        obj.id = d.name.split('/').pop();
+        out.push(obj);
+      });
+      pageToken = data.nextPageToken || '';
+    } while (pageToken);
+    return out;
+  },
+  async delete(collection, docId) {
+    const token = await FS_REST.token();
+    const res = await fetch(`${FS_REST.base()}/${collection}/${docId}`, {
+      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!res.ok && res.status !== 404) throw new Error('REST ' + res.status);
+  },
+};
+
 async function onUserSignedIn(u) {
   console.log('%c[TANK BAZAAR] ⏳ Syncing profile for ' + u.email, 'color:#d9a441;font-weight:bold');
   const role = roleForEmail(u.email);
@@ -2886,56 +2983,46 @@ async function onUserSignedIn(u) {
   };
   applyLoggedInUI();
 
-  // Sync profile with retries. We use a merge-set (creates if absent, updates if
-  // present) so we don't depend on a fragile initial read during connection warm-up.
-  const ref = fbDb.collection('users').doc(u.uid);
-  const FieldValue = firebase.firestore.FieldValue;
+  try {
+    // Read existing profile via REST (plain HTTPS — not the blocked transport).
+    let existing = null;
+    try { existing = await FS_REST.get('users', u.uid); } catch (e) { /* treat as new */ }
 
-  // 1) Ensure the base profile doc exists (merge = won't overwrite existing fields).
-  const baseProfile = {
-    uid: u.uid, email: u.email,
-    name: u.displayName || u.email.split('@')[0],
-    photoURL: u.photoURL || '',
-    provider: provider, role: role,
-    lastLogin: FieldValue.serverTimestamp(),
-    status: 'active',
-  };
+    const now = new Date();
+    const base = {
+      uid: u.uid, email: u.email,
+      name: (existing && existing.name) || u.displayName || u.email.split('@')[0],
+      photoURL: u.photoURL || '',
+      provider: provider, role: role,
+      lastLogin: now, status: (existing && existing.status) || 'active',
+      loginCount: ((existing && existing.loginCount) || 0) + 1,
+    };
+    if (!existing || !existing.createdAt) {
+      base.createdAt = now;
+      base.company = (existing && existing.company) || '';
+      base.title = (existing && existing.title) || '';
+      base.phone = (existing && existing.phone) || '';
+      base.country = (existing && existing.country) || '';
+      base.segment = (existing && existing.segment) || '';
+      base.companySize = (existing && existing.companySize) || '';
+      base.interests = (existing && existing.interests) || [];
+      base.regions = (existing && existing.regions) || [];
+      base.newsletter = existing ? existing.newsletter !== false : true;
+      base.allowAnalytics = existing ? existing.allowAnalytics !== false : true;
+      base.pageViews = (existing && existing.pageViews) || 0;
+    }
 
-  const ok = await retryWrite(() => ref.set(baseProfile, { merge: true }), 'profile-base');
+    await FS_REST.setMerge('users', u.uid, base);
 
-  if (ok) {
-    // 2) Bump login counter. (createdAt is set once below only if the doc is new.)
-    await retryWrite(() => ref.set({
-      loginCount: FieldValue.increment(1),
-    }, { merge: true }), 'profile-counters').catch(()=>{});
+    currentUser.profile = Object.assign({}, existing || {}, base);
+    currentUser.name = currentUser.profile.name || currentUser.name;
+    applyLoggedInUI();
 
-    // 3) Read back the profile for the UI; set first-time defaults if new.
-    try {
-      const snap = await ref.get();
-      if (snap.exists) {
-        const data = snap.data();
-        // First-time enrichment: add createdAt + default fields only if missing.
-        if (!data.createdAt) {
-          await ref.set({
-            createdAt: FieldValue.serverTimestamp(),
-            company: data.company || '', title: data.title || '', phone: data.phone || '',
-            country: data.country || '', segment: data.segment || '', companySize: data.companySize || '',
-            interests: data.interests || [], regions: data.regions || [],
-            newsletter: data.newsletter !== false, allowAnalytics: data.allowAnalytics !== false,
-            pageViews: data.pageViews || 0,
-          }, { merge: true }).catch(()=>{});
-        }
-        currentUser.profile = data;
-        currentUser.name = data.name || currentUser.name;
-        applyLoggedInUI();
-      }
-    } catch (e) { /* non-fatal */ }
-
-    console.log('%c[TANK BAZAAR] ✅ Profile saved to Firestore', 'color:#6fd98f;font-weight:bold');
+    console.log('%c[TANK BAZAAR] ✅ Profile saved to Firestore (REST)', 'color:#6fd98f;font-weight:bold');
     trackPageView();
-  } else {
-    console.error('[TANK BAZAAR] ❌ Profile write failed after retries');
-    toast('Signed in, but could not save profile (network). It will retry next login.', 'error');
+  } catch (e) {
+    console.error('[TANK BAZAAR] ❌ Profile write failed (REST):', e.message);
+    toast('Signed in, but could not save profile: ' + e.message, 'error');
   }
 }
 
@@ -2988,18 +3075,13 @@ function userLogout() {
 }
 
 // ── PAGE-VIEW ANALYTICS ──
-function trackPageView() {
+async function trackPageView() {
   if (!firebaseReady || !currentUser) return;
   try {
-    fbDb.collection('users').doc(currentUser.uid).set({
-      pageViews: firebase.firestore.FieldValue.increment(1),
-      lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true }).catch(()=>{});
-    fbDb.collection('analytics').add({
-      uid: currentUser.uid, email: currentUser.email,
-      event: 'page_view', ts: firebase.firestore.FieldValue.serverTimestamp(),
-    }).catch(()=>{});
-  } catch (e) {}
+    const views = ((currentUser.profile && currentUser.profile.pageViews) || 0) + 1;
+    if (currentUser.profile) currentUser.profile.pageViews = views;
+    await FS_REST.setMerge('users', currentUser.uid, { pageViews: views, lastLogin: new Date() });
+  } catch (e) { /* non-fatal */ }
 }
 
 // ── PROFILE PAGE ──
@@ -3055,16 +3137,13 @@ async function saveProfile() {
   if (!firebaseReady) { toast('Profile saved (preview).'); return; }
 
   toast('Saving…');
-  // merge-set creates the doc if missing and updates if present; retried for resilience.
-  const ok = await retryWrite(
-    () => fbDb.collection('users').doc(currentUser.uid).set(updated, { merge: true }),
-    'save-profile'
-  );
-  if (ok) {
-    console.log('%c[TANK BAZAAR] ✅ Profile updated in Firestore', 'color:#6fd98f;font-weight:bold');
+  try {
+    await FS_REST.setMerge('users', currentUser.uid, updated);
+    console.log('%c[TANK BAZAAR] ✅ Profile updated (REST)', 'color:#6fd98f;font-weight:bold');
     toast('Profile saved.');
-  } else {
-    toast('Could not save profile — network issue. Please try again.', 'error');
+  } catch (e) {
+    console.error('[TANK BAZAAR] save failed:', e.message);
+    toast('Could not save profile: ' + e.message, 'error');
   }
 }
 
@@ -3072,7 +3151,7 @@ function deleteMyAccount() {
   showConfirm('Delete Account', 'Permanently delete your account and profile? This cannot be undone.', async () => {
     if (firebaseReady && fbAuth.currentUser) {
       try {
-        await fbDb.collection('users').doc(currentUser.uid).delete();
+        await FS_REST.delete('users', currentUser.uid);
         await fbAuth.currentUser.delete();
         toast('Account deleted.');
       } catch (e) { toast('Re-authenticate and try again: ' + e.message, 'error'); return; }
@@ -3137,24 +3216,23 @@ let usersData = [];
 async function loadUsersFromFirestore() {
   if (!firebaseReady) { usersData = []; return; }
   try {
-    const snap = await fbDb.collection('users').orderBy('createdAt', 'desc').get();
-    usersData = snap.docs.map(doc => {
-      const d = doc.data();
-      return {
-        id: doc.id,
-        name: d.name || (d.email||'').split('@')[0],
-        email: d.email || '',
-        role: d.role || 'member',
-        joined: fmtDate(d.createdAt) || '—',
-        last: fmtDate(d.lastLogin) || '—',
-        status: d.status || 'active',
-        country: d.country || '—',
-        views: d.pageViews || 0,
-        company: d.company || '—',
-        segment: d.segment || '',
-        loginCount: d.loginCount || 0,
-      };
-    });
+    const docs = await FS_REST.list('users');
+    usersData = docs.map(d => ({
+      id: d.id,
+      name: d.name || (d.email||'').split('@')[0],
+      email: d.email || '',
+      role: d.role || 'member',
+      joined: fmtDate(d.createdAt) || '—',
+      last: fmtDate(d.lastLogin) || '—',
+      status: d.status || 'active',
+      country: d.country || '—',
+      views: d.pageViews || 0,
+      company: d.company || '—',
+      segment: d.segment || '',
+      loginCount: d.loginCount || 0,
+    }));
+    // Newest first
+    usersData.sort((a,b) => (b.loginCount||0) - (a.loginCount||0));
   } catch (e) { console.warn('Could not load users:', e.message); usersData = []; }
 }
 
@@ -3199,7 +3277,7 @@ function removeUser(id) {
   if (!u) return;
   showConfirm('Remove User', `Remove ${u.name} (${u.email})? This deletes their profile data.`, async () => {
     if (firebaseReady) {
-      try { await fbDb.collection('users').doc(id).delete(); }
+      try { await FS_REST.delete('users', id); }
       catch(e) { toast(e.message, 'error'); return; }
     }
     usersData = usersData.filter(x => x.id !== id);
@@ -3213,7 +3291,7 @@ function suspendUser(id) {
   const u = usersData.find(x=>x.id===id);
   if (!u) return;
   u.status = 'suspended';
-  if (firebaseReady) fbDb.collection('users').doc(id).update({ status: 'suspended' }).catch(()=>{});
+  if (firebaseReady) FS_REST.setMerge('users', id, { status: 'suspended' }).catch(()=>{});
   renderUsersTable();
   toast(`${u.name} suspended.`);
   logActivity(`Suspended user: ${u.name}`, 'warning');
@@ -3298,19 +3376,23 @@ function createAdmin() {
   const role = document.getElementById('newAdminRole').value;
   if (!name || !email) { toast('Please fill name and email.', 'error'); return; }
   if (!firebaseReady) { toast('Configure Firebase to manage admins.', 'error'); return; }
-  // Grant admin by setting role on the user's Firestore doc (they must have signed in at least once),
-  // or create a pending-admin record that's promoted on first login.
-  fbDb.collection('users').where('email','==',email).limit(1).get().then(async snap => {
-    if (!snap.empty) {
-      await snap.docs[0].ref.update({ role });
-      toast(`${name} promoted to ${role}.`);
-    } else {
-      await fbDb.collection('pendingAdmins').doc(email).set({ email, name, role, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      toast(`${email} will become ${role} on first sign-in.`);
-    }
-    logActivity(`Granted ${role}: ${name}`, 'success');
-    await loadUsersFromFirestore(); renderAdminsTable(); renderUsersTable();
-  }).catch(e => toast(e.message, 'error'));
+  // Grant admin by setting role on the user's Firestore doc (they must have signed in
+  // at least once), or create a pending-admin record that's promoted on first login.
+  (async () => {
+    try {
+      await loadUsersFromFirestore();
+      const existing = usersData.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existing) {
+        await FS_REST.setMerge('users', existing.id, { role });
+        toast(`${name} promoted to ${role}.`);
+      } else {
+        await FS_REST.setMerge('pendingAdmins', email.replace(/[^a-zA-Z0-9]/g,'_'), { email, name, role, createdAt: new Date() });
+        toast(`${email} will become ${role} on first sign-in.`);
+      }
+      logActivity(`Granted ${role}: ${name}`, 'success');
+      await loadUsersFromFirestore(); renderAdminsTable(); renderUsersTable();
+    } catch (e) { toast(e.message, 'error'); }
+  })();
   document.getElementById('newAdminName').value='';
   document.getElementById('newAdminEmail').value='';
   const pw = document.getElementById('newAdminPass'); if (pw) pw.value='';
@@ -3321,7 +3403,7 @@ function removeAdmin(email) {
   const u = usersData.find(x=>x.email===email);
   showConfirm('Revoke Admin', `Revoke admin rights for ${u?.name||email}? They become a regular member.`, async () => {
     if (firebaseReady && u) {
-      try { await fbDb.collection('users').doc(u.id).update({ role: 'member' }); } catch(e){}
+      try { await FS_REST.setMerge('users', u.id, { role: 'member' }); } catch(e){}
     }
     if (u) u.role = 'member';
     renderAdminsTable(); renderUsersTable();
