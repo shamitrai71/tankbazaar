@@ -21,7 +21,6 @@
 ════════════════════════════════════════════════════════════════ -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 // ⬇️  PASTE YOUR FIREBASE CONFIG HERE  ⬇️
 const FIREBASE_CONFIG = {
@@ -51,26 +50,12 @@ let firebaseReady = false, fbAuth = null, fbDb = null;
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     fbAuth = firebase.auth();
-    // Support a named (non-default) Firestore database.
-    fbDb = (FIRESTORE_DB_ID && FIRESTORE_DB_ID !== "(default)")
-      ? firebase.app().firestore(FIRESTORE_DB_ID)
-      : firebase.firestore();
-    // Force long-polling instead of WebChannel streaming. Many corporate
-    // networks, ISPs, proxies and VPNs block Firestore's streaming transport,
-    // which surfaces as "unavailable / client is offline".
-    try {
-      fbDb.settings({ experimentalForceLongPolling: true, useFetchStreams: false });
-      console.log('%c[TANK BAZAAR] Firestore long-polling FORCED (fetch streams off)', 'color:#d9a441');
-    } catch (settingsErr) {
-      console.warn('Could not apply Firestore long-polling settings:', settingsErr.message);
-    }
+    // Data is read/written via the Firestore REST API (see FS_REST), not the
+    // streaming SDK — plain HTTPS works reliably on all networks. The Firebase
+    // SDK here is used only for Authentication.
     firebaseReady = true;
-    console.log('%c[TANK BAZAAR] BUILD v10 (REST writes) · Firebase ready · project=' + FIREBASE_CONFIG.projectId +
+    console.log('%c[TANK BAZAAR] Ready · project=' + FIREBASE_CONFIG.projectId +
                 ' · database=' + FIRESTORE_DB_ID, 'color:#2fa37c;font-weight:bold');
-    // Enable local persistence so writes commit to cache immediately (promise
-    // resolves without waiting for a server ACK that may be blocked), then sync
-    // in the background. This makes profile saves reliable on flaky networks.
-
   } catch (e) { console.error('Firebase init failed:', e); }
 })();
 </script>
@@ -2970,7 +2955,6 @@ const FS_REST = {
 };
 
 async function onUserSignedIn(u) {
-  console.log('%c[TANK BAZAAR] ⏳ Syncing profile for ' + u.email, 'color:#d9a441;font-weight:bold');
   const role = roleForEmail(u.email);
   const provider = (u.providerData[0] && u.providerData[0].providerId) || 'password';
 
@@ -3017,34 +3001,11 @@ async function onUserSignedIn(u) {
     currentUser.profile = Object.assign({}, existing || {}, base);
     currentUser.name = currentUser.profile.name || currentUser.name;
     applyLoggedInUI();
-
-    console.log('%c[TANK BAZAAR] ✅ Profile saved to Firestore (REST)', 'color:#6fd98f;font-weight:bold');
     trackPageView();
   } catch (e) {
     console.error('[TANK BAZAAR] ❌ Profile write failed (REST):', e.message);
     toast('Signed in, but could not save profile: ' + e.message, 'error');
   }
-}
-
-// Retry a Firestore write a few times, waiting for the connection to come up.
-// Each attempt has a timeout so a hung (never-resolving) write is caught.
-async function retryWrite(fn, label, attempts) {
-  attempts = attempts || 4;
-  for (let i = 1; i <= attempts; i++) {
-    try {
-      await Promise.race([
-        fn(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000)),
-      ]);
-      return true;
-    } catch (e) {
-      const code = e.code || e.message || '';
-      console.warn(`[TANK BAZAAR] write "${label}" attempt ${i}/${attempts}: ${code}`);
-      if (i === attempts) return false;
-      await new Promise(r => setTimeout(r, 600 * i));
-    }
-  }
-  return false;
 }
 
 function applyLoggedInUI() {
@@ -3139,7 +3100,6 @@ async function saveProfile() {
   toast('Saving…');
   try {
     await FS_REST.setMerge('users', currentUser.uid, updated);
-    console.log('%c[TANK BAZAAR] ✅ Profile updated (REST)', 'color:#6fd98f;font-weight:bold');
     toast('Profile saved.');
   } catch (e) {
     console.error('[TANK BAZAAR] save failed:', e.message);
