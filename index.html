@@ -424,6 +424,13 @@ input[type="range"] {
 .popup-owner.unclaimed { background: rgba(217,164,65,0.08); border-color: rgba(217,164,65,0.25); color: var(--gold); }
 .popup-btn-claim { background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4); color: var(--gold); margin-top: 6px; }
 .popup-btn-claim:hover { background: rgba(217,164,65,0.2); }
+.popup-btn-owner { background: rgba(47,163,124,0.12); border: 1px solid rgba(47,163,124,0.4); color: var(--accent2); margin-top: 6px; }
+.popup-btn-owner:hover { background: rgba(47,163,124,0.2); }
+.popup-metrics { margin: 10px 0; padding-top: 10px; border-top: 1px solid var(--border); }
+.pm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 6px; }
+.pm-item { display: flex; justify-content: space-between; align-items: baseline; }
+.pm-label { font-size: 10px; color: var(--text-dim); }
+.pm-val { font-size: 12px; color: var(--accent); font-weight: 600; }
 .claim-field { margin-bottom: 13px; }
 .claim-field label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 5px; }
 .claim-field input, .claim-field textarea {
@@ -1133,9 +1140,11 @@ input[type="range"] {
           <div class="popup-products-label">Products Stored</div>
           <div class="popup-product-list" id="p-products"></div>
         </div>
+        <div class="popup-metrics" id="p-metrics" style="display:none;"></div>
         <div class="popup-owner" id="p-owner" style="display:none;"></div>
         <button class="popup-btn" onclick="viewFull()">View Full Fact Sheet →</button>
         <button class="popup-btn popup-btn-claim" id="p-claim-btn" onclick="openClaimForm()" style="display:none;">⚑ Claim this terminal</button>
+        <button class="popup-btn popup-btn-owner" id="p-metrics-btn" onclick="openMetricsForm()" style="display:none;">✎ Edit operational data</button>
       </div>
     </div>
 
@@ -1191,6 +1200,9 @@ input[type="range"] {
               <th>Berth Occupancy</th>
               <th>Tanks</th>
               <th>Berths</th>
+              <th>Throughput</th>
+              <th>Avg TRT</th>
+              <th>Tank Turns</th>
             </tr>
           </thead>
           <tbody id="bench-tbody"></tbody>
@@ -1686,7 +1698,11 @@ function showPopup(t) {
   // Ownership status + claim button
   const ownerEl = document.getElementById('p-owner');
   const claimBtn = document.getElementById('p-claim-btn');
+  const metricsBtn = document.getElementById('p-metrics-btn');
   const status = t.claimStatus || 'unclaimed';
+  const isOwner = currentUser && t.ownerId && currentUser.uid === t.ownerId;
+  const isAdminUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+
   if (status === 'owned' && t.ownerId) {
     ownerEl.style.display = 'block';
     ownerEl.className = 'popup-owner';
@@ -1701,9 +1717,14 @@ function showPopup(t) {
     ownerEl.style.display = 'block';
     ownerEl.className = 'popup-owner unclaimed';
     ownerEl.textContent = '○ Unclaimed — are you the operator?';
-    // Show claim button only to signed-in members (not needed for admins/owners)
     claimBtn.style.display = currentUser ? 'block' : 'none';
   }
+
+  // Owner (or admin) can edit operational metrics
+  metricsBtn.style.display = (isOwner || isAdminUser) ? 'block' : 'none';
+
+  // Show any populated operational metrics
+  renderPopupMetrics(t);
 
   document.getElementById('terminal-popup').style.display = 'block';
 
@@ -1816,6 +1837,85 @@ async function submitClaim() {
     toast('Could not submit claim: ' + e.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'Submit Claim for Review';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPERATIONAL METRICS (Phase 3)
+// Validated owners (or admins) enter verified operational figures.
+// Empty = unreported ("—"), never fabricated. Feeds Benchmark analytics.
+// ═══════════════════════════════════════════════════════════════
+const METRIC_LABELS = {
+  throughput: { label: 'Throughput', unit: ' kbd', fmt: v => Number(v).toLocaleString() },
+  trt:        { label: 'Avg TRT', unit: 'h', fmt: v => v },
+  tankTurns:  { label: 'Tank Turns/yr', unit: '', fmt: v => v },
+  utilization:{ label: 'Utilization', unit: '%', fmt: v => v },
+};
+
+function hasAnyMetric(t) {
+  const m = t.metrics || {};
+  return ['throughput','trt','tankTurns','utilization'].some(k => m[k] != null && m[k] !== '');
+}
+
+function renderPopupMetrics(t) {
+  const el = document.getElementById('p-metrics');
+  const m = t.metrics || {};
+  if (!hasAnyMetric(t)) { el.style.display = 'none'; return; }
+  const items = Object.keys(METRIC_LABELS)
+    .filter(k => m[k] != null && m[k] !== '')
+    .map(k => {
+      const spec = METRIC_LABELS[k];
+      return `<div class="pm-item"><span class="pm-label">${spec.label}</span><span class="pm-val">${spec.fmt(m[k])}${spec.unit}</span></div>`;
+    }).join('');
+  el.innerHTML = `<div class="popup-products-label">Operational Data ${m.lastAudit ? `<span style="color:var(--text-dim);font-weight:400;">· audited ${m.lastAudit}</span>` : ''}</div><div class="pm-grid">${items}</div>`;
+  el.style.display = 'block';
+}
+
+function openMetricsForm() {
+  if (!selectedTerminal) return;
+  const t = selectedTerminal;
+  const isOwner = currentUser && t.ownerId && currentUser.uid === t.ownerId;
+  const isAdminUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  if (!isOwner && !isAdminUser) { toast('Only the verified operator can edit this.', 'error'); return; }
+  const m = t.metrics || {};
+  document.getElementById('metricsTerminalName').textContent = `${t.name} · ${t.city}, ${t.country}`;
+  document.getElementById('m-throughput').value = m.throughput ?? '';
+  document.getElementById('m-trt').value = m.trt ?? '';
+  document.getElementById('m-tankturns').value = m.tankTurns ?? '';
+  document.getElementById('m-utilization').value = m.utilization ?? '';
+  document.getElementById('m-lastaudit').value = m.lastAudit ?? '';
+  document.getElementById('metricsModal').classList.remove('hidden');
+}
+function closeMetricsForm() { document.getElementById('metricsModal').classList.add('hidden'); }
+
+async function saveMetrics() {
+  if (!selectedTerminal) return;
+  const t = selectedTerminal;
+  const numOrNull = id => { const v = document.getElementById(id).value.trim(); return v === '' ? null : parseFloat(v); };
+  const dateVal = document.getElementById('m-lastaudit').value || null;
+  const metrics = {
+    throughput: numOrNull('m-throughput'),
+    trt: numOrNull('m-trt'),
+    tankTurns: numOrNull('m-tankturns'),
+    utilization: numOrNull('m-utilization'),
+    lastAudit: dateVal,
+  };
+  const btn = document.getElementById('metricsSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    t.metrics = Object.assign(blankMetrics(), metrics);
+    const ok = await TerminalStore.save(t);
+    if (!ok) throw new Error('save failed');
+    closeMetricsForm();
+    renderPopupMetrics(t);
+    // Refresh benchmark if it's open (metrics feed it)
+    if (document.getElementById('benchmark-panel')?.classList.contains('active') && typeof initBenchmarkCharts === 'function') initBenchmarkCharts();
+    toast('Operational data saved.');
+    logActivity(`Updated operational data: ${t.name}`, 'success');
+  } catch (e) {
+    toast('Could not save: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Operational Data';
   }
 }
 
@@ -1961,6 +2061,15 @@ function initBenchmarkCharts() {
   set('bmCountSub', `${countries} countries`);
   set('bmTanks', totalTanks.toLocaleString());
 
+  // Reported-metrics coverage (how many terminals have operator-supplied data)
+  const reported = data.filter(t => hasAnyMetric(t)).length;
+  const thru = data.map(t => t.metrics && t.metrics.throughput).filter(v => v != null && v !== '');
+  const avgThru = thru.length ? Math.round(thru.reduce((a,b)=>a+Number(b),0)/thru.length) : null;
+  const tanksSub = document.getElementById('bmTanksSub');
+  if (tanksSub) tanksSub.textContent = reported ? `${reported} facilities report operational data` : 'across facilities';
+  const occSub = document.getElementById('bmAvgOccSub');
+  if (occSub) occSub.textContent = avgThru ? `avg reported throughput ${avgThru.toLocaleString()} kbd` : 'mean across facilities';
+
   // ── Storage Capacity by Operator (real, top 8) ──
   const sorted = [...data].sort((a,b) => b.cap - a.cap).slice(0,8);
   const ctx1 = document.getElementById('capChart').getContext('2d');
@@ -2003,13 +2112,14 @@ function initBenchmarkCharts() {
     }
   });
 
-  // ── Table (real columns only) ──
+  // ── Table — infrastructure + reported operational metrics ("—" if unreported) ──
   const tbody = document.getElementById('bench-tbody');
   const rows = [...data].sort((a,b)=>b.cap-a.cap).slice(0,12);
   const maxCap = rows[0].cap;
+  const mv = (t,k,suffix='') => { const v = t.metrics && t.metrics[k]; return (v==null||v==='') ? '<span style="color:var(--text-dim);">—</span>' : (Number(v).toLocaleString()+suffix); };
   tbody.innerHTML = rows.map(t => `
     <tr>
-      <td class="t-name">${t.name}</td>
+      <td class="t-name">${t.name}${(t.claimStatus==='owned')?' <span title="Verified operator" style="color:var(--accent2);">✓</span>':''}</td>
       <td>${t.country}</td>
       <td><span style="color:${getTypeColor(t)};font-size:10px;white-space:nowrap;">● ${TERMINAL_TYPES[terminalType(t)].short}</span></td>
       <td class="t-val">
@@ -2019,6 +2129,9 @@ function initBenchmarkCharts() {
       <td class="t-val">${t.occ}</td>
       <td>${t.tanks}</td>
       <td>${t.berths}</td>
+      <td class="t-val">${mv(t,'throughput')}</td>
+      <td class="t-val">${mv(t,'trt','h')}</td>
+      <td class="t-val">${mv(t,'tankTurns')}</td>
     </tr>
   `).join('');
 }
@@ -2967,6 +3080,38 @@ loadScript(
     </div>
     <button class="popup-btn" style="margin-top:8px;" onclick="submitClaim()" id="claimSubmitBtn">Submit Claim for Review</button>
     <p style="color:var(--text-dim);font-size:10px;margin-top:10px;">Claims are manually reviewed by our team. You'll be able to edit this terminal's operational data once approved.</p>
+  </div>
+</div>
+
+<!-- OPERATIONAL METRICS EDIT MODAL -->
+<div class="modal-overlay hidden" id="metricsModal">
+  <div class="login-box" style="max-width:500px;text-align:left;">
+    <button class="modal-close-x" onclick="closeMetricsForm()">×</button>
+    <h2 style="font-family:var(--font-display);margin-bottom:4px;">Operational Data</h2>
+    <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px;" id="metricsTerminalName">—</p>
+    <p style="color:var(--text-dim);font-size:11px;margin-bottom:16px;">Enter verified operational figures. Leave blank to keep unreported (shown as "—"). These feed the public Benchmark analytics.</p>
+    <div class="claim-field">
+      <label>Throughput (kbd)</label>
+      <input type="number" id="m-throughput" placeholder="e.g. 4200" step="any" min="0">
+      <div class="claim-hint">Average daily throughput in thousand barrels/day.</div>
+    </div>
+    <div class="claim-field">
+      <label>Avg Turnaround Time — TRT (hours)</label>
+      <input type="number" id="m-trt" placeholder="e.g. 28" step="any" min="0">
+    </div>
+    <div class="claim-field">
+      <label>Tank Turns / Year</label>
+      <input type="number" id="m-tankturns" placeholder="e.g. 14.6" step="any" min="0">
+    </div>
+    <div class="claim-field">
+      <label>Utilization (%)</label>
+      <input type="number" id="m-utilization" placeholder="e.g. 88" step="any" min="0" max="100">
+    </div>
+    <div class="claim-field">
+      <label>Last Audited</label>
+      <input type="date" id="m-lastaudit">
+    </div>
+    <button class="popup-btn" style="margin-top:8px;" onclick="saveMetrics()" id="metricsSaveBtn">Save Operational Data</button>
   </div>
 </div>
 
