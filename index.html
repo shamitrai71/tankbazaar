@@ -1015,7 +1015,7 @@ input[type="range"] {
       </div>
       <div class="filter-group">
         <div class="filter-label">Region</div>
-        <select onchange="filterTerminals()">
+        <select id="filter-region" onchange="filterTerminals()">
           <option>All Regions</option>
           <option>ARA (NW Europe)</option>
           <option>Middle East</option>
@@ -1027,18 +1027,18 @@ input[type="range"] {
       </div>
       <div class="filter-group">
         <div class="filter-label">Min Capacity (kbd)</div>
-        <input type="range" min="100" max="5000" value="100" oninput="updateRange(this)">
-        <div class="range-labels"><span>100 kbd</span><span>5,000 kbd</span></div>
+        <input type="range" id="filter-cap" min="0" max="15000" step="500" value="0" oninput="updateRange(this)">
+        <div class="range-labels"><span id="filter-cap-val">0 kbd</span><span>15,000 kbd</span></div>
       </div>
       <div class="filter-group">
         <div class="filter-label">Products</div>
         <div class="product-tags">
           <span class="product-tag active" onclick="toggleTag(this)">Crude</span>
           <span class="product-tag active" onclick="toggleTag(this)">Gasoline</span>
-          <span class="product-tag" onclick="toggleTag(this)">LPG</span>
-          <span class="product-tag" onclick="toggleTag(this)">LNG</span>
-          <span class="product-tag" onclick="toggleTag(this)">Diesel</span>
-          <span class="product-tag" onclick="toggleTag(this)">Chemicals</span>
+          <span class="product-tag active" onclick="toggleTag(this)">LPG</span>
+          <span class="product-tag active" onclick="toggleTag(this)">LNG</span>
+          <span class="product-tag active" onclick="toggleTag(this)">Diesel</span>
+          <span class="product-tag active" onclick="toggleTag(this)">Chemicals</span>
         </div>
       </div>
     </div>
@@ -1622,6 +1622,20 @@ function viewFull() { switchView('benchmark'); }
 
 // ─── SIDEBAR LIST ────────────────────────────────────────────────────────────
 
+// Clicking a terminal in the sidebar list: ensure the Map view is active
+// (the popup lives in the map panel), then show its details.
+function selectTerminalFromList(id) {
+  const t = terminals.find(x => x.id === id);
+  if (!t) return;
+  const onMap = document.getElementById('map-panel')?.classList.contains('active');
+  if (!onMap) {
+    switchView('map');
+    setTimeout(() => showPopup(t), 200);
+  } else {
+    showPopup(t);
+  }
+}
+
 function renderTerminalList(list) {
   const el = document.getElementById('terminal-list');
   document.getElementById('term-count').textContent = `(${list.length})`;
@@ -1633,7 +1647,7 @@ function renderTerminalList(list) {
   if (pc) pc.textContent = new Set(list.map(t => t.country)).size;
   if (ss) ss.textContent = `${list.length} facilities · ${new Set(list.map(t => t.country)).size} countries`;
   el.innerHTML = list.map(t => `
-    <div class="terminal-item" data-id="${t.id}" onclick="showPopup(terminals.find(x=>x.id===${t.id}))">
+    <div class="terminal-item" data-id="${t.id}" onclick="selectTerminalFromList(${t.id})">
       <div class="ti-name">${t.name}</div>
       <div class="ti-meta">
         <span>📍 ${t.city}</span>
@@ -1648,24 +1662,67 @@ function currentTypeFilter() {
   const sel = document.getElementById('filter-type');
   return sel ? sel.value : 'all';
 }
+
+// Map each region label to the countries it covers.
+const REGION_COUNTRIES = {
+  'ARA (NW Europe)': ['Netherlands','Belgium','UK','Germany'],
+  'Middle East': ['UAE','Saudi Arabia','Kuwait','Qatar','Bahrain','Oman'],
+  'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines'],
+  'North America': ['USA','Canada','Mexico'],
+  'West Africa': ['Nigeria','Angola','Ghana'],
+  'India Subcontinent': ['India','Bangladesh','Pakistan','Sri Lanka'],
+};
+
+function activeProducts() {
+  return Array.from(document.querySelectorAll('.product-tag.active')).map(el => el.textContent.trim());
+}
+
 function filteredTerminals() {
   const ft = currentTypeFilter();
-  return ft === 'all' ? terminals : terminals.filter(t => terminalType(t) === ft);
+  const regionEl = document.getElementById('filter-region');
+  const region = regionEl ? regionEl.value : 'All Regions';
+  const capEl = document.getElementById('filter-cap');
+  const minCap = capEl ? parseInt(capEl.value) || 0 : 0;
+  const prods = activeProducts();
+  const allProdTags = document.querySelectorAll('.product-tag').length;
+
+  return terminals.filter(t => {
+    // Type
+    if (ft !== 'all' && terminalType(t) !== ft) return false;
+    // Region
+    if (region !== 'All Regions') {
+      const countries = REGION_COUNTRIES[region] || [];
+      if (!countries.includes(t.country)) return false;
+    }
+    // Min capacity
+    if (t.cap < minCap) return false;
+    // Products — keep terminals that stock at least one selected product.
+    // (If all tags are active, don't filter — everything passes.)
+    if (prods.length > 0 && prods.length < allProdTags) {
+      if (!t.products.some(p => prods.includes(p))) return false;
+    }
+    return true;
+  });
 }
+
 function filterTerminals() {
   const list = filteredTerminals();
   renderTerminalList(list);
-  // Sync map markers to the filter
   if (typeof refreshMapMarkers === 'function') refreshMapMarkers(list);
-  // Keep globe in sync via its own segmented control state
+  // Keep globe in sync with the type dropdown
   if (typeof globeTypeFilter !== 'undefined') {
     globeTypeFilter = currentTypeFilter();
     document.querySelectorAll('.globe-seg-btn').forEach(b => b.classList.toggle('active', b.dataset.type === globeTypeFilter));
     if (typeof refreshGlobe === 'function') refreshGlobe();
   }
 }
-function toggleTag(el) { el.classList.toggle('active'); }
-function updateRange(input) {}
+function toggleTag(el) { el.classList.toggle('active'); filterTerminals(); }
+function updateRange(input) {
+  const v = parseInt(input.value) || 0;
+  const lbl = document.getElementById('filter-cap-val');
+  if (lbl) lbl.textContent = v.toLocaleString() + ' kbd';
+  filterTerminals();
+}
 
 // ─── BENCHMARK CHARTS ────────────────────────────────────────────────────────
 
@@ -2004,6 +2061,12 @@ function onGlobeShown() {
 function setGlobeType(type) {
   globeTypeFilter = type;
   document.querySelectorAll('.globe-seg-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  // Keep the sidebar type dropdown in sync so all views agree.
+  const sel = document.getElementById('filter-type');
+  if (sel && sel.value !== type) sel.value = type;
+  const list = filteredTerminals();
+  renderTerminalList(list);
+  if (typeof refreshMapMarkers === 'function') refreshMapMarkers(list);
   refreshGlobe();
 }
 
@@ -2014,7 +2077,10 @@ function toggleGlobeLegend() {
 }
 
 function globeDestinations() {
-  return terminals
+  // Respect the globe's own type segment; other filters (region/capacity/products)
+  // come from the sidebar via filteredTerminals when set.
+  const base = (typeof filteredTerminals === 'function') ? filteredTerminals() : terminals;
+  return base
     .filter(t => globeTypeFilter === 'all' || terminalType(t) === globeTypeFilter)
     .map(t => ({
       name: t.name, lat: t.lat, lon: t.lng,
@@ -2037,7 +2103,7 @@ function initGlobe() {
 
   const legend = document.getElementById('globeLegend');
   legend.style.display = dests.length ? 'block' : 'none';
-  document.getElementById('globeHub').textContent = GLOBE_HUB.name;
+  document.getElementById('globeHub').textContent = 'Global';
   document.getElementById('globeDestCount').textContent = dests.length;
   const typeWord = globeTypeFilter === 'all' ? 'terminals' : (TERMINAL_TYPES[globeTypeFilter].short.toLowerCase());
   const dcLabel = document.getElementById('globeDestLabel');
@@ -2100,23 +2166,7 @@ function initGlobe() {
   })();
   group.add(planet);
 
-  // hub marker (Mumbai)
-  (function(){
-    const cv=document.createElement('canvas'); cv.width=360; cv.height=128; const x=cv.getContext('2d');
-    if (!x.roundRect) x.roundRect=function(x0,y0,w,h,r){this.beginPath();this.moveTo(x0+r,y0);this.arcTo(x0+w,y0,x0+w,y0+h,r);this.arcTo(x0+w,y0+h,x0,y0+h,r);this.arcTo(x0,y0+h,x0,y0,r);this.arcTo(x0,y0,x0+w,y0,r);this.closePath();return this;};
-    x.fillStyle='rgba(16,24,20,.92)'; x.roundRect(86,16,268,56,12); x.fill();
-    x.strokeStyle='rgba(238,244,239,.32)'; x.lineWidth=2; x.roundRect(86,16,268,56,12); x.stroke();
-    x.fillStyle='#eef4ef'; x.textAlign='left'; x.font='700 30px Chakra Petch,ui-sans-serif,system-ui';
-    x.fillText('TANK', 104, 54); x.fillStyle='#d9a441'; x.fillText('BAZAAR', 176, 54);
-    x.strokeStyle='#eef4ef'; x.lineWidth=3; x.beginPath(); x.moveTo(86,60); x.lineTo(52,104); x.stroke();
-    x.fillStyle='#2fa37c'; x.beginPath(); x.arc(52,104,13,0,7); x.fill();
-    x.lineWidth=4; x.strokeStyle='#eef4ef'; x.beginPath(); x.arc(52,104,13,0,7); x.stroke();
-    const tex=new THREE.CanvasTexture(cv); tex.encoding=THREE.sRGBEncoding;
-    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
-    sprite.position.copy(llToVec(GLOBE_HUB.lat,GLOBE_HUB.lon,PLANET_R+0.05));
-    sprite.center.set(0.145,0.19); sprite.scale.set(3.0,3.0*128/360,1);
-    group.add(sprite);
-  })();
+  // (Hub brand marker removed — globe shows terminal markers only.)
 
   // One dot texture per facility type, colored to match TERMINAL_TYPES.
   const DOT_BY_TYPE = {
