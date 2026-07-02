@@ -859,6 +859,23 @@ input[type="range"] {
   font-size: clamp(10px, 2.6vw, 13px); color: var(--text-muted);
   max-width: 520px; text-shadow: 0 1px 8px rgba(0,0,0,0.6);
 }
+.globe-segmented {
+  pointer-events: auto; display: inline-flex; gap: 4px; margin-top: 10px;
+  background: rgba(16,24,20,0.72); border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px; backdrop-filter: blur(6px);
+  flex-wrap: wrap; justify-content: center;
+}
+.globe-seg-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 0; color: var(--text-muted);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  padding: 6px 12px; border-radius: 7px; cursor: pointer; transition: all 0.18s;
+  white-space: nowrap;
+}
+.globe-seg-btn i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.globe-seg-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.globe-seg-btn.active { background: var(--accent); color: #06110d; }
+.globe-seg-btn.active i { box-shadow: 0 0 0 1.5px rgba(6,17,13,0.3); }
 .globe-legend {
   position: absolute; z-index: 18; left: 14px; bottom: 14px;
   max-width: min(280px, 78vw);
@@ -988,6 +1005,15 @@ input[type="range"] {
     <div class="sidebar-section">
       <div class="sidebar-label">Filters</div>
       <div class="filter-group">
+        <div class="filter-label">Facility Type</div>
+        <select id="filter-type" onchange="filterTerminals()">
+          <option value="all">All Types</option>
+          <option value="port">Port Terminals</option>
+          <option value="refinery">Refinery Tank Farms</option>
+          <option value="inland">Inland Terminals</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <div class="filter-label">Region</div>
         <select onchange="filterTerminals()">
           <option>All Regions</option>
@@ -1030,13 +1056,19 @@ input[type="range"] {
       <div class="globe-loading" id="globeLoading">Loading globe…</div>
       <div class="globe-overlay-top">
         <div class="globe-sub">Global tank terminal storage intelligence — explore terminals across the network. Tap a marker for details.</div>
+        <div class="globe-segmented" id="globeSegmented">
+          <button class="globe-seg-btn active" data-type="all" onclick="setGlobeType('all')">All</button>
+          <button class="globe-seg-btn" data-type="port" onclick="setGlobeType('port')"><i style="background:#2fa37c;"></i>Ports</button>
+          <button class="globe-seg-btn" data-type="refinery" onclick="setGlobeType('refinery')"><i style="background:#d9a441;"></i>Refineries</button>
+          <button class="globe-seg-btn" data-type="inland" onclick="setGlobeType('inland')"><i style="background:#5b8ac0;"></i>Inland</button>
+        </div>
       </div>
       <div class="globe-legend" id="globeLegend" style="display:none;">
         <button class="globe-legend-btn" onclick="toggleGlobeLegend()">
           <span class="globe-legend-dot"></span>
           <span style="display:flex;flex-direction:column;line-height:1.25;min-width:0;">
             <span class="globe-legend-label-sm">Terminal network</span>
-            <span class="globe-legend-label-lg"><span id="globeHub">Mumbai</span> · <b style="color:var(--accent);" id="globeDestCount">0</b> terminals</span>
+            <span class="globe-legend-label-lg"><span id="globeHub">Mumbai</span> · <b style="color:var(--accent);" id="globeDestCount">0</b> <span id="globeDestLabel">terminals</span></span>
           </span>
           <span style="margin-left:auto;padding-left:6px;opacity:.6;font-size:11px;" id="globeLegendCaret">▾</span>
         </button>
@@ -1055,11 +1087,11 @@ input[type="range"] {
         <button class="map-btn" title="Toggle Heat" onclick="toggleHeat()">🌡</button>
       </div>
       <div class="map-legend">
-        <h4>Capacity (kbd)</h4>
-        <div class="legend-item"><div class="legend-dot" style="background:#e05c4f;width:14px;height:14px;"></div>> 2,000</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#d9a441;width:11px;height:11px;"></div>500–2,000</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--accent);width:8px;height:8px;"></div>100–500</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#46594f;width:6px;height:6px;"></div>< 100</div>
+        <h4>Facility Type</h4>
+        <div class="legend-item"><div class="legend-dot" style="background:#2fa37c;width:11px;height:11px;"></div>Port Terminal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#d9a441;width:11px;height:11px;"></div>Refinery Tank Farm</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#5b8ac0;width:11px;height:11px;"></div>Inland Terminal</div>
+        <div class="legend-item" style="opacity:0.7;margin-top:4px;font-size:9px;">Dot size = capacity</div>
       </div>
       <div class="terminal-popup" id="terminal-popup">
         <button class="popup-close" onclick="closePopup()">×</button>
@@ -1367,31 +1399,48 @@ function updateDataSourceStatus() {
 // ─── DATA (demo seed — replaced automatically when live endpoints are set) ──
 
 const terminals = [
-  { id:1, name:"Vopak Fujairah", country:"UAE", city:"Fujairah", lat:25.12, lng:56.34, cap:12000, tanks:182, berths:14, occ:"91%", products:["Crude","Diesel","Gasoline"], op:"Vopak", size:"xl" },
-  { id:2, name:"PDVSA Terminal Amuay", country:"Venezuela", city:"Punto Fijo", lat:11.75, lng:-70.21, cap:8900, tanks:142, berths:10, occ:"78%", products:["Crude","LPG"], op:"PDVSA", size:"xl" },
-  { id:3, name:"Oiltanking Amsterdam", country:"Netherlands", city:"Amsterdam", lat:52.38, lng:4.90, cap:5200, tanks:96, berths:8, occ:"85%", products:["Gasoline","Diesel","Chemicals"], op:"Oiltanking", size:"lg" },
-  { id:4, name:"Vopak Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.92, lng:4.47, cap:7100, tanks:128, berths:12, occ:"89%", products:["Crude","LNG","Chemicals"], op:"Vopak", size:"xl" },
-  { id:5, name:"Kamco Kaohsiung", country:"Taiwan", city:"Kaohsiung", lat:22.62, lng:120.27, cap:3800, tanks:74, berths:6, occ:"72%", products:["Crude","Gasoline"], op:"Kamco", size:"lg" },
-  { id:6, name:"Birch Shipping Singapore", country:"Singapore", city:"Singapore", lat:1.26, lng:103.82, cap:6400, tanks:112, berths:11, occ:"94%", products:["Crude","LPG","Diesel"], op:"Birch", size:"xl" },
-  { id:7, name:"Mitsui Chiba", country:"Japan", city:"Chiba", lat:35.61, lng:140.10, cap:4100, tanks:88, berths:7, occ:"81%", products:["Crude","Gasoline","LPG"], op:"Mitsui", size:"lg" },
-  { id:8, name:"IOCL Paradip", country:"India", city:"Paradip, Odisha", lat:20.26, lng:86.68, cap:9200, tanks:164, berths:15, occ:"88%", products:["Crude","Diesel","LPG"], op:"IOCL", size:"xl" },
-  { id:9, name:"Vopak Houston", country:"USA", city:"Houston TX", lat:29.75, lng:-95.26, cap:5800, tanks:104, berths:9, occ:"76%", products:["Crude","Chemicals","Gasoline"], op:"Vopak", size:"lg" },
-  { id:10, name:"Buckeye Texas City", country:"USA", city:"Texas City TX", lat:29.38, lng:-94.90, cap:3200, tanks:68, berths:5, occ:"69%", products:["Gasoline","Diesel"], op:"Buckeye", size:"md" },
-  { id:11, name:"Oiltanking Antwerp", country:"Belgium", city:"Antwerp", lat:51.26, lng:4.39, cap:4500, tanks:82, berths:8, occ:"83%", products:["Crude","Chemicals","Diesel"], op:"Oiltanking", size:"lg" },
-  { id:12, name:"Vivo Energy Lagos", country:"Nigeria", city:"Lagos", lat:6.44, lng:3.41, cap:2400, tanks:48, berths:5, occ:"71%", products:["Gasoline","Diesel","LPG"], op:"Vivo", size:"md" },
-  { id:13, name:"Sasref Jubail", country:"Saudi Arabia", city:"Jubail", lat:27.00, lng:49.66, cap:11200, tanks:196, berths:16, occ:"92%", products:["Crude","LPG","Gasoline"], op:"Sasref", size:"xl" },
-  { id:14, name:"ADNOC Ruwais", country:"UAE", city:"Ruwais", lat:24.10, lng:52.73, cap:10800, tanks:188, berths:14, occ:"95%", products:["Crude","LNG","Diesel"], op:"ADNOC", size:"xl" },
-  { id:15, name:"Kinder Morgan Long Beach", country:"USA", city:"Long Beach CA", lat:33.75, lng:-118.22, cap:2800, tanks:56, berths:4, occ:"67%", products:["Crude","Gasoline"], op:"Kinder Morgan", size:"md" },
-  { id:16, name:"Vopak Pengerang", country:"Malaysia", city:"Johor", lat:1.38, lng:104.11, cap:6200, tanks:108, berths:10, occ:"87%", products:["Crude","LNG","Chemicals"], op:"Vopak", size:"xl" },
-  { id:17, name:"BPCL Mumbai", country:"India", city:"Mumbai", lat:18.96, lng:72.85, cap:4800, tanks:92, berths:8, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"BPCL", size:"lg" },
-  { id:18, name:"Europoort Terminals", country:"Netherlands", city:"Rotterdam", lat:51.95, lng:4.01, cap:5600, tanks:102, berths:9, occ:"86%", products:["Crude","LNG","LPG"], op:"Europoort", size:"lg" },
-  { id:19, name:"Kuwait NPC Mina Ahmadi", country:"Kuwait", city:"Mina Ahmadi", lat:29.07, lng:48.16, cap:8700, tanks:156, berths:13, occ:"90%", products:["Crude","Gasoline","LPG"], op:"KPC", size:"xl" },
-  { id:20, name:"Sonatrach Arzew", country:"Algeria", city:"Arzew", lat:35.85, lng:-0.32, cap:3900, tanks:76, berths:7, occ:"74%", products:["LNG","LPG","Crude"], op:"Sonatrach", size:"lg" },
-  { id:21, name:"Ineos Grangemouth", country:"UK", city:"Falkirk, Scotland", lat:56.02, lng:-3.69, cap:2100, tanks:44, berths:4, occ:"68%", products:["Crude","Chemicals"], op:"Ineos", size:"md" },
-  { id:22, name:"Pertamina Cilacap", country:"Indonesia", city:"Cilacap", lat:-7.73, lng:109.01, cap:5100, tanks:98, berths:8, occ:"84%", products:["Crude","Gasoline","Diesel"], op:"Pertamina", size:"lg" },
-  { id:23, name:"Nayara Energy Vadinar", country:"India", city:"Vadinar, Gujarat", lat:22.46, lng:69.76, cap:7800, tanks:138, berths:12, occ:"86%", products:["Crude","Diesel","LPG"], op:"Nayara", size:"xl" },
-  { id:24, name:"ExxonMobil Jurong", country:"Singapore", city:"Jurong Island", lat:1.22, lng:103.70, cap:4300, tanks:84, berths:7, occ:"88%", products:["Crude","Chemicals","Gasoline"], op:"ExxonMobil", size:"xl" },
+  { id:1, name:"Vopak Fujairah", country:"UAE", city:"Fujairah", lat:25.12, lng:56.34, cap:12000, tanks:182, berths:14, occ:"91%", products:["Crude","Diesel","Gasoline"], op:"Vopak", size:"xl", type:"port" },
+  { id:2, name:"PDVSA Terminal Amuay", country:"Venezuela", city:"Punto Fijo", lat:11.75, lng:-70.21, cap:8900, tanks:142, berths:10, occ:"78%", products:["Crude","LPG"], op:"PDVSA", size:"xl", type:"refinery" },
+  { id:3, name:"Oiltanking Amsterdam", country:"Netherlands", city:"Amsterdam", lat:52.38, lng:4.90, cap:5200, tanks:96, berths:8, occ:"85%", products:["Gasoline","Diesel","Chemicals"], op:"Oiltanking", size:"lg", type:"port" },
+  { id:4, name:"Vopak Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.92, lng:4.47, cap:7100, tanks:128, berths:12, occ:"89%", products:["Crude","LNG","Chemicals"], op:"Vopak", size:"xl", type:"port" },
+  { id:5, name:"Kamco Kaohsiung", country:"Taiwan", city:"Kaohsiung", lat:22.62, lng:120.27, cap:3800, tanks:74, berths:6, occ:"72%", products:["Crude","Gasoline"], op:"Kamco", size:"lg", type:"port" },
+  { id:6, name:"Birch Shipping Singapore", country:"Singapore", city:"Singapore", lat:1.26, lng:103.82, cap:6400, tanks:112, berths:11, occ:"94%", products:["Crude","LPG","Diesel"], op:"Birch", size:"xl", type:"port" },
+  { id:7, name:"Mitsui Chiba", country:"Japan", city:"Chiba", lat:35.61, lng:140.10, cap:4100, tanks:88, berths:7, occ:"81%", products:["Crude","Gasoline","LPG"], op:"Mitsui", size:"lg", type:"port" },
+  { id:8, name:"IOCL Paradip", country:"India", city:"Paradip, Odisha", lat:20.26, lng:86.68, cap:9200, tanks:164, berths:15, occ:"88%", products:["Crude","Diesel","LPG"], op:"IOCL", size:"xl", type:"refinery" },
+  { id:9, name:"Vopak Houston", country:"USA", city:"Houston TX", lat:29.75, lng:-95.26, cap:5800, tanks:104, berths:9, occ:"76%", products:["Crude","Chemicals","Gasoline"], op:"Vopak", size:"lg", type:"port" },
+  { id:10, name:"Buckeye Texas City", country:"USA", city:"Texas City TX", lat:29.38, lng:-94.90, cap:3200, tanks:68, berths:5, occ:"69%", products:["Gasoline","Diesel"], op:"Buckeye", size:"md", type:"port" },
+  { id:11, name:"Oiltanking Antwerp", country:"Belgium", city:"Antwerp", lat:51.26, lng:4.39, cap:4500, tanks:82, berths:8, occ:"83%", products:["Crude","Chemicals","Diesel"], op:"Oiltanking", size:"lg", type:"port" },
+  { id:12, name:"Vivo Energy Lagos", country:"Nigeria", city:"Lagos", lat:6.44, lng:3.41, cap:2400, tanks:48, berths:5, occ:"71%", products:["Gasoline","Diesel","LPG"], op:"Vivo", size:"md", type:"port" },
+  { id:13, name:"Sasref Jubail", country:"Saudi Arabia", city:"Jubail", lat:27.00, lng:49.66, cap:11200, tanks:196, berths:16, occ:"92%", products:["Crude","LPG","Gasoline"], op:"Sasref", size:"xl", type:"refinery" },
+  { id:14, name:"ADNOC Ruwais", country:"UAE", city:"Ruwais", lat:24.10, lng:52.73, cap:10800, tanks:188, berths:14, occ:"95%", products:["Crude","LNG","Diesel"], op:"ADNOC", size:"xl", type:"refinery" },
+  { id:15, name:"Kinder Morgan Long Beach", country:"USA", city:"Long Beach CA", lat:33.75, lng:-118.22, cap:2800, tanks:56, berths:4, occ:"67%", products:["Crude","Gasoline"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:16, name:"Vopak Pengerang", country:"Malaysia", city:"Johor", lat:1.38, lng:104.11, cap:6200, tanks:108, berths:10, occ:"87%", products:["Crude","LNG","Chemicals"], op:"Vopak", size:"xl", type:"port" },
+  { id:17, name:"BPCL Mumbai", country:"India", city:"Mumbai", lat:18.96, lng:72.85, cap:4800, tanks:92, berths:8, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"BPCL", size:"lg", type:"refinery" },
+  { id:18, name:"Europoort Terminals", country:"Netherlands", city:"Rotterdam", lat:51.95, lng:4.01, cap:5600, tanks:102, berths:9, occ:"86%", products:["Crude","LNG","LPG"], op:"Europoort", size:"lg", type:"port" },
+  { id:19, name:"Kuwait NPC Mina Ahmadi", country:"Kuwait", city:"Mina Ahmadi", lat:29.07, lng:48.16, cap:8700, tanks:156, berths:13, occ:"90%", products:["Crude","Gasoline","LPG"], op:"KPC", size:"xl", type:"refinery" },
+  { id:20, name:"Sonatrach Arzew", country:"Algeria", city:"Arzew", lat:35.85, lng:-0.32, cap:3900, tanks:76, berths:7, occ:"74%", products:["LNG","LPG","Crude"], op:"Sonatrach", size:"lg", type:"refinery" },
+  { id:21, name:"Ineos Grangemouth", country:"UK", city:"Falkirk, Scotland", lat:56.02, lng:-3.69, cap:2100, tanks:44, berths:4, occ:"68%", products:["Crude","Chemicals"], op:"Ineos", size:"md", type:"refinery" },
+  { id:22, name:"Pertamina Cilacap", country:"Indonesia", city:"Cilacap", lat:-7.73, lng:109.01, cap:5100, tanks:98, berths:8, occ:"84%", products:["Crude","Gasoline","Diesel"], op:"Pertamina", size:"lg", type:"refinery" },
+  { id:23, name:"Nayara Energy Vadinar", country:"India", city:"Vadinar, Gujarat", lat:22.46, lng:69.76, cap:7800, tanks:138, berths:12, occ:"86%", products:["Crude","Diesel","LPG"], op:"Nayara", size:"xl", type:"refinery" },
+  { id:24, name:"ExxonMobil Jurong", country:"Singapore", city:"Jurong Island", lat:1.22, lng:103.70, cap:4300, tanks:84, berths:7, occ:"88%", products:["Crude","Chemicals","Gasoline"], op:"ExxonMobil", size:"xl", type:"refinery" },
+  // ── Inland terminals (pipeline / rail / truck fed — no marine berths) ──
+  { id:25, name:"Cushing Hub", country:"USA", city:"Cushing, Oklahoma", lat:35.98, lng:-96.77, cap:13000, tanks:210, berths:0, occ:"79%", products:["Crude"], op:"Enbridge", size:"xl", type:"inland" },
+  { id:26, name:"IOCL Panipat Depot", country:"India", city:"Panipat, Haryana", lat:29.39, lng:76.97, cap:3600, tanks:72, berths:0, occ:"81%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"lg", type:"inland" },
+  { id:27, name:"HPCL Bhatinda Terminal", country:"India", city:"Bhatinda, Punjab", lat:30.21, lng:74.95, cap:2200, tanks:46, berths:0, occ:"73%", products:["Diesel","Gasoline"], op:"HPCL", size:"md", type:"inland" },
+  { id:28, name:"Tank & Rast Karlsruhe", country:"Germany", city:"Karlsruhe", lat:49.01, lng:8.40, cap:2900, tanks:58, berths:0, occ:"70%", products:["Gasoline","Diesel","Chemicals"], op:"MiRO", size:"md", type:"inland" },
+  // ── Additional refinery tank farm ──
+  { id:29, name:"Reliance Jamnagar", country:"India", city:"Jamnagar, Gujarat", lat:22.34, lng:69.85, cap:14500, tanks:240, berths:18, occ:"93%", products:["Crude","Diesel","Gasoline","LPG"], op:"Reliance", size:"xl", type:"refinery" },
+  // ── Additional port terminal ──
+  { id:30, name:"Vopak Sebarok", country:"Singapore", city:"Pulau Sebarok", lat:1.20, lng:103.80, cap:5400, tanks:100, berths:9, occ:"90%", products:["Crude","Chemicals"], op:"Vopak", size:"lg", type:"port" },
 ];
+
+// Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
+const TERMINAL_TYPES = {
+  port:     { label:"Port Terminals",       short:"Ports",      color:"#2fa37c", hex:0x2fa37c },
+  refinery: { label:"Refinery Tank Farms",  short:"Refineries", color:"#d9a441", hex:0xd9a441 },
+  inland:   { label:"Inland Terminals",     short:"Inland",     color:"#5b8ac0", hex:0x5b8ac0 },
+};
+function terminalType(t) { return TERMINAL_TYPES[t.type] ? t.type : 'port'; }
 
 // ─── MAP SETUP — DUAL ENGINE: Google Maps (primary) / Leaflet (fallback) ────
 
@@ -1466,6 +1515,7 @@ function getMarkerColor(cap) {
   if (cap > 2000) return '#2fa37c';
   return '#46594f';
 }
+function getTypeColor(t) { return (TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port).color; }
 
 function getMarkerSize(cap) {
   if (cap > 8000) return 18;
@@ -1475,7 +1525,7 @@ function getMarkerSize(cap) {
 }
 
 function addMarker(t) {
-  const color = getMarkerColor(t.cap);
+  const color = getTypeColor(t);
   const size = getMarkerSize(t.cap);
 
   if (usingGoogle && gMap) {
@@ -1523,6 +1573,17 @@ function removeMarkerById(id) {
   }
 }
 
+function clearAllMarkers() {
+  markers.forEach(m => m.engine === 'google' ? m.marker.setMap(null) : m.marker.remove());
+  markers = [];
+}
+
+// Redraw map markers for a given terminal subset (used by the type filter).
+function refreshMapMarkers(list) {
+  clearAllMarkers();
+  (list || terminals).forEach(t => addMarker(t));
+}
+
 // ── UNIFIED MAP CONTROLS (null-safe) ──
 function mapZoomIn() { if (usingGoogle && gMap) gMap.setZoom(gMap.getZoom() + 1); else if (map) map.zoomIn(); }
 function mapZoomOut() { if (usingGoogle && gMap) gMap.setZoom(gMap.getZoom() - 1); else if (map) map.zoomOut(); }
@@ -1532,7 +1593,8 @@ function mapResize() { if (!usingGoogle && map) map.invalidateSize(); }
 function showPopup(t) {
   selectedTerminal = t;
   document.getElementById('p-name').textContent = t.name;
-  document.getElementById('p-loc').textContent = `${t.city}, ${t.country}`;
+  const ty = TERMINAL_TYPES[terminalType(t)];
+  document.getElementById('p-loc').innerHTML = `${t.city}, ${t.country} · <span style="color:${ty.color};">● ${ty.short}</span>`;
   document.getElementById('p-cap').textContent = `${(t.cap/1000).toFixed(1)}M kbd`;
   document.getElementById('p-tanks').textContent = t.tanks;
   document.getElementById('p-berths').textContent = t.berths;
@@ -1577,12 +1639,31 @@ function renderTerminalList(list) {
         <span>📍 ${t.city}</span>
         <span>${t.country}</span>
       </div>
-      <div class="ti-cap">${(t.cap/1000).toFixed(1)}M kbd · ${t.tanks} tanks</div>
+      <div class="ti-cap">${(t.cap/1000).toFixed(1)}M kbd · ${t.tanks} tanks <span class="ti-type" style="color:${getTypeColor(t)};">● ${TERMINAL_TYPES[terminalType(t)].short}</span></div>
     </div>
   `).join('');
 }
 
-function filterTerminals() { renderTerminalList(terminals); }
+function currentTypeFilter() {
+  const sel = document.getElementById('filter-type');
+  return sel ? sel.value : 'all';
+}
+function filteredTerminals() {
+  const ft = currentTypeFilter();
+  return ft === 'all' ? terminals : terminals.filter(t => terminalType(t) === ft);
+}
+function filterTerminals() {
+  const list = filteredTerminals();
+  renderTerminalList(list);
+  // Sync map markers to the filter
+  if (typeof refreshMapMarkers === 'function') refreshMapMarkers(list);
+  // Keep globe in sync via its own segmented control state
+  if (typeof globeTypeFilter !== 'undefined') {
+    globeTypeFilter = currentTypeFilter();
+    document.querySelectorAll('.globe-seg-btn').forEach(b => b.classList.toggle('active', b.dataset.type === globeTypeFilter));
+    if (typeof refreshGlobe === 'function') refreshGlobe();
+  }
+}
 function toggleTag(el) { el.classList.toggle('active'); }
 function updateRange(input) {}
 
@@ -1911,12 +1992,19 @@ function closeDrawer() {
 // Hub = Mumbai; destinations = terminal locations. Tap a marker → details.
 // ═══════════════════════════════════════════════════════════════
 let globeBuilt = false, globeCleanup = null, globeLegendOpen = false;
+let globeTypeFilter = 'all';  // 'all' | 'port' | 'refinery' | 'inland'
 const GLOBE_HUB = { name: 'Mumbai', lat: 19.07, lon: 72.87 };
 
 function onGlobeShown() {
   if (globeBuilt) { window.dispatchEvent(new Event('resize')); return; }
   if (!window.threeReady) { window.pendingGlobeInit = true; return; }
   initGlobe();
+}
+
+function setGlobeType(type) {
+  globeTypeFilter = type;
+  document.querySelectorAll('.globe-seg-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  refreshGlobe();
 }
 
 function toggleGlobeLegend() {
@@ -1926,10 +2014,13 @@ function toggleGlobeLegend() {
 }
 
 function globeDestinations() {
-  return terminals.map(t => ({
-    name: t.name, lat: t.lat, lon: t.lng,
-    serviceable: t.cap >= 5000, terminal: t,
-  })).filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lon));
+  return terminals
+    .filter(t => globeTypeFilter === 'all' || terminalType(t) === globeTypeFilter)
+    .map(t => ({
+      name: t.name, lat: t.lat, lon: t.lng,
+      type: terminalType(t), terminal: t,
+    }))
+    .filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lon));
 }
 
 function initGlobe() {
@@ -1948,9 +2039,12 @@ function initGlobe() {
   legend.style.display = dests.length ? 'block' : 'none';
   document.getElementById('globeHub').textContent = GLOBE_HUB.name;
   document.getElementById('globeDestCount').textContent = dests.length;
+  const typeWord = globeTypeFilter === 'all' ? 'terminals' : (TERMINAL_TYPES[globeTypeFilter].short.toLowerCase());
+  const dcLabel = document.getElementById('globeDestLabel');
+  if (dcLabel) dcLabel.textContent = typeWord;
   const sorted = [...dests].sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('globeLegendList').innerHTML = sorted.map(d=>`
-    <div><i style="width:6px;height:6px;border-radius:50%;background:${d.serviceable?'#6fd98f':'#d9a441'};flex:0 0 auto;"></i>${d.name}</div>
+    <div><i style="width:6px;height:6px;border-radius:50%;background:${TERMINAL_TYPES[d.type].color};flex:0 0 auto;"></i>${d.name}</div>
   `).join('');
 
   const llToVec = (lat, lon, r) => {
@@ -2024,12 +2118,16 @@ function initGlobe() {
     group.add(sprite);
   })();
 
-  const DOT_G=dotTex('#2fa37c'), DOT_O=dotTex('#d9a441'), C_GREEN=0x2fa37c, C_ORANGE=0xd9a441;
+  // One dot texture per facility type, colored to match TERMINAL_TYPES.
+  const DOT_BY_TYPE = {
+    port: dotTex(TERMINAL_TYPES.port.color),
+    refinery: dotTex(TERMINAL_TYPES.refinery.color),
+    inland: dotTex(TERMINAL_TYPES.inland.color),
+  };
   const cityMarkers=[];
   dests.forEach((d) => {
-    const green=d.serviceable;
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:green?DOT_G:DOT_O, transparent:true, depthWrite:false }));
-    sp.position.copy(llToVec(d.lat,d.lon,PLANET_R+0.04)); sp.scale.set(green?0.5:0.44,green?0.5:0.44,1);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:DOT_BY_TYPE[d.type]||DOT_BY_TYPE.port, transparent:true, depthWrite:false }));
+    sp.position.copy(llToVec(d.lat,d.lon,PLANET_R+0.04)); sp.scale.set(0.48,0.48,1);
     sp.userData={ dest:d }; group.add(sp); cityMarkers.push(sp);
   });
 
@@ -2906,7 +3004,7 @@ loadScript(
             <button class="btn-admin primary" onclick="adminNav('addterminal', null)">+ Add Terminal</button>
           </div>
           <table class="admin-table"><thead><tr>
-            <th>Terminal</th><th>Country</th><th>Capacity (kbd)</th><th>Tanks</th><th>Berths</th><th>Operator</th><th>Products</th><th>Actions</th>
+            <th>Terminal</th><th>Country</th><th>Type</th><th>Capacity (kbd)</th><th>Tanks</th><th>Berths</th><th>Operator</th><th>Products</th><th>Actions</th>
           </tr></thead><tbody id="termDataTbody"></tbody></table>
         </div>
       </div>
@@ -2924,6 +3022,15 @@ loadScript(
           <div class="admin-form-grid three">
             <div class="admin-field"><label>City</label><input type="text" id="nt-city" placeholder="Rotterdam"></div>
             <div class="admin-field"><label>Country</label><input type="text" id="nt-country" placeholder="Netherlands"></div>
+            <div class="admin-field"><label>Facility Type</label>
+              <select id="nt-type">
+                <option value="port">Port Terminal</option>
+                <option value="refinery">Refinery Tank Farm</option>
+                <option value="inland">Inland Terminal</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-form-grid three">
             <div class="admin-field"><label>Region</label>
               <select id="nt-region">
                 <option>ARA (NW Europe)</option><option>Middle East</option>
@@ -2931,8 +3038,6 @@ loadScript(
                 <option>West Africa</option><option>India Subcontinent</option>
               </select>
             </div>
-          </div>
-          <div class="admin-form-grid">
             <div class="admin-field"><label>Latitude</label><input type="text" id="nt-lat" placeholder="51.92"></div>
             <div class="admin-field"><label>Longitude</label><input type="text" id="nt-lng" placeholder="4.47"></div>
           </div>
@@ -3777,6 +3882,7 @@ function renderTerminalDataTable() {
     <tr>
       <td class="cell-name">${t.name}</td>
       <td>${t.country}</td>
+      <td><span style="color:${getTypeColor(t)};font-size:9px;white-space:nowrap;">● ${TERMINAL_TYPES[terminalType(t)].short}</span></td>
       <td class="cell-accent">${(t.cap/1000).toFixed(1)}M</td>
       <td>${t.tanks}</td>
       <td>${t.berths}</td>
@@ -3804,15 +3910,17 @@ function addTerminalFromForm() {
   const berths = parseInt(document.getElementById('nt-berths').value) || 3;
   const occ = document.getElementById('nt-occ').value || '75%';
   const prods = document.getElementById('nt-products').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const type = document.getElementById('nt-type') ? document.getElementById('nt-type').value : 'port';
   if (!name || !city || !country || isNaN(lat) || isNaN(lng)) { toast('Please fill all required fields.', 'error'); return; }
-  const newT = { id: terminals.length+1, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md' };
+  const newT = { id: terminals.length+1, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type };
   terminals.push(newT);
   addMarker(newT);
-  renderTerminalList(terminals);
+  renderTerminalList(filteredTerminals());
   renderTerminalDataTable();
+  if (typeof refreshGlobe === 'function') refreshGlobe();
   clearTerminalForm();
   toast(`Terminal "${name}" added successfully.`);
-  logActivity(`Added terminal: ${name} (${country})`, 'success');
+  logActivity(`Added terminal: ${name} (${country}, ${TERMINAL_TYPES[type].short})`, 'success');
 }
 
 function deleteTerminal(id) {
@@ -3843,6 +3951,7 @@ function editTerminalForm(id) {
   document.getElementById('nt-berths').value = t.berths;
   document.getElementById('nt-occ').value = t.occ;
   document.getElementById('nt-products').value = t.products.join(', ');
+  if (document.getElementById('nt-type')) document.getElementById('nt-type').value = terminalType(t);
 }
 
 function clearTerminalForm() {
