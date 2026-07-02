@@ -1117,29 +1117,29 @@ input[type="range"] {
     <div class="view-panel" id="benchmark-panel">
       <div class="panel-header">
         <div class="panel-title">Terminal Benchmarking</div>
-        <div class="panel-subtitle">Compare infrastructure & logistical KPIs across facilities</div>
+        <div class="panel-subtitle">Infrastructure metrics computed from terminal records · reflects current filters</div>
       </div>
 
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label">Avg Throughput</div>
-          <div class="kpi-value" style="color:var(--accent)">4.2M</div>
-          <div class="kpi-delta up">↑ 12.4% vs last qtr</div>
+          <div class="kpi-label">Total Capacity</div>
+          <div class="kpi-value" style="color:var(--accent)" id="bmTotalCap">—</div>
+          <div class="kpi-delta" id="bmTotalCapSub">across facilities</div>
         </div>
         <div class="kpi-card orange">
-          <div class="kpi-label">Berth Occupancy</div>
-          <div class="kpi-value">78%</div>
-          <div class="kpi-delta down">↓ 3.1% vs last qtr</div>
+          <div class="kpi-label">Avg Berth Occupancy</div>
+          <div class="kpi-value" id="bmAvgOcc">—</div>
+          <div class="kpi-delta" id="bmAvgOccSub">mean across facilities</div>
         </div>
         <div class="kpi-card green">
-          <div class="kpi-label">Tank Turns / Year</div>
-          <div class="kpi-value">14.6</div>
-          <div class="kpi-delta up">↑ 2.1 YoY</div>
+          <div class="kpi-label">Facilities</div>
+          <div class="kpi-value" id="bmCount">—</div>
+          <div class="kpi-delta" id="bmCountSub">in current view</div>
         </div>
         <div class="kpi-card gold">
-          <div class="kpi-label">Avg Turnaround</div>
-          <div class="kpi-value">28h</div>
-          <div class="kpi-delta up">↑ Improved 4h</div>
+          <div class="kpi-label">Total Tanks</div>
+          <div class="kpi-value" id="bmTanks">—</div>
+          <div class="kpi-delta" id="bmTanksSub">across facilities</div>
         </div>
       </div>
 
@@ -1149,8 +1149,8 @@ input[type="range"] {
           <div class="chart-wrap"><canvas id="capChart"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Throughput Trend — 12 Months</div>
-          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+          <div class="chart-title">Capacity by Facility Type</div>
+          <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
         </div>
       </div>
 
@@ -1160,12 +1160,11 @@ input[type="range"] {
             <tr>
               <th>Terminal</th>
               <th>Country</th>
+              <th>Type</th>
               <th>Capacity (kbd)</th>
-              <th>Cap Utilization</th>
+              <th>Berth Occupancy</th>
               <th>Tanks</th>
               <th>Berths</th>
-              <th>Avg TRT</th>
-              <th>Tank Turns</th>
             </tr>
           </thead>
           <tbody id="bench-tbody"></tbody>
@@ -1442,6 +1441,62 @@ const TERMINAL_TYPES = {
 };
 function terminalType(t) { return TERMINAL_TYPES[t.type] ? t.type : 'port'; }
 
+// Operational metric fields. Kept on every terminal but empty by default —
+// populated later via Data & API (admin) or by validated terminal owners.
+// Empty metrics render as "—", never fabricated.
+const METRIC_FIELDS = ['throughput','trt','tankTurns','utilization','lastAudit'];
+function blankMetrics() { return { throughput:null, trt:null, tankTurns:null, utilization:null, lastAudit:null }; }
+function normalizeTerminal(t) {
+  return Object.assign({
+    metrics: blankMetrics(),
+    ownerId: null,          // uid of validated owner (null = unclaimed)
+    claimStatus: 'unclaimed', // unclaimed | pending | owned
+  }, t, { metrics: Object.assign(blankMetrics(), t.metrics || {}) });
+}
+
+// ── Terminal persistence via Firestore REST ──
+// Terminals now live in Firestore so ownership/claims/metrics persist.
+// The in-file array above is the SEED used to populate an empty database
+// on first run, and a fallback if Firestore is unreachable.
+const TerminalStore = {
+  async load() {
+    if (!firebaseReady) return false;
+    try {
+      const docs = await FS_REST.listPublic('terminals');
+      if (docs && docs.length) {
+        terminals.length = 0;
+        docs.map(normalizeTerminal)
+            .sort((a,b)=>(a.id||0)-(b.id||0))
+            .forEach(t => terminals.push(t));
+        return true;
+      }
+      // Empty DB → seed only if an admin is signed in (writes require admin auth).
+      if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
+        await this.seed();
+      }
+      return true;
+    } catch (e) {
+      console.warn('[TANK BAZAAR] terminal load failed, using seed:', e.message);
+      return false;
+    }
+  },
+  async seed() {
+    const seeds = terminals.map(normalizeTerminal);
+    terminals.length = 0; seeds.forEach(t => terminals.push(t));
+    await Promise.allSettled(seeds.map(t => FS_REST.setMerge('terminals', String(t.id), t)));
+  },
+  async save(t) {
+    if (!firebaseReady) return false;
+    try { await FS_REST.setMerge('terminals', String(t.id), normalizeTerminal(t)); return true; }
+    catch (e) { console.warn('[TANK BAZAAR] terminal save failed:', e.message); return false; }
+  },
+  async remove(id) {
+    if (!firebaseReady) return false;
+    try { await FS_REST.delete('terminals', String(id)); return true; }
+    catch (e) { console.warn('[TANK BAZAAR] terminal delete failed:', e.message); return false; }
+  },
+};
+
 // ─── MAP SETUP — DUAL ENGINE: Google Maps (primary) / Leaflet (fallback) ────
 
 let map, gMap, markers = [], selectedTerminal = null, usingGoogle = false;
@@ -1715,6 +1770,10 @@ function filterTerminals() {
     document.querySelectorAll('.globe-seg-btn').forEach(b => b.classList.toggle('active', b.dataset.type === globeTypeFilter));
     if (typeof refreshGlobe === 'function') refreshGlobe();
   }
+  // Live-update the benchmark view if it's open
+  if (document.getElementById('benchmark-panel')?.classList.contains('active') && typeof Chart !== 'undefined') {
+    initBenchmarkCharts();
+  }
 }
 function toggleTag(el) { el.classList.toggle('active'); filterTerminals(); }
 function updateRange(input) {
@@ -1734,21 +1793,40 @@ function whenChartReady(fn, tries) {
   else console.warn('Chart.js unavailable — charts skipped.');
 }
 
-function initBenchmarkCharts() {
-  const sorted = [...terminals].sort((a,b) => b.cap - a.cap).slice(0,8);
+let capChartInst = null, typeChartInst = null;
 
+function initBenchmarkCharts() {
+  const data = (typeof filteredTerminals === 'function') ? filteredTerminals() : terminals;
+  if (!data.length) return;
+
+  // ── Real KPI cards ──
+  const totalCap = data.reduce((s,t)=>s+t.cap,0);
+  const totalTanks = data.reduce((s,t)=>s+t.tanks,0);
+  const occVals = data.map(t=>parseFloat(t.occ)).filter(n=>!isNaN(n));
+  const avgOcc = occVals.length ? Math.round(occVals.reduce((a,b)=>a+b,0)/occVals.length) : 0;
+  const countries = new Set(data.map(t=>t.country)).size;
+  const set = (id,val)=>{ const e=document.getElementById(id); if(e) e.textContent=val; };
+  set('bmTotalCap', (totalCap/1000).toFixed(1)+'M');
+  set('bmTotalCapSub', `${data.length} facilities`);
+  set('bmAvgOcc', avgOcc+'%');
+  set('bmCount', data.length);
+  set('bmCountSub', `${countries} countries`);
+  set('bmTanks', totalTanks.toLocaleString());
+
+  // ── Storage Capacity by Operator (real, top 8) ──
+  const sorted = [...data].sort((a,b) => b.cap - a.cap).slice(0,8);
   const ctx1 = document.getElementById('capChart').getContext('2d');
-  new Chart(ctx1, {
+  if (capChartInst) capChartInst.destroy();
+  capChartInst = new Chart(ctx1, {
     type: 'bar',
     data: {
       labels: sorted.map(t => t.name.split(' ').slice(-1)[0]),
       datasets: [{
         label: 'Capacity (kbd)',
         data: sorted.map(t => t.cap),
-        backgroundColor: sorted.map(t => getMarkerColor(t.cap) + 'aa'),
-        borderColor: sorted.map(t => getMarkerColor(t.cap)),
-        borderWidth: 1,
-        borderRadius: 4,
+        backgroundColor: sorted.map(t => getTypeColor(t) + 'aa'),
+        borderColor: sorted.map(t => getTypeColor(t)),
+        borderWidth: 1, borderRadius: 4,
       }]
     },
     options: {
@@ -1761,50 +1839,38 @@ function initBenchmarkCharts() {
     }
   });
 
-  const months = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
-  const ctx2 = document.getElementById('trendChart').getContext('2d');
-  new Chart(ctx2, {
-    type: 'line',
-    data: {
-      labels: months,
-      datasets: [{
-        label: 'Throughput',
-        data: [3.8,4.0,4.2,3.9,4.1,4.4,4.3,4.6,4.5,4.7,4.8,5.0],
-        borderColor: '#d9a441',
-        backgroundColor: 'rgba(217,164,65,0.07)',
-        tension: 0.4,
-        fill: true,
-        pointRadius: 3,
-        pointBackgroundColor: '#d9a441',
-      }]
-    },
+  // ── Capacity by Facility Type (real doughnut) ──
+  const byType = { port:0, refinery:0, inland:0 };
+  data.forEach(t => { byType[terminalType(t)] += t.cap; });
+  const typeLabels = [], typeVals = [], typeColors = [];
+  Object.keys(byType).forEach(k => { if (byType[k] > 0) { typeLabels.push(TERMINAL_TYPES[k].label); typeVals.push(byType[k]); typeColors.push(TERMINAL_TYPES[k].color); } });
+  const ctx2 = document.getElementById('typeChart').getContext('2d');
+  if (typeChartInst) typeChartInst.destroy();
+  typeChartInst = new Chart(ctx2, {
+    type: 'doughnut',
+    data: { labels: typeLabels, datasets: [{ data: typeVals, backgroundColor: typeColors.map(c=>c+'cc'), borderColor: typeColors, borderWidth: 1 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color:'#7d9388', font:{family:'IBM Plex Mono',size:9} }, grid: { color:'#24362c' } },
-        y: { ticks: { color:'#7d9388', font:{family:'IBM Plex Mono',size:9} }, grid: { color:'#24362c' } }
-      }
+      plugins: { legend: { position:'right', labels:{ color:'#7d9388', font:{family:'IBM Plex Mono',size:10}, boxWidth:12 } } }
     }
   });
 
-  // Table
+  // ── Table (real columns only) ──
   const tbody = document.getElementById('bench-tbody');
-  const top10 = [...terminals].sort((a,b)=>b.cap-a.cap).slice(0,12);
-  const maxCap = top10[0].cap;
-  tbody.innerHTML = top10.map(t => `
+  const rows = [...data].sort((a,b)=>b.cap-a.cap).slice(0,12);
+  const maxCap = rows[0].cap;
+  tbody.innerHTML = rows.map(t => `
     <tr>
       <td class="t-name">${t.name}</td>
       <td>${t.country}</td>
+      <td><span style="color:${getTypeColor(t)};font-size:10px;white-space:nowrap;">● ${TERMINAL_TYPES[terminalType(t)].short}</span></td>
       <td class="t-val">
         ${(t.cap/1000).toFixed(1)}M
-        <div class="bench-bar"><div class="bench-bar-fill" style="width:${(t.cap/maxCap*100).toFixed(0)}%;background:${getMarkerColor(t.cap)};"></div></div>
+        <div class="bench-bar"><div class="bench-bar-fill" style="width:${(t.cap/maxCap*100).toFixed(0)}%;background:${getTypeColor(t)};"></div></div>
       </td>
       <td class="t-val">${t.occ}</td>
       <td>${t.tanks}</td>
       <td>${t.berths}</td>
-      <td>${Math.floor(22+Math.random()*20)}h</td>
-      <td class="t-val">${(10+Math.random()*10).toFixed(1)}</td>
     </tr>
   `).join('');
 }
@@ -2023,7 +2089,7 @@ function switchView(view) {
 
   if (view === 'globe') { setTimeout(()=>{ if (typeof onGlobeShown==='function') onGlobeShown(); }, 60); }
   if (view === 'map') { setTimeout(mapResize,100); }
-  if (view === 'benchmark' && !chartsInit.benchmark) { whenChartReady(initBenchmarkCharts); chartsInit.benchmark=true; }
+  if (view === 'benchmark') { whenChartReady(initBenchmarkCharts); chartsInit.benchmark=true; }
   if (view === 'market' && !chartsInit.market) { whenChartReady(function(){renderMarket('global');}); chartsInit.market=true; }
   if (view === 'tracking' && !chartsInit.tracking) { renderShips(); chartsInit.tracking=true; }
   if (view === 'flow' && !chartsInit.flow) { whenChartReady(renderFlows); chartsInit.flow=true; }
@@ -2271,7 +2337,14 @@ function refreshGlobe() {
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
 async function startApp() {
-  // Attempt live data load before first render
+  // Normalize seed terminals so every record has metrics/ownership fields.
+  for (let i = 0; i < terminals.length; i++) terminals[i] = normalizeTerminal(terminals[i]);
+
+  // Load terminals from Firestore (seeds the DB from the in-file array on first
+  // run). Falls back to the seed array if Firestore is unreachable.
+  await TerminalStore.load();
+
+  // A configured live endpoint (Admin → Data & API) still overrides if present.
   await Promise.allSettled([DataService.loadTerminals(), DataService.loadShips(), DataService.loadFlows()]);
   DataService.lastFetch = DataService.isLive.terminals || DataService.isLive.ships ? new Date() : null;
   renderTerminalList(terminals);
@@ -3496,6 +3569,26 @@ const FS_REST = {
     } while (pageToken);
     return out;
   },
+  // Public read (no auth token) — for collections with public read rules
+  // (terminals, listings). Falls back cleanly if rules require auth.
+  async listPublic(collection) {
+    const out = [];
+    let pageToken = '';
+    do {
+      const url = `${FS_REST.base()}/${collection}?pageSize=300` + (pageToken ? `&pageToken=${pageToken}` : '');
+      const token = fbAuth && fbAuth.currentUser ? await FS_REST.token() : null;
+      const res = await fetch(url, { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
+      if (!res.ok) throw new Error('REST ' + res.status);
+      const data = await res.json();
+      (data.documents || []).forEach(d => {
+        const obj = FS_REST.fromFields(d.fields);
+        obj.id = d.name.split('/').pop();
+        out.push(obj);
+      });
+      pageToken = data.nextPageToken || '';
+    } while (pageToken);
+    return out;
+  },
   async delete(collection, docId) {
     const token = await FS_REST.token();
     const res = await fetch(`${FS_REST.base()}/${collection}/${docId}`, {
@@ -3948,7 +4041,9 @@ function renderTerminalDataTable() {
   `).join('');
 }
 
-function addTerminalFromForm() {
+let editingTerminalId = null;
+
+async function addTerminalFromForm() {
   const name = document.getElementById('nt-name').value.trim();
   const op = document.getElementById('nt-op').value.trim();
   const city = document.getElementById('nt-city').value.trim();
@@ -3962,8 +4057,30 @@ function addTerminalFromForm() {
   const prods = document.getElementById('nt-products').value.split(',').map(s=>s.trim()).filter(Boolean);
   const type = document.getElementById('nt-type') ? document.getElementById('nt-type').value : 'port';
   if (!name || !city || !country || isNaN(lat) || isNaN(lng)) { toast('Please fill all required fields.', 'error'); return; }
-  const newT = { id: terminals.length+1, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type };
+
+  if (editingTerminalId != null) {
+    // Update existing terminal (preserves metrics/ownership).
+    const t = terminals.find(x => x.id === editingTerminalId);
+    if (t) {
+      Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ,
+        products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
+      await TerminalStore.save(t);
+      refreshMapMarkers(filteredTerminals());
+      renderTerminalList(filteredTerminals());
+      renderTerminalDataTable();
+      if (typeof refreshGlobe === 'function') refreshGlobe();
+      toast(`Terminal "${name}" updated.`);
+      logActivity(`Updated terminal: ${name}`, 'success');
+    }
+    editingTerminalId = null;
+    clearTerminalForm();
+    return;
+  }
+
+  const nextId = terminals.reduce((m,t)=>Math.max(m, t.id||0), 0) + 1;
+  const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
   terminals.push(newT);
+  await TerminalStore.save(newT);
   addMarker(newT);
   renderTerminalList(filteredTerminals());
   renderTerminalDataTable();
@@ -3975,12 +4092,14 @@ function addTerminalFromForm() {
 
 function deleteTerminal(id) {
   const t = terminals.find(x=>x.id===id);
-  showConfirm('Delete Terminal', `Delete "${t?.name}"? This will remove it from the map and database.`, () => {
+  showConfirm('Delete Terminal', `Delete "${t?.name}"? This will remove it from the map and database.`, async () => {
     const idx = terminals.indexOf(t);
     if (idx > -1) terminals.splice(idx,1);
+    await TerminalStore.remove(id);
     removeMarkerById(id);
-    renderTerminalList(terminals);
+    renderTerminalList(filteredTerminals());
     renderTerminalDataTable();
+    if (typeof refreshGlobe === 'function') refreshGlobe();
     toast(`Terminal deleted.`);
     logActivity(`Deleted terminal: ${t?.name}`, 'danger');
   });
@@ -3989,6 +4108,7 @@ function deleteTerminal(id) {
 function editTerminalForm(id) {
   const t = terminals.find(x=>x.id===id);
   if (!t) return;
+  editingTerminalId = id;
   adminNav('addterminal', null);
   document.getElementById('nt-name').value = t.name;
   document.getElementById('nt-op').value = t.op;
@@ -4005,6 +4125,7 @@ function editTerminalForm(id) {
 }
 
 function clearTerminalForm() {
+  editingTerminalId = null;
   ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';

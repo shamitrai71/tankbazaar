@@ -2,40 +2,57 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read/write only their own profile.
-    // Admins (custom claim or listed email) can read all and manage roles.
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'esraigroup@gmail.com';
+    }
+
+    // Any signed-in user can create & manage their own profile.
+    // Admin can read/manage everyone.
     match /users/{uid} {
-      allow read: if request.auth != null &&
-                  (request.auth.uid == uid || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow update: if request.auth != null &&
-                    (request.auth.uid == uid || isAdmin());
-      allow delete: if request.auth != null &&
-                    (request.auth.uid == uid || isAdmin());
+      allow read:   if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isOwner(uid) || isAdmin();
     }
 
-    // Analytics events: any signed-in user may write their own; admins read.
+    // Analytics: signed-in users may write; admin reads.
     match /analytics/{doc} {
-      allow create: if request.auth != null;
-      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow read:   if isAdmin();
     }
 
-    // Pending admin grants: admins only.
+    // Pending admin grants: admin only.
     match /pendingAdmins/{email} {
       allow read, write: if isAdmin();
     }
 
-    // Terminal & content data: public read, admin write.
+    // Terminals: public read. Admin can write anything. A validated owner
+    // (resource.ownerId == their uid) may update the doc (operational metrics).
     match /terminals/{doc} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read:   if true;
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAdmin()
+                    || (isSignedIn() && resource.data.ownerId == request.auth.uid);
     }
 
-    function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.admin == true ||
-        request.auth.token.email == 'esraigroup@gmail.com'
-      );
+    // Terminal ownership claims: a signed-in user creates their own claim and
+    // can read it; admin can read/update all (to approve/reject).
+    match /terminalClaims/{doc} {
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow read:   if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // Storage capacity listings: public read (it's a marketplace). The listing
+    // owner (ownerId == their uid) can create/edit/delete their own; admin any.
+    match /listings/{doc} {
+      allow read:   if true;
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isAdmin()
+                    || (isSignedIn() && resource.data.ownerId == request.auth.uid);
     }
   }
 }
