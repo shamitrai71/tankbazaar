@@ -99,12 +99,14 @@ function loadScript(src, cb, fallbackSrc) {
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow-x: hidden; max-width: 100%; }
 
 body {
   font-family: var(--font-mono);
   background: var(--bg);
   color: var(--text);
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -892,12 +894,19 @@ input[type="range"] {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 860px) {
-  header { padding: 0 12px; gap: 8px; }
+  header { padding: 0 12px; gap: 8px; overflow: hidden; }
   .hamburger { display: flex; }
   header > nav { display: none; }
   .header-right .live-badge,
   .header-right .stat-pill { display: none; }
-  .logo { font-size: 15px; }
+  .header-right { gap: 6px; min-width: 0; }
+  .logo { font-size: 15px; flex-shrink: 0; }
+  .logo .logo-icon { flex-shrink: 0; }
+
+  /* Compact the signed-in pill so it never pushes past the screen edge */
+  .admin-user-pill { padding: 3px 8px; gap: 5px; max-width: 46vw; overflow: hidden; }
+  .admin-user-pill #pillName { display: none; }
+  .admin-user-pill button { font-size: 9px; padding: 2px 6px; }
 
   /* Sidebar becomes a slide-out drawer */
   .sidebar {
@@ -919,7 +928,7 @@ input[type="range"] {
   .kpi-grid { grid-template-columns: 1fr 1fr !important; }
   .profile-analytics-row { grid-template-columns: 1fr 1fr !important; }
   .admin-sidebar { width: 180px; }
-  .content-area { width: 100%; }
+  .content-area { width: 100%; min-width: 0; }
 }
 @media (min-width: 861px) {
   .drawer-nav { display: none; }
@@ -1020,7 +1029,6 @@ input[type="range"] {
       <div id="globe-mount"></div>
       <div class="globe-loading" id="globeLoading">Loading globe…</div>
       <div class="globe-overlay-top">
-        <div class="globe-title">TANK <span>BAZAAR</span></div>
         <div class="globe-sub">Global tank terminal storage intelligence — explore terminals across the network. Tap a marker for details.</div>
       </div>
       <div class="globe-legend" id="globeLegend" style="display:none;">
@@ -1949,16 +1957,6 @@ function initGlobe() {
     const phi = (90-lat)*Math.PI/180, theta = (lon+180)*Math.PI/180;
     return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta));
   };
-  function arcPoints(a, b, r, segs) {
-    const va=a.clone().normalize(), vb=b.clone().normalize();
-    const dot=Math.max(-1,Math.min(1,va.dot(vb))), om=Math.acos(dot), pts=[];
-    for (let i=0;i<=segs;i++){ const t=i/segs; let v;
-      if (om<1e-4) v=va.clone();
-      else { const s1=Math.sin((1-t)*om)/Math.sin(om), s2=Math.sin(t*om)/Math.sin(om); v=va.clone().multiplyScalar(s1).add(vb.clone().multiplyScalar(s2)); }
-      pts.push(v.normalize().multiplyScalar(r+Math.sin(t*Math.PI)*(r*0.16)));
-    }
-    return pts;
-  }
   function dotTex(ring) {
     const s=48, c=document.createElement('canvas'); c.width=c.height=s; const x=c.getContext('2d');
     x.beginPath(); x.arc(s/2,s/2,s*0.30,0,7); x.fillStyle='#eef4ef'; x.fill();
@@ -2008,7 +2006,7 @@ function initGlobe() {
   })();
   group.add(planet);
 
-  const HUB = llToVec(GLOBE_HUB.lat, GLOBE_HUB.lon, PLANET_R);
+  // hub marker (Mumbai)
   (function(){
     const cv=document.createElement('canvas'); cv.width=360; cv.height=128; const x=cv.getContext('2d');
     if (!x.roundRect) x.roundRect=function(x0,y0,w,h,r){this.beginPath();this.moveTo(x0+r,y0);this.arcTo(x0+w,y0,x0+w,y0+h,r);this.arcTo(x0+w,y0+h,x0,y0+h,r);this.arcTo(x0,y0+h,x0,y0,r);this.arcTo(x0,y0,x0+w,y0,r);this.closePath();return this;};
@@ -2029,9 +2027,7 @@ function initGlobe() {
   const DOT_G=dotTex('#2fa37c'), DOT_O=dotTex('#d9a441'), C_GREEN=0x2fa37c, C_ORANGE=0xd9a441;
   const cityMarkers=[];
   dests.forEach((d) => {
-    const green=d.serviceable, pos=llToVec(d.lat,d.lon,PLANET_R);
-    const geo=new THREE.BufferGeometry().setFromPoints(arcPoints(HUB,pos,PLANET_R+0.04,64));
-    group.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color:green?C_GREEN:C_ORANGE, transparent:true, opacity:green?0.85:0.42, fog:false })));
+    const green=d.serviceable;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:green?DOT_G:DOT_O, transparent:true, depthWrite:false }));
     sp.position.copy(llToVec(d.lat,d.lon,PLANET_R+0.04)); sp.scale.set(green?0.5:0.44,green?0.5:0.44,1);
     sp.userData={ dest:d }; group.add(sp); cityMarkers.push(sp);
