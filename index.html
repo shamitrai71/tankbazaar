@@ -416,6 +416,30 @@ input[type="range"] {
 
 .popup-header { margin-bottom: 12px; }
 .popup-name { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+.popup-owner {
+  font-size: 10px; padding: 6px 9px; border-radius: 7px; margin: 8px 0;
+  background: rgba(47,163,124,0.1); border: 1px solid rgba(47,163,124,0.28);
+  color: var(--accent2); letter-spacing: 0.02em;
+}
+.popup-owner.unclaimed { background: rgba(217,164,65,0.08); border-color: rgba(217,164,65,0.25); color: var(--gold); }
+.popup-btn-claim { background: rgba(217,164,65,0.12); border: 1px solid rgba(217,164,65,0.4); color: var(--gold); margin-top: 6px; }
+.popup-btn-claim:hover { background: rgba(217,164,65,0.2); }
+.claim-field { margin-bottom: 13px; }
+.claim-field label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 5px; }
+.claim-field input, .claim-field textarea {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--font-mono);
+  font-size: 12px; padding: 9px 11px; resize: vertical;
+}
+.claim-field input:focus, .claim-field textarea:focus { outline: none; border-color: var(--accent2); }
+.claim-evidence-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.claim-ev-tab {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; color: var(--text-muted); font-family: var(--font-mono);
+  font-size: 11px; padding: 7px; cursor: pointer;
+}
+.claim-ev-tab.active { background: var(--accent2); color: #06110d; border-color: var(--accent2); }
+.claim-hint { font-size: 10px; color: var(--text-dim); margin-top: 5px; }
 .popup-location { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
 
 .popup-stats {
@@ -1109,7 +1133,9 @@ input[type="range"] {
           <div class="popup-products-label">Products Stored</div>
           <div class="popup-product-list" id="p-products"></div>
         </div>
+        <div class="popup-owner" id="p-owner" style="display:none;"></div>
         <button class="popup-btn" onclick="viewFull()">View Full Fact Sheet →</button>
+        <button class="popup-btn popup-btn-claim" id="p-claim-btn" onclick="openClaimForm()" style="display:none;">⚑ Claim this terminal</button>
       </div>
     </div>
 
@@ -1656,6 +1682,29 @@ function showPopup(t) {
   document.getElementById('p-occ').textContent = t.occ;
   const pp = document.getElementById('p-products');
   pp.innerHTML = t.products.map(p => `<span class="popup-product">${p}</span>`).join('');
+
+  // Ownership status + claim button
+  const ownerEl = document.getElementById('p-owner');
+  const claimBtn = document.getElementById('p-claim-btn');
+  const status = t.claimStatus || 'unclaimed';
+  if (status === 'owned' && t.ownerId) {
+    ownerEl.style.display = 'block';
+    ownerEl.className = 'popup-owner';
+    ownerEl.textContent = t.ownerCompany ? `✓ Verified operator: ${t.ownerCompany}` : '✓ Claimed & verified';
+    claimBtn.style.display = 'none';
+  } else if (status === 'pending') {
+    ownerEl.style.display = 'block';
+    ownerEl.className = 'popup-owner';
+    ownerEl.textContent = '⏳ A claim for this terminal is under review';
+    claimBtn.style.display = 'none';
+  } else {
+    ownerEl.style.display = 'block';
+    ownerEl.className = 'popup-owner unclaimed';
+    ownerEl.textContent = '○ Unclaimed — are you the operator?';
+    // Show claim button only to signed-in members (not needed for admins/owners)
+    claimBtn.style.display = currentUser ? 'block' : 'none';
+  }
+
   document.getElementById('terminal-popup').style.display = 'block';
 
   // Highlight in sidebar
@@ -1669,6 +1718,105 @@ function showPopup(t) {
 function closePopup() {
   document.getElementById('terminal-popup').style.display = 'none';
   selectedTerminal = null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TERMINAL CLAIMING (Phase 2)
+// A signed-in user submits a claim with evidence (uploaded doc as base64,
+// or a URL). Stored in Firestore `terminalClaims` for admin review.
+// ═══════════════════════════════════════════════════════════════
+let claimEvidenceMode = 'file', claimFileData = null;
+
+function openClaimForm() {
+  if (!currentUser) { showLoginGate(); return; }
+  if (!selectedTerminal) return;
+  document.getElementById('claimTerminalName').textContent =
+    `${selectedTerminal.name} · ${selectedTerminal.city}, ${selectedTerminal.country}`;
+  document.getElementById('claim-company').value = (currentUser.profile && currentUser.profile.company) || '';
+  document.getElementById('claim-role').value = (currentUser.profile && currentUser.profile.title) || '';
+  document.getElementById('claim-email').value = currentUser.email || '';
+  document.getElementById('claim-note').value = '';
+  document.getElementById('claim-url').value = '';
+  document.getElementById('claim-file-info').textContent = '';
+  claimFileData = null;
+  setClaimEvidenceMode('file');
+  document.getElementById('claimModal').classList.remove('hidden');
+}
+function closeClaimForm() { document.getElementById('claimModal').classList.add('hidden'); }
+
+function setClaimEvidenceMode(mode) {
+  claimEvidenceMode = mode;
+  document.querySelectorAll('.claim-ev-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.getElementById('claim-ev-file').style.display = mode === 'file' ? 'block' : 'none';
+  document.getElementById('claim-ev-url').style.display = mode === 'url' ? 'block' : 'none';
+}
+
+function onClaimFileSelected(input) {
+  const file = input.files && input.files[0];
+  const info = document.getElementById('claim-file-info');
+  claimFileData = null;
+  if (!file) { info.textContent = ''; return; }
+  if (file.size > 700 * 1024) {
+    info.style.color = 'var(--danger)';
+    info.textContent = `File is ${(file.size/1024).toFixed(0)} KB — must be under 700 KB. Try compressing or use a URL.`;
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    claimFileData = { name: file.name, type: file.type, dataUrl: reader.result };
+    info.style.color = 'var(--accent2)';
+    info.textContent = `✓ ${file.name} (${(file.size/1024).toFixed(0)} KB) ready`;
+  };
+  reader.onerror = () => { info.style.color = 'var(--danger)'; info.textContent = 'Could not read file.'; };
+  reader.readAsDataURL(file);
+}
+
+async function submitClaim() {
+  if (!currentUser || !selectedTerminal) return;
+  const company = document.getElementById('claim-company').value.trim();
+  const role = document.getElementById('claim-role').value.trim();
+  const email = document.getElementById('claim-email').value.trim();
+  const note = document.getElementById('claim-note').value.trim();
+  const url = document.getElementById('claim-url').value.trim();
+
+  if (!company || !role || !email) { toast('Please fill company, role, and work email.', 'error'); return; }
+  if (claimEvidenceMode === 'file' && !claimFileData) { toast('Please upload an evidence document, or switch to URL.', 'error'); return; }
+  if (claimEvidenceMode === 'url' && !url) { toast('Please provide an evidence URL, or switch to upload.', 'error'); return; }
+
+  const btn = document.getElementById('claimSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const claimId = `${selectedTerminal.id}_${currentUser.uid}`;
+  const claim = {
+    terminalId: selectedTerminal.id,
+    terminalName: selectedTerminal.name,
+    uid: currentUser.uid,
+    email: email,
+    userEmail: currentUser.email,
+    company, role, note,
+    evidenceType: claimEvidenceMode,
+    evidenceUrl: claimEvidenceMode === 'url' ? url : '',
+    evidenceFileName: claimFileData ? claimFileData.name : '',
+    evidenceData: claimFileData ? claimFileData.dataUrl : '',
+    status: 'pending',
+    createdAt: new Date(),
+  };
+
+  try {
+    await FS_REST.setMerge('terminalClaims', claimId, claim);
+    // Mark the terminal as pending (best-effort; admin approval finalizes).
+    const t = terminals.find(x => x.id === selectedTerminal.id);
+    if (t) { t.claimStatus = 'pending'; }
+    closeClaimForm();
+    closePopup();
+    toast('Claim submitted for review. We\'ll verify and get back to you.');
+    logActivity(`Terminal claim submitted: ${selectedTerminal.name} by ${email}`, 'info');
+  } catch (e) {
+    toast('Could not submit claim: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Submit Claim for Review';
+  }
 }
 
 function fitAll() { if (usingGoogle && gMap) { gMap.setCenter({lat:20,lng:10}); gMap.setZoom(2); } else if (map) map.setView([20, 10], 2); }
@@ -2568,6 +2716,21 @@ loadScript(
 
 .admin-section { display: none; }
 .admin-section.active { display: block; }
+.claims-badge {
+  display: inline-block; background: var(--gold); color: #06110d;
+  font-size: 9px; font-weight: 700; border-radius: 9px; padding: 1px 6px; margin-left: 4px;
+}
+.claim-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 15px; margin-bottom: 12px;
+}
+.claim-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.claim-card-title { font-family: var(--font-display); font-size: 14px; font-weight: 700; }
+.claim-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.claim-status { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; border: 1px solid; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
+.claim-card-body { font-size: 11.5px; color: var(--text-muted); line-height: 1.7; }
+.claim-k { color: var(--text-dim); text-transform: uppercase; font-size: 9px; letter-spacing: 0.06em; margin-right: 4px; }
+.claim-card-actions { display: flex; gap: 8px; margin-top: 12px; }
 
 .admin-page-title {
   font-family: var(--font-display); font-size: 20px; font-weight: 800;
@@ -2764,6 +2927,49 @@ loadScript(
 <!-- ═══════════════════════════════════════════════════════════════
      LOGIN MODAL
 ════════════════════════════════════════════════════════════════ -->
+<!-- CLAIM TERMINAL MODAL -->
+<div class="modal-overlay hidden" id="claimModal">
+  <div class="login-box" style="max-width:520px;text-align:left;">
+    <button class="modal-close-x" onclick="closeClaimForm()">×</button>
+    <h2 style="font-family:var(--font-display);margin-bottom:4px;">Claim Terminal</h2>
+    <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px;" id="claimTerminalName">—</p>
+    <div class="claim-field">
+      <label>Your company / organization</label>
+      <input type="text" id="claim-company" placeholder="e.g. Vopak B.V.">
+    </div>
+    <div class="claim-field">
+      <label>Your role</label>
+      <input type="text" id="claim-role" placeholder="e.g. Terminal Operations Manager">
+    </div>
+    <div class="claim-field">
+      <label>Work email</label>
+      <input type="email" id="claim-email" placeholder="you@company.com">
+    </div>
+    <div class="claim-field">
+      <label>Evidence of ownership / authorization</label>
+      <div class="claim-evidence-tabs">
+        <button class="claim-ev-tab active" data-mode="file" onclick="setClaimEvidenceMode('file')">Upload document</button>
+        <button class="claim-ev-tab" data-mode="url" onclick="setClaimEvidenceMode('url')">Link a URL</button>
+      </div>
+      <div id="claim-ev-file">
+        <input type="file" id="claim-file" accept=".pdf,.png,.jpg,.jpeg,.webp" onchange="onClaimFileSelected(this)">
+        <div class="claim-hint">PDF or image, max 700 KB. E.g. authorization letter, operator ID, company letterhead.</div>
+        <div id="claim-file-info" style="font-size:11px;color:var(--accent2);margin-top:6px;"></div>
+      </div>
+      <div id="claim-ev-url" style="display:none;">
+        <input type="url" id="claim-url" placeholder="https://company.com/authorization.pdf">
+        <div class="claim-hint">A public link to a document proving your authority over this terminal.</div>
+      </div>
+    </div>
+    <div class="claim-field">
+      <label>Note to reviewer (optional)</label>
+      <textarea id="claim-note" rows="2" placeholder="Anything that helps us verify your claim"></textarea>
+    </div>
+    <button class="popup-btn" style="margin-top:8px;" onclick="submitClaim()" id="claimSubmitBtn">Submit Claim for Review</button>
+    <p style="color:var(--text-dim);font-size:10px;margin-top:10px;">Claims are manually reviewed by our team. You'll be able to edit this terminal's operational data once approved.</p>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="loginGate">
   <div class="login-box">
     <button class="modal-close-x" onclick="hideLoginGate()" id="loginCloseX">×</button>
@@ -2955,6 +3161,9 @@ loadScript(
       </div>
       <div class="admin-nav-item" onclick="adminNav('addterminal', this)">
         <span class="nav-icon">➕</span> Add Terminal
+      </div>
+      <div class="admin-nav-item" onclick="adminNav('claims', this)">
+        <span class="nav-icon">⚑</span> Terminal Claims <span class="claims-badge" id="claimsBadge" style="display:none;"></span>
       </div>
 
       <div class="admin-nav-sep"></div>
@@ -3184,6 +3393,22 @@ loadScript(
             <button class="btn-admin" onclick="clearTerminalForm()">Clear Form</button>
           </div>
         </div>
+      </div>
+
+      <!-- ── TERMINAL CLAIMS ── -->
+      <div class="admin-section" id="sec-claims">
+        <div class="admin-page-title">Terminal Claims</div>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px;">Review ownership claims. Approving assigns the terminal to the claimant, who can then edit its operational data.</p>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="btn-admin primary" onclick="loadClaims()">⟳ Refresh Claims</button>
+          <select id="claims-filter" onchange="renderClaims()" style="background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 10px;font-family:var(--font-mono);font-size:11px;">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div id="claims-list"><div style="color:var(--text-dim);font-size:12px;padding:20px;">Click "Refresh Claims" to load.</div></div>
       </div>
 
       <!-- ── SEND MAIL ── -->
@@ -3792,6 +4017,7 @@ function adminNav(section, clickedEl) {
   }
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-' + section).classList.add('active');
+  if (section === 'claims') loadClaims();
 }
 
 // ── TOAST ────────────────────────────────────────────────────────
@@ -4018,6 +4244,106 @@ function removeAdmin(email) {
 }
 
 // ── TERMINAL DATA MANAGEMENT ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// ADMIN: TERMINAL CLAIMS REVIEW
+// ═══════════════════════════════════════════════════════════════
+let claimsData = [];
+
+async function loadClaims() {
+  const listEl = document.getElementById('claims-list');
+  if (!firebaseReady) { listEl.innerHTML = '<div style="color:var(--text-dim);padding:20px;">Firebase not available.</div>'; return; }
+  listEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:20px;">Loading claims…</div>';
+  try {
+    claimsData = await FS_REST.list('terminalClaims');
+    // Update the nav badge with pending count
+    const pending = claimsData.filter(c => c.status === 'pending').length;
+    const badge = document.getElementById('claimsBadge');
+    if (badge) { badge.style.display = pending ? 'inline-block' : 'none'; badge.textContent = pending; }
+    renderClaims();
+  } catch (e) {
+    listEl.innerHTML = `<div style="color:var(--danger);padding:20px;">Could not load claims: ${e.message}</div>`;
+  }
+}
+
+function renderClaims() {
+  const filter = document.getElementById('claims-filter').value;
+  const listEl = document.getElementById('claims-list');
+  let rows = claimsData;
+  if (filter !== 'all') rows = rows.filter(c => (c.status || 'pending') === filter);
+  rows = rows.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
+
+  if (!rows.length) { listEl.innerHTML = `<div style="color:var(--text-dim);font-size:12px;padding:20px;">No ${filter} claims.</div>`; return; }
+
+  listEl.innerHTML = rows.map(c => {
+    const evidence = c.evidenceType === 'url'
+      ? (c.evidenceUrl ? `<a href="${c.evidenceUrl}" target="_blank" rel="noopener" style="color:var(--accent2);">🔗 View linked evidence</a>` : '<span style="color:var(--text-dim);">No URL</span>')
+      : (c.evidenceData ? `<a href="${c.evidenceData}" download="${c.evidenceFileName||'evidence'}" style="color:var(--accent2);">📎 ${c.evidenceFileName||'Download evidence'}</a>` : '<span style="color:var(--text-dim);">No file</span>');
+    const statusColor = c.status === 'approved' ? 'var(--accent2)' : c.status === 'rejected' ? 'var(--danger)' : 'var(--gold)';
+    const when = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—';
+    return `
+      <div class="claim-card">
+        <div class="claim-card-head">
+          <div>
+            <div class="claim-card-title">${c.terminalName || 'Terminal #'+c.terminalId}</div>
+            <div class="claim-card-sub">${c.company} · ${c.role}</div>
+          </div>
+          <span class="claim-status" style="color:${statusColor};border-color:${statusColor};">${(c.status||'pending').toUpperCase()}</span>
+        </div>
+        <div class="claim-card-body">
+          <div><span class="claim-k">Claimant:</span> ${c.email} <span style="color:var(--text-dim);">(login: ${c.userEmail||'—'})</span></div>
+          ${c.note ? `<div><span class="claim-k">Note:</span> ${c.note}</div>` : ''}
+          <div><span class="claim-k">Evidence:</span> ${evidence}</div>
+          <div><span class="claim-k">Submitted:</span> ${when}</div>
+        </div>
+        ${c.status === 'pending' ? `
+        <div class="claim-card-actions">
+          <button class="btn-admin primary" onclick="approveClaim('${c.id}')">✓ Approve & Assign</button>
+          <button class="btn-admin danger" onclick="rejectClaim('${c.id}')">✕ Reject</button>
+        </div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function approveClaim(claimId) {
+  const c = claimsData.find(x => x.id === claimId);
+  if (!c) return;
+  showConfirm('Approve Claim', `Assign "${c.terminalName}" to ${c.company} (${c.email})? They'll be able to edit its operational data.`, async () => {
+    try {
+      // 1) Mark the claim approved.
+      await FS_REST.setMerge('terminalClaims', claimId, { status: 'approved', reviewedAt: new Date(), reviewedBy: currentUser.email });
+      // 2) Assign ownership on the terminal.
+      const t = terminals.find(x => x.id === c.terminalId);
+      if (t) {
+        t.ownerId = c.uid; t.ownerCompany = c.company; t.claimStatus = 'owned';
+        await TerminalStore.save(t);
+      } else {
+        // Terminal not in local array (edge case) — write ownership directly.
+        await FS_REST.setMerge('terminals', String(c.terminalId), { ownerId: c.uid, ownerCompany: c.company, claimStatus: 'owned' });
+      }
+      toast(`Claim approved — ${c.company} now owns ${c.terminalName}.`);
+      logActivity(`Approved terminal claim: ${c.terminalName} → ${c.email}`, 'success');
+      loadClaims();
+    } catch (e) { toast('Approve failed: ' + e.message, 'error'); }
+  });
+}
+
+async function rejectClaim(claimId) {
+  const c = claimsData.find(x => x.id === claimId);
+  if (!c) return;
+  showConfirm('Reject Claim', `Reject the claim for "${c.terminalName}" by ${c.email}?`, async () => {
+    try {
+      await FS_REST.setMerge('terminalClaims', claimId, { status: 'rejected', reviewedAt: new Date(), reviewedBy: currentUser.email });
+      // Reset the terminal's status back to unclaimed (if it was pending and not owned).
+      const t = terminals.find(x => x.id === c.terminalId);
+      if (t && t.claimStatus === 'pending') { t.claimStatus = 'unclaimed'; await TerminalStore.save(t); }
+      toast('Claim rejected.');
+      logActivity(`Rejected terminal claim: ${c.terminalName} by ${c.email}`, 'warning');
+      loadClaims();
+    } catch (e) { toast('Reject failed: ' + e.message, 'error'); }
+  });
+}
+
 function renderTerminalDataTable() {
   document.getElementById('termDataCount').textContent = terminals.length;
   document.getElementById('termCountKpi').textContent = terminals.length;
