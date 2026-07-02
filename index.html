@@ -941,6 +941,40 @@ input[type="range"] {
 }
 
 /* ── RESPONSIVE ── */
+/* ── LISTINGS MARKETPLACE ── */
+#listings-panel { overflow-y: auto; padding: 20px 24px; }
+.listings-toolbar {
+  display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0 20px;
+  padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+}
+.lf-group { display: flex; flex-direction: column; gap: 4px; min-width: 130px; flex: 1; }
+.lf-group label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+.lf-group select, .lf-group input {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 7px;
+  color: var(--text); font-family: var(--font-mono); font-size: 11px; padding: 7px 9px;
+}
+.listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.listing-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 16px; display: flex; flex-direction: column; transition: border-color 0.2s;
+}
+.listing-card:hover { border-color: var(--accent2); }
+.listing-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.listing-terminal { font-family: var(--font-display); font-size: 14px; font-weight: 700; }
+.listing-loc { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+.listing-cap { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--accent); line-height: 1; white-space: nowrap; }
+.listing-cap span { font-size: 10px; color: var(--text-dim); margin-left: 3px; font-weight: 400; }
+.listing-body { border-top: 1px solid var(--border); padding-top: 10px; }
+.listing-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 6px; }
+.listing-k { color: var(--text-dim); text-transform: uppercase; font-size: 9px; letter-spacing: 0.06em; }
+.listing-tag { background: rgba(47,163,124,0.12); color: var(--accent2); border-radius: 5px; padding: 2px 8px; font-size: 10px; }
+.listing-terms { font-size: 10px; color: var(--text-muted); margin-top: 8px; padding: 8px; background: var(--surface2); border-radius: 7px; line-height: 1.5; }
+.listing-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.listing-operator { font-size: 10px; color: var(--accent2); }
+.listing-contact { font-size: 11px; color: var(--gold); text-decoration: none; font-weight: 600; }
+.listing-contact:hover { text-decoration: underline; }
+.listing-manage { margin-top: 10px; text-align: right; }
+
 @media (max-width: 860px) {
   header { padding: 0 12px; gap: 8px; overflow: hidden; }
   .hamburger { display: flex; }
@@ -998,6 +1032,7 @@ input[type="range"] {
   <nav>
     <button class="nav-btn active" onclick="switchView('globe')">🌐 Globe</button>
     <button class="nav-btn" onclick="switchView('map')">🗺 Map</button>
+    <button class="nav-btn" onclick="switchView('listings')">📋 Listings</button>
     <button class="nav-btn" onclick="switchView('benchmark')">📊 Benchmark</button>
     <button class="nav-btn" onclick="switchView('market')">🏭 Market</button>
     <button class="nav-btn" onclick="switchView('tracking')">🚢 Tracking</button>
@@ -1028,6 +1063,7 @@ input[type="range"] {
     <div class="drawer-nav">
       <button class="nav-btn active" onclick="switchView('globe')">🌐 Globe</button>
       <button class="nav-btn" onclick="switchView('map')">🗺 Map View</button>
+      <button class="nav-btn" onclick="switchView('listings')">📋 Listings</button>
       <button class="nav-btn" onclick="switchView('benchmark')">📊 Benchmark</button>
       <button class="nav-btn" onclick="switchView('market')">🏭 Market Share</button>
       <button class="nav-btn" onclick="switchView('tracking')">🚢 Ship Tracking</button>
@@ -1145,6 +1181,62 @@ input[type="range"] {
         <button class="popup-btn" onclick="viewFull()">View Full Fact Sheet →</button>
         <button class="popup-btn popup-btn-claim" id="p-claim-btn" onclick="openClaimForm()" style="display:none;">⚑ Claim this terminal</button>
         <button class="popup-btn popup-btn-owner" id="p-metrics-btn" onclick="openMetricsForm()" style="display:none;">✎ Edit operational data</button>
+      </div>
+    </div>
+
+    <!-- LISTINGS MARKETPLACE VIEW -->
+    <div class="view-panel" id="listings-panel">
+      <div class="panel-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div class="panel-title">Storage Marketplace</div>
+          <div class="panel-subtitle">Available tank storage capacity posted by verified terminal operators.</div>
+        </div>
+        <button class="popup-btn" style="width:auto;padding:9px 16px;" onclick="openListingForm()" id="postListingBtn">+ Post a Listing</button>
+      </div>
+
+      <div class="listings-toolbar">
+        <div class="lf-group">
+          <label>Product</label>
+          <select id="lf-product" onchange="renderListings()">
+            <option value="all">All Products</option>
+            <option>Crude</option><option>Gasoline</option><option>Diesel</option>
+            <option>LPG</option><option>LNG</option><option>Chemicals</option>
+          </select>
+        </div>
+        <div class="lf-group">
+          <label>Region</label>
+          <select id="lf-region" onchange="renderListings()">
+            <option value="all">All Regions</option>
+            <option>ARA (NW Europe)</option><option>Middle East</option>
+            <option>Southeast Asia</option><option>North America</option>
+            <option>West Africa</option><option>India Subcontinent</option>
+          </select>
+        </div>
+        <div class="lf-group">
+          <label>Facility Type</label>
+          <select id="lf-type" onchange="renderListings()">
+            <option value="all">All Types</option>
+            <option value="port">Port Terminals</option>
+            <option value="refinery">Refinery Tank Farms</option>
+            <option value="inland">Inland Terminals</option>
+          </select>
+        </div>
+        <div class="lf-group">
+          <label>Min Available (kbd)</label>
+          <input type="number" id="lf-mincap" placeholder="0" min="0" oninput="renderListings()">
+        </div>
+        <div class="lf-group">
+          <label>Sort</label>
+          <select id="lf-sort" onchange="renderListings()">
+            <option value="newest">Newest</option>
+            <option value="capacity">Capacity ↓</option>
+            <option value="price">Price ↑</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="listings-grid" class="listings-grid">
+        <div style="color:var(--text-dim);padding:30px;">Loading listings…</div>
       </div>
     </div>
 
@@ -1919,6 +2011,166 @@ async function saveMetrics() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// STORAGE LISTINGS MARKETPLACE (Phase 4)
+// Verified owners post available capacity; everyone browses/filters.
+// Backed by the Firestore `listings` collection (public read).
+// ═══════════════════════════════════════════════════════════════
+let listingsData = [];
+
+// Terminals the current user may list (owns & verified), or all for admin.
+function myListableTerminals() {
+  if (!currentUser) return [];
+  if (currentUser.role === 'admin' || currentUser.role === 'superadmin') return terminals;
+  return terminals.filter(t => t.ownerId === currentUser.uid && t.claimStatus === 'owned');
+}
+
+async function loadListings() {
+  const grid = document.getElementById('listings-grid');
+  // Toggle Post button by eligibility
+  const canPost = myListableTerminals().length > 0;
+  const postBtn = document.getElementById('postListingBtn');
+  if (postBtn) postBtn.style.display = canPost ? 'block' : 'none';
+
+  if (!firebaseReady) { grid.innerHTML = '<div style="color:var(--text-dim);padding:30px;">Marketplace requires a connection.</div>'; return; }
+  grid.innerHTML = '<div style="color:var(--text-dim);padding:30px;">Loading listings…</div>';
+  try {
+    listingsData = await FS_REST.listPublic('listings');
+    renderListings();
+  } catch (e) {
+    grid.innerHTML = `<div style="color:var(--danger);padding:30px;">Could not load listings: ${e.message}</div>`;
+  }
+}
+
+function renderListings() {
+  const grid = document.getElementById('listings-grid');
+  const fProd = document.getElementById('lf-product').value;
+  const fRegion = document.getElementById('lf-region').value;
+  const fType = document.getElementById('lf-type').value;
+  const fMin = parseFloat(document.getElementById('lf-mincap').value) || 0;
+  const fSort = document.getElementById('lf-sort').value;
+
+  let rows = listingsData.filter(l => (l.status || 'active') === 'active');
+
+  if (fProd !== 'all') rows = rows.filter(l => l.product === fProd || l.product === 'Multi-product');
+  if (fType !== 'all') rows = rows.filter(l => l.terminalType === fType);
+  if (fRegion !== 'all') {
+    const countries = (typeof REGION_COUNTRIES !== 'undefined' && REGION_COUNTRIES[fRegion]) || [];
+    rows = rows.filter(l => countries.includes(l.country));
+  }
+  if (fMin > 0) rows = rows.filter(l => (parseFloat(l.capacity)||0) >= fMin);
+
+  if (fSort === 'capacity') rows.sort((a,b)=>(parseFloat(b.capacity)||0)-(parseFloat(a.capacity)||0));
+  else if (fSort === 'price') rows.sort((a,b)=>(parseFloat((a.rate||'').replace(/[^0-9.]/g,''))||1e9)-(parseFloat((b.rate||'').replace(/[^0-9.]/g,''))||1e9));
+  else rows.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+
+  if (!rows.length) {
+    grid.innerHTML = '<div style="color:var(--text-dim);padding:30px;grid-column:1/-1;">No listings match your filters yet.</div>';
+    return;
+  }
+
+  grid.innerHTML = rows.map(l => {
+    const typeMeta = (typeof TERMINAL_TYPES !== 'undefined' && TERMINAL_TYPES[l.terminalType]) || null;
+    const mine = currentUser && l.ownerId === currentUser.uid;
+    const isAdminUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+    const from = l.availableFrom ? new Date(l.availableFrom).toLocaleDateString() : 'Now';
+    return `
+      <div class="listing-card">
+        <div class="listing-head">
+          <div>
+            <div class="listing-terminal">${l.terminalName || 'Terminal'}</div>
+            <div class="listing-loc">${l.city ? l.city+', ' : ''}${l.country || ''} ${typeMeta ? `· <span style="color:${typeMeta.color};">● ${typeMeta.short}</span>` : ''}</div>
+          </div>
+          <div class="listing-cap">${(parseFloat(l.capacity)||0).toLocaleString()}<span>kbd</span></div>
+        </div>
+        <div class="listing-body">
+          <div class="listing-row"><span class="listing-k">Product</span><span class="listing-tag">${l.product||'—'}</span></div>
+          <div class="listing-row"><span class="listing-k">Available</span><span>${from}</span></div>
+          ${l.rate ? `<div class="listing-row"><span class="listing-k">Rate</span><span style="color:var(--accent);">${l.rate}</span></div>` : ''}
+          ${l.terms ? `<div class="listing-terms">${l.terms}</div>` : ''}
+        </div>
+        <div class="listing-foot">
+          <div class="listing-operator">✓ ${l.company || 'Verified operator'}</div>
+          ${l.contact ? `<a class="listing-contact" href="mailto:${l.contact}?subject=Storage enquiry: ${encodeURIComponent(l.terminalName||'')}">Enquire →</a>` : ''}
+        </div>
+        ${(mine || isAdminUser) ? `<div class="listing-manage"><button class="btn-admin danger" onclick="deleteListing('${l.id}')">Remove</button></div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function openListingForm() {
+  if (!currentUser) { showLoginGate(); return; }
+  const listable = myListableTerminals();
+  if (!listable.length) {
+    toast('Only verified operators can post. Claim & verify a terminal first.', 'error');
+    return;
+  }
+  const sel = document.getElementById('lst-terminal');
+  sel.innerHTML = listable.map(t => `<option value="${t.id}">${t.name} — ${t.city}, ${t.country}</option>`).join('');
+  document.getElementById('lst-product').value = 'Crude';
+  document.getElementById('lst-capacity').value = '';
+  document.getElementById('lst-from').value = '';
+  document.getElementById('lst-rate').value = '';
+  document.getElementById('lst-contact').value = currentUser.email || '';
+  document.getElementById('lst-terms').value = '';
+  document.getElementById('listingModal').classList.remove('hidden');
+}
+function closeListingForm() { document.getElementById('listingModal').classList.add('hidden'); }
+
+async function submitListing() {
+  if (!currentUser) return;
+  const tid = parseInt(document.getElementById('lst-terminal').value);
+  const t = terminals.find(x => x.id === tid);
+  if (!t) { toast('Select a terminal.', 'error'); return; }
+  // Guard: must own it (or admin)
+  const isAdminUser = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+  if (!isAdminUser && t.ownerId !== currentUser.uid) { toast('You can only list terminals you operate.', 'error'); return; }
+
+  const capacity = parseFloat(document.getElementById('lst-capacity').value);
+  if (!capacity || capacity <= 0) { toast('Enter available capacity.', 'error'); return; }
+
+  const listing = {
+    terminalId: t.id, terminalName: t.name, city: t.city, country: t.country,
+    terminalType: terminalType(t),
+    ownerId: currentUser.uid,
+    company: t.ownerCompany || (currentUser.profile && currentUser.profile.company) || 'Verified operator',
+    product: document.getElementById('lst-product').value,
+    capacity: capacity,
+    availableFrom: document.getElementById('lst-from').value || null,
+    rate: document.getElementById('lst-rate').value.trim(),
+    contact: document.getElementById('lst-contact').value.trim(),
+    terms: document.getElementById('lst-terms').value.trim(),
+    status: 'active',
+    createdAt: new Date(),
+  };
+
+  const btn = document.getElementById('listingSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Publishing…';
+  const id = `${t.id}_${currentUser.uid}_${Date.now()}`;
+  try {
+    await FS_REST.setMerge('listings', id, listing);
+    closeListingForm();
+    toast('Listing published.');
+    logActivity(`Posted storage listing: ${t.name} (${capacity} kbd ${listing.product})`, 'success');
+    loadListings();
+  } catch (e) {
+    toast('Could not publish: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Publish Listing';
+  }
+}
+
+async function deleteListing(id) {
+  showConfirm('Remove Listing', 'Remove this storage listing from the marketplace?', async () => {
+    try {
+      await FS_REST.delete('listings', id);
+      toast('Listing removed.');
+      loadListings();
+    } catch (e) { toast('Could not remove: ' + e.message, 'error'); }
+  });
+}
+
 function fitAll() { if (usingGoogle && gMap) { gMap.setCenter({lat:20,lng:10}); gMap.setZoom(2); } else if (map) map.setView([20, 10], 2); }
 function toggleHeat() { /* future: add heatmap layer */ }
 function viewFull() { switchView('benchmark'); }
@@ -2336,7 +2588,7 @@ function renderFlows() {
 // ─── VIEW SWITCHING ──────────────────────────────────────────────────────────
 
 let chartsInit = { benchmark: false, market: false, tracking: false, flow: false };
-const VIEW_ORDER = ['globe','map','benchmark','market','tracking','flow'];
+const VIEW_ORDER = ['globe','map','listings','benchmark','market','tracking','flow'];
 
 function switchView(view) {
   document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
@@ -2350,6 +2602,7 @@ function switchView(view) {
 
   if (view === 'globe') { setTimeout(()=>{ if (typeof onGlobeShown==='function') onGlobeShown(); }, 60); }
   if (view === 'map') { setTimeout(mapResize,100); }
+  if (view === 'listings') { if (typeof loadListings==='function') loadListings(); }
   if (view === 'benchmark') { whenChartReady(initBenchmarkCharts); chartsInit.benchmark=true; }
   if (view === 'market' && !chartsInit.market) { whenChartReady(function(){renderMarket('global');}); chartsInit.market=true; }
   if (view === 'tracking' && !chartsInit.tracking) { renderShips(); chartsInit.tracking=true; }
@@ -3084,6 +3337,52 @@ loadScript(
 </div>
 
 <!-- OPERATIONAL METRICS EDIT MODAL -->
+<!-- POST LISTING MODAL -->
+<div class="modal-overlay hidden" id="listingModal">
+  <div class="login-box" style="max-width:520px;text-align:left;">
+    <button class="modal-close-x" onclick="closeListingForm()">×</button>
+    <h2 style="font-family:var(--font-display);margin-bottom:4px;" id="listingModalTitle">Post a Storage Listing</h2>
+    <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px;">List available capacity at a terminal you operate. Only verified operators can post.</p>
+    <div class="claim-field">
+      <label>Terminal</label>
+      <select id="lst-terminal"></select>
+      <div class="claim-hint" id="lst-terminal-hint">You can only list terminals you've claimed and had verified.</div>
+    </div>
+    <div class="claim-field">
+      <label>Product available for</label>
+      <select id="lst-product">
+        <option>Crude</option><option>Gasoline</option><option>Diesel</option>
+        <option>LPG</option><option>LNG</option><option>Chemicals</option><option>Multi-product</option>
+      </select>
+    </div>
+    <div class="admin-form-grid">
+      <div class="claim-field">
+        <label>Available Capacity (kbd)</label>
+        <input type="number" id="lst-capacity" placeholder="e.g. 500" min="0" step="any">
+      </div>
+      <div class="claim-field">
+        <label>Available From</label>
+        <input type="date" id="lst-from">
+      </div>
+    </div>
+    <div class="admin-form-grid">
+      <div class="claim-field">
+        <label>Indicative Rate (optional)</label>
+        <input type="text" id="lst-rate" placeholder="e.g. $2.50 / bbl / month">
+      </div>
+      <div class="claim-field">
+        <label>Contact Email</label>
+        <input type="email" id="lst-contact" placeholder="deals@company.com">
+      </div>
+    </div>
+    <div class="claim-field">
+      <label>Terms / Notes (optional)</label>
+      <textarea id="lst-terms" rows="2" placeholder="Min duration, throughput terms, heating, etc."></textarea>
+    </div>
+    <button class="popup-btn" style="margin-top:8px;" onclick="submitListing()" id="listingSubmitBtn">Publish Listing</button>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="metricsModal">
   <div class="login-box" style="max-width:500px;text-align:left;">
     <button class="modal-close-x" onclick="closeMetricsForm()">×</button>
@@ -3309,6 +3608,9 @@ loadScript(
       </div>
       <div class="admin-nav-item" onclick="adminNav('claims', this)">
         <span class="nav-icon">⚑</span> Terminal Claims <span class="claims-badge" id="claimsBadge" style="display:none;"></span>
+      </div>
+      <div class="admin-nav-item" onclick="adminNav('listings', this)">
+        <span class="nav-icon">📋</span> Listings
       </div>
 
       <div class="admin-nav-sep"></div>
@@ -3538,6 +3840,14 @@ loadScript(
             <button class="btn-admin" onclick="clearTerminalForm()">Clear Form</button>
           </div>
         </div>
+      </div>
+
+      <!-- ── LISTINGS MODERATION ── -->
+      <div class="admin-section" id="sec-listings">
+        <div class="admin-page-title">Listings Moderation</div>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:16px;">All storage listings on the marketplace. Remove any that violate policy.</p>
+        <button class="btn-admin primary" onclick="loadAdminListings()" style="margin-bottom:16px;">⟳ Refresh Listings</button>
+        <div id="admin-listings-list"><div style="color:var(--text-dim);font-size:12px;padding:20px;">Click "Refresh Listings" to load.</div></div>
       </div>
 
       <!-- ── TERMINAL CLAIMS ── -->
@@ -4163,6 +4473,7 @@ function adminNav(section, clickedEl) {
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-' + section).classList.add('active');
   if (section === 'claims') loadClaims();
+  if (section === 'listings') loadAdminListings();
 }
 
 // ── TOAST ────────────────────────────────────────────────────────
@@ -4486,6 +4797,38 @@ async function rejectClaim(claimId) {
       logActivity(`Rejected terminal claim: ${c.terminalName} by ${c.email}`, 'warning');
       loadClaims();
     } catch (e) { toast('Reject failed: ' + e.message, 'error'); }
+  });
+}
+
+// ── ADMIN: LISTINGS MODERATION ──
+async function loadAdminListings() {
+  const el = document.getElementById('admin-listings-list');
+  if (!firebaseReady) { el.innerHTML = '<div style="color:var(--text-dim);padding:20px;">Firebase not available.</div>'; return; }
+  el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:20px;">Loading…</div>';
+  try {
+    const all = await FS_REST.list('listings');
+    if (!all.length) { el.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:20px;">No listings posted yet.</div>'; return; }
+    all.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    el.innerHTML = `<table class="admin-table"><thead><tr>
+      <th>Terminal</th><th>Country</th><th>Product</th><th>Capacity</th><th>Company</th><th>Posted</th><th>Actions</th>
+      </tr></thead><tbody>${all.map(l => `
+      <tr>
+        <td class="cell-name">${l.terminalName||'—'}</td>
+        <td>${l.country||'—'}</td>
+        <td>${l.product||'—'}</td>
+        <td class="cell-accent">${(parseFloat(l.capacity)||0).toLocaleString()} kbd</td>
+        <td>${l.company||'—'}</td>
+        <td style="font-size:9px;color:var(--text-muted);">${l.createdAt ? new Date(l.createdAt).toLocaleDateString() : '—'}</td>
+        <td><button class="btn-admin danger" onclick="adminRemoveListing('${l.id}')">Remove</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--danger);padding:20px;">Could not load: ${e.message}</div>`;
+  }
+}
+async function adminRemoveListing(id) {
+  showConfirm('Remove Listing', 'Remove this listing from the marketplace?', async () => {
+    try { await FS_REST.delete('listings', id); toast('Listing removed.'); logActivity('Removed a marketplace listing', 'warning'); loadAdminListings(); }
+    catch (e) { toast('Could not remove: ' + e.message, 'error'); }
   });
 }
 
