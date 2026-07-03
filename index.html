@@ -2580,22 +2580,37 @@ const AisStream = {
     } catch (e) { this.setStatus('Connection failed: ' + e.message, true); return; }
 
     this.ws.onopen = () => {
+      const boxes = this.boundingBoxes();
       const sub = {
         APIKey: this.key,
-        BoundingBoxes: this.boundingBoxes(),
+        BoundingBoxes: boxes,
         FilterMessageTypes: ['PositionReport', 'ShipStaticData'],
       };
       this.ws.send(JSON.stringify(sub));
       this.connected = true;
-      this.updateBtn();
-      this.setStatus('● Live — receiving AIS near ' + terminals.length + ' terminals…');
+      this.msgCount = 0;
+      this.vessels = {};
+      // Clear demo data immediately so the table honestly reflects live state.
+      ships.length = 0;
       DataService.isLive.ships = true;
+      this.updateBtn();
+      this.setStatus('● Connected — waiting for vessels in ' + boxes.length + ' areas…');
+      if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
+      console.log('%c[AIS] Subscribed with ' + boxes.length + ' bounding boxes', 'color:#2fa37c');
     };
 
     this.ws.onmessage = (ev) => {
       let msg; try { msg = JSON.parse(ev.data); } catch { return; }
-      // Error envelope from AISStream (e.g. bad key) arrives as {error: "..."}
-      if (msg.error) { this.setStatus('AISStream error: ' + msg.error, true); this.disconnect(true); return; }
+      // Error envelope from AISStream (bad key, bad subscription, throttling).
+      if (msg.error || msg.Error || (msg.MessageType === 'Error')) {
+        const err = msg.error || msg.Error || JSON.stringify(msg);
+        this.setStatus('AISStream error: ' + err, true);
+        console.error('[AIS] error:', err);
+        this.disconnect(true);
+        return;
+      }
+      this.msgCount = (this.msgCount || 0) + 1;
+      if (this.msgCount === 1) console.log('%c[AIS] First message received ✓', 'color:#6fd98f;font-weight:bold', msg.MessageType);
       this.ingest(msg);
       this.scheduleRender();
     };
@@ -2654,6 +2669,8 @@ const AisStream = {
     this.renderTimer = setTimeout(() => {
       this.renderTimer = null;
       this.pushToShips();
+      const n = ships.length;
+      this.setStatus(`● Live — ${n} vessel${n===1?'':'s'} near your terminals (${this.msgCount} msgs received)`);
       if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
     }, 1500);
   },
@@ -3841,6 +3858,9 @@ loadScript(
 
       <div class="admin-nav-sep"></div>
       <div class="admin-nav-label">Site</div>
+      <div class="admin-nav-item" onclick="openDataApi(this)">
+        <span class="nav-icon">🛰</span> Data & API
+      </div>
       <div class="admin-nav-item" onclick="adminNav('sitesettings', this)">
         <span class="nav-icon">🎨</span> Site Settings
       </div>
@@ -4178,7 +4198,7 @@ loadScript(
             <div class="admin-field" style="margin-bottom:14px;"><label>SMTP Password</label><input type="password" placeholder="••••••••"></div>
             <button class="btn-admin primary" onclick="toast('SMTP settings saved.')">Save SMTP Config</button>
           </div>
-          <div class="admin-card">
+          <div class="admin-card" id="dataApiCard">
             <div class="admin-card-title">Data & API — Live Connections</div>
             <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Connect real data providers. Once saved, the site fetches live data and replaces demo data automatically. Endpoints must return JSON arrays (CORS-enabled).</div>
             <div class="admin-field" style="margin-bottom:10px;"><label>Terminals Data Endpoint (JSON)</label><input type="text" id="epTerminals" placeholder="https://your-api.com/terminals.json"></div>
@@ -4702,6 +4722,21 @@ function adminNav(section, clickedEl) {
   document.getElementById('sec-' + section).classList.add('active');
   if (section === 'claims') loadClaims();
   if (section === 'listings') loadAdminListings();
+}
+
+// Data & API nav → opens Site Settings and scrolls to the connection cards.
+function openDataApi(clickedEl) {
+  adminNav('sitesettings', clickedEl);
+  populateDataConfigFields();
+  setTimeout(() => {
+    const card = document.getElementById('dataApiCard');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      card.style.transition = 'box-shadow 0.4s';
+      card.style.boxShadow = '0 0 0 2px var(--accent2)';
+      setTimeout(() => { card.style.boxShadow = ''; }, 1600);
+    }
+  }, 80);
 }
 
 // ── TOAST ────────────────────────────────────────────────────────
