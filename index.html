@@ -1339,11 +1339,11 @@ input[type="range"] {
         <div class="panel-subtitle">Live tanker positions, berth occupancy & waiting times</div>
       </div>
       <div class="search-bar">
-        <input type="text" placeholder="Search vessel name or IMO...">
-        <button class="btn-small">Filter by Type ▾</button>
-        <button class="btn-small">Terminal ▾</button>
-        <button class="btn-small primary">Export CSV</button>
+        <input type="text" id="shipSearch" placeholder="Search vessel name or IMO..." oninput="renderShips()">
+        <button class="btn-small" id="aisConnectBtn" onclick="toggleAisStream()">🛰 Connect Live AIS</button>
+        <button class="btn-small primary" onclick="exportShipsCsv()">Export CSV</button>
       </div>
+      <div id="aisStatusLine" style="font-size:11px;color:var(--text-muted);margin-bottom:12px;display:none;"></div>
       <div class="kpi-grid" style="margin-bottom:16px;">
         <div class="kpi-card"><div class="kpi-label">Vessels Tracked</div><div class="kpi-value" style="color:var(--accent)" id="shipTotalKpi">—</div><div class="kpi-delta" id="shipTotalSub">in current view</div></div>
         <div class="kpi-card green"><div class="kpi-label">At Berth</div><div class="kpi-value" id="shipBerthKpi">—</div><div class="kpi-delta" id="shipBerthSub">&nbsp;</div></div>
@@ -2515,9 +2515,209 @@ const ships = [
   {name:"VLCC Emerald Sea",imo:"9012345",type:"VLCC",flag:"🇸🇬",dwt:"315,000",status:"moving",last:"Pengerang",eta:"Apr 05",cargo:"Crude"},
 ];
 
+// ═══════════════════════════════════════════════════════════════
+// LIVE AIS via AISStream.io (WebSocket)
+// Connects to aisstream.io, subscribes to bounding boxes around our
+// terminals, merges PositionReport + ShipStaticData into vessel records,
+// and feeds the ship table + KPIs. Key stored locally (free read-only key).
+// ═══════════════════════════════════════════════════════════════
+const AisStream = {
+  ws: null,
+  key: localStorage.getItem('tb_aisstream_key') || '',
+  vessels: {},        // mmsi -> merged record
+  connected: false,
+  renderTimer: null,
+  reconnectTimer: null,
+  manualClose: false,
+
+  // AIS ship-type code → label (tankers are 80-89).
+  shipTypeLabel(code) {
+    code = parseInt(code) || 0;
+    if (code >= 80 && code <= 89) return 'Tanker';
+    if (code >= 70 && code <= 79) return 'Cargo';
+    if (code >= 60 && code <= 69) return 'Passenger';
+    if (code >= 40 && code <= 49) return 'High-speed';
+    if (code >= 30 && code <= 39) return 'Fishing/Tug';
+    if (code >= 50 && code <= 59) return 'Special';
+    return code ? 'Other' : '—';
+  },
+
+  // Rough flag emoji from MMSI MID (first 3 digits) for common maritime nations.
+  flagFromMmsi(mmsi) {
+    const mid = String(mmsi).slice(0, 3);
+    const map = {
+      '419':'🇮🇳','563':'🇸🇬','564':'🇸🇬','565':'🇸🇬','566':'🇸🇬',
+      '470':'🇦🇪','471':'🇦🇪','403':'🇸🇦','425':'🇮🇶','422':'🇮🇷',
+      '447':'🇰🇼','445':'🇰🇵','244':'🇳🇱','245':'🇳🇱','246':'🇳🇱',
+      '205':'🇧🇪','232':'🇬🇧','233':'🇬🇧','234':'🇬🇧','235':'🇬🇧',
+      '338':'🇺🇸','366':'🇺🇸','367':'🇺🇸','368':'🇺🇸','369':'🇺🇸',
+      '353':'🇵🇦','354':'🇵🇦','355':'🇵🇦','256':'🇲🇹','248':'🇲🇹',
+      '538':'🇲🇭','636':'🇱🇷','477':'🇭🇰','431':'🇯🇵','432':'🇯🇵',
+      '440':'🇰🇷','441':'🇰🇷','525':'🇮🇩','533':'🇲🇾','657':'🇳🇬',
+      '605':'🇩🇿','208':'🇧🇬','237':'🇬🇷','239':'🇬🇷','240':'🇬🇷','241':'🇬🇷',
+    };
+    return map[mid] || '🏳';
+  },
+
+  // Build ~±2° bounding boxes around each terminal (focuses volume near our facilities).
+  boundingBoxes() {
+    const D = 2.0;
+    const boxes = terminals
+      .filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng))
+      .map(t => [[t.lat - D, t.lng - D], [t.lat + D, t.lng + D]]);
+    // AISStream accepts multiple boxes; cap to keep the subscription reasonable.
+    return boxes.slice(0, 50);
+  },
+
+  connect(key) {
+    if (key) { this.key = key.trim(); localStorage.setItem('tb_aisstream_key', this.key); }
+    if (!this.key) { toast('Enter your AISStream.io API key in Admin → Data & API first.', 'error'); return; }
+    if (this.ws) this.disconnect(true);
+    this.manualClose = false;
+    this.setStatus('Connecting to AISStream.io…');
+    try {
+      this.ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
+    } catch (e) { this.setStatus('Connection failed: ' + e.message, true); return; }
+
+    this.ws.onopen = () => {
+      const sub = {
+        APIKey: this.key,
+        BoundingBoxes: this.boundingBoxes(),
+        FilterMessageTypes: ['PositionReport', 'ShipStaticData'],
+      };
+      this.ws.send(JSON.stringify(sub));
+      this.connected = true;
+      this.updateBtn();
+      this.setStatus('● Live — receiving AIS near ' + terminals.length + ' terminals…');
+      DataService.isLive.ships = true;
+    };
+
+    this.ws.onmessage = (ev) => {
+      let msg; try { msg = JSON.parse(ev.data); } catch { return; }
+      // Error envelope from AISStream (e.g. bad key) arrives as {error: "..."}
+      if (msg.error) { this.setStatus('AISStream error: ' + msg.error, true); this.disconnect(true); return; }
+      this.ingest(msg);
+      this.scheduleRender();
+    };
+
+    this.ws.onerror = () => { this.setStatus('WebSocket error — check key/network.', true); };
+    this.ws.onclose = () => {
+      this.connected = false; this.updateBtn();
+      if (!this.manualClose) {
+        this.setStatus('Disconnected — retrying in 5s…', true);
+        this.reconnectTimer = setTimeout(() => this.connect(), 5000);
+      } else {
+        this.setStatus('Disconnected.');
+      }
+    };
+  },
+
+  disconnect(silent) {
+    this.manualClose = true;
+    clearTimeout(this.reconnectTimer);
+    if (this.ws) { try { this.ws.close(); } catch {} this.ws = null; }
+    this.connected = false;
+    this.updateBtn();
+    if (!silent) { this.setStatus('Disconnected.'); DataService.isLive.ships = false; renderShips(); }
+  },
+
+  ingest(msg) {
+    const meta = msg.MetaData || {};
+    const mmsi = meta.MMSI || (msg.Message && (
+      (msg.Message.PositionReport && msg.Message.PositionReport.UserID) ||
+      (msg.Message.ShipStaticData && msg.Message.ShipStaticData.UserID)));
+    if (!mmsi) return;
+    const v = this.vessels[mmsi] || { mmsi };
+
+    if (msg.MessageType === 'PositionReport' && msg.Message.PositionReport) {
+      const p = msg.Message.PositionReport;
+      v.lat = p.Latitude; v.lon = p.Longitude;
+      v.sog = p.Sog; v.cog = p.Cog;
+      v.navStatus = p.NavigationalStatus;
+    }
+    if (msg.MessageType === 'ShipStaticData' && msg.Message.ShipStaticData) {
+      const s = msg.Message.ShipStaticData;
+      v.name = (s.Name || '').trim() || v.name;
+      v.imo = s.ImoNumber || v.imo;
+      v.typeCode = s.Type != null ? s.Type : v.typeCode;
+      v.destination = (s.Destination || '').trim() || v.destination;
+      if (s.Eta && s.Eta.Month) v.eta = `${s.Eta.Month}/${s.Eta.Day} ${String(s.Eta.Hour).padStart(2,'0')}:${String(s.Eta.Minute).padStart(2,'0')}`;
+    }
+    // Name sometimes only present in MetaData
+    if (!v.name && meta.ShipName) v.name = String(meta.ShipName).trim();
+    v.lastUpdate = Date.now();
+    this.vessels[mmsi] = v;
+  },
+
+  scheduleRender() {
+    if (this.renderTimer) return;
+    this.renderTimer = setTimeout(() => {
+      this.renderTimer = null;
+      this.pushToShips();
+      if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
+    }, 1500);
+  },
+
+  // Convert live vessels into the app's `ships` array (tankers first, freshest first).
+  pushToShips() {
+    const now = Date.now();
+    const list = Object.values(this.vessels)
+      .filter(v => v.lat != null && (now - v.lastUpdate) < 15*60*1000) // drop stale >15min
+      .sort((a,b) => {
+        const at = (a.typeCode>=80&&a.typeCode<=89)?0:1, bt = (b.typeCode>=80&&b.typeCode<=89)?0:1;
+        if (at !== bt) return at - bt;             // tankers first
+        return b.lastUpdate - a.lastUpdate;        // then freshest
+      })
+      .slice(0, 100);
+    ships.length = 0;
+    list.forEach(v => ships.push({
+      name: v.name || ('MMSI ' + v.mmsi),
+      imo: v.imo || '—',
+      type: this.shipTypeLabel(v.typeCode),
+      flag: this.flagFromMmsi(v.mmsi),
+      dwt: '—',  // DWT is not broadcast over AIS
+      status: (v.sog != null && v.sog > 0.5) ? 'moving' : 'berthed',
+      last: v.destination || '—',
+      eta: v.eta || '—',
+      cargo: '—',  // cargo is not broadcast over AIS
+    }));
+  },
+
+  setStatus(text, isErr) {
+    const el = document.getElementById('aisStatusLine');
+    if (!el) return;
+    el.style.display = 'block';
+    el.style.color = isErr ? 'var(--danger)' : 'var(--accent2)';
+    el.textContent = text;
+  },
+  updateBtn() {
+    const b = document.getElementById('aisConnectBtn');
+    if (!b) return;
+    b.textContent = this.connected ? '🛰 Disconnect Live AIS' : '🛰 Connect Live AIS';
+    b.classList.toggle('primary', this.connected);
+  },
+};
+
+function toggleAisStream() {
+  if (AisStream.connected || AisStream.ws) AisStream.disconnect();
+  else AisStream.connect();
+}
+
+function exportShipsCsv() {
+  const rows = [['Vessel','IMO','Type','Flag','DWT','Status','Destination','ETA','Cargo']]
+    .concat(ships.map(s => [s.name, s.imo, s.type, s.flag, s.dwt, s.status, s.last, s.eta, s.cargo]));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'tankbazaar-vessels.csv'; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function renderShips() {
   const tbody = document.getElementById('ship-tbody');
-  tbody.innerHTML = ships.map(s => `
+  const q = (document.getElementById('shipSearch')?.value || '').trim().toLowerCase();
+  const rows = q ? ships.filter(s => s.name.toLowerCase().includes(q) || String(s.imo).includes(q)) : ships;
+  tbody.innerHTML = rows.map(s => `
     <tr>
       <td class="ship-name">${s.name}</td>
       <td style="color:var(--text-dim)">${s.imo}</td>
@@ -2529,7 +2729,7 @@ function renderShips() {
       <td>${s.eta}</td>
       <td style="color:var(--accent)">${s.cargo}</td>
     </tr>
-  `).join('');
+  `).join('') || '<tr><td colspan="9" style="color:var(--text-dim);padding:20px;text-align:center;">No vessels. Connect Live AIS to stream real positions.</td></tr>';
 
   // KPIs computed from the actual vessel set (not hardcoded).
   const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
@@ -2541,7 +2741,7 @@ function renderShips() {
   set('shipMovingKpi', moving.toLocaleString());
   set('shipSourceKpi', isLive ? 'Live AIS' : 'Demo');
   const srcSub = document.getElementById('shipSourceSub');
-  if (srcSub) srcSub.textContent = isLive ? 'streaming from provider' : 'configure in Admin → Data & API';
+  if (srcSub) srcSub.textContent = isLive ? 'AISStream.io · live' : 'connect above or in Admin';
   const srcCard = document.getElementById('shipSourceKpi');
   if (srcCard) srcCard.style.color = isLive ? 'var(--accent3)' : 'var(--gold)';
 }
@@ -3994,6 +4194,17 @@ loadScript(
               <button class="btn-admin" onclick="testDataConfig()">Test Connections</button>
             </div>
           </div>
+          <div class="admin-card">
+            <div class="admin-card-title">🛰 Live AIS — AISStream.io (WebSocket)</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Free real-time vessel positions streamed directly to the browser. Get a free key at <span style="color:var(--accent2);">aisstream.io</span> (no card required). The stream subscribes to areas around your terminals and shows live tankers on the Ship Tracking page.</div>
+            <div class="admin-field" style="margin-bottom:10px;"><label>AISStream.io API Key</label><input type="text" id="aisStreamKey" placeholder="your_aisstream_api_key"></div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn-admin primary" onclick="saveAndConnectAis()">Save & Connect Live</button>
+              <button class="btn-admin" onclick="AisStream.disconnect()">Disconnect</button>
+              <span id="aisAdminStatus" style="font-size:10px;color:var(--text-dim);"></span>
+            </div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Note: the key is used from the browser (AISStream keys are free & read-only). AIS broadcasts don't include DWT or cargo, so those columns show "—". Coverage is terrestrial (near-coast), strongest around ports.</div>
+          </div>
         </div>
       </div>
 
@@ -5223,6 +5434,18 @@ function populateDataConfigFields() {
   set('epFlows', DataService.endpoints.flows);
   set('epAisKey', DataService.aisKey);
   set('gmapsApiKey', getGmapsKey());
+  set('aisStreamKey', AisStream.key);
+  const st = document.getElementById('aisAdminStatus');
+  if (st) st.textContent = AisStream.connected ? '● Live' : '';
+}
+
+function saveAndConnectAis() {
+  const key = document.getElementById('aisStreamKey').value.trim();
+  if (!key) { toast('Enter your AISStream.io API key.', 'error'); return; }
+  AisStream.connect(key);
+  const st = document.getElementById('aisAdminStatus');
+  if (st) st.textContent = 'Connecting…';
+  logActivity('Connected live AIS (AISStream.io)', 'success');
 }
 
 // ── SITE SETTINGS ────────────────────────────────────────────────
