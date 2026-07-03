@@ -1011,6 +1011,9 @@ input[type="range"] {
   .profile-analytics-row { grid-template-columns: 1fr 1fr !important; }
   .admin-sidebar { width: 180px; }
   .content-area { width: 100%; min-width: 0; }
+
+  /* Hide the desktop status bar on mobile — it clutters and overflows */
+  .status-bar { display: none; }
 }
 @media (min-width: 861px) {
   .drawer-nav { display: none; }
@@ -1093,9 +1096,9 @@ input[type="range"] {
         </select>
       </div>
       <div class="filter-group">
-        <div class="filter-label">Min Capacity (kbd)</div>
+        <div class="filter-label">Min Capacity: <span id="filter-cap-val" style="color:var(--accent);">0 kbd</span></div>
         <input type="range" id="filter-cap" min="0" max="15000" step="500" value="0" oninput="updateRange(this)">
-        <div class="range-labels"><span id="filter-cap-val">0 kbd</span><span>15,000 kbd</span></div>
+        <div class="range-labels"><span>0 kbd</span><span>15,000 kbd</span></div>
       </div>
       <div class="filter-group">
         <div class="filter-label">Products</div>
@@ -1342,10 +1345,10 @@ input[type="range"] {
         <button class="btn-small primary">Export CSV</button>
       </div>
       <div class="kpi-grid" style="margin-bottom:16px;">
-        <div class="kpi-card"><div class="kpi-label">Vessels at Sea</div><div class="kpi-value" style="color:var(--accent)">1,842</div><div class="kpi-delta up">↑ 23 since 06:00</div></div>
-        <div class="kpi-card green"><div class="kpi-label">At Berth</div><div class="kpi-value">384</div><div class="kpi-delta">Across 94 terminals</div></div>
-        <div class="kpi-card gold"><div class="kpi-label">Waiting</div><div class="kpi-value">127</div><div class="kpi-delta down">Avg wait 18.4h</div></div>
-        <div class="kpi-card orange"><div class="kpi-label">Ship Visits (7d)</div><div class="kpi-value">3,290</div><div class="kpi-delta up">↑ 8.3% vs prev wk</div></div>
+        <div class="kpi-card"><div class="kpi-label">Vessels Tracked</div><div class="kpi-value" style="color:var(--accent)" id="shipTotalKpi">—</div><div class="kpi-delta" id="shipTotalSub">in current view</div></div>
+        <div class="kpi-card green"><div class="kpi-label">At Berth</div><div class="kpi-value" id="shipBerthKpi">—</div><div class="kpi-delta" id="shipBerthSub">&nbsp;</div></div>
+        <div class="kpi-card gold"><div class="kpi-label">Moving / At Sea</div><div class="kpi-value" id="shipMovingKpi">—</div><div class="kpi-delta" id="shipMovingSub">&nbsp;</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">Data Source</div><div class="kpi-value" id="shipSourceKpi" style="font-size:18px;">Demo</div><div class="kpi-delta" id="shipSourceSub">configure in Admin</div></div>
       </div>
       <div class="ship-table-wrap">
         <table class="ship-table">
@@ -2527,6 +2530,20 @@ function renderShips() {
       <td style="color:var(--accent)">${s.cargo}</td>
     </tr>
   `).join('');
+
+  // KPIs computed from the actual vessel set (not hardcoded).
+  const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  const berthed = ships.filter(s => s.status === 'berthed' || s.status === 'at berth').length;
+  const moving = ships.filter(s => s.status === 'moving' || s.status === 'at sea').length;
+  const isLive = DataService.isLive.ships;
+  set('shipTotalKpi', ships.length.toLocaleString());
+  set('shipBerthKpi', berthed.toLocaleString());
+  set('shipMovingKpi', moving.toLocaleString());
+  set('shipSourceKpi', isLive ? 'Live AIS' : 'Demo');
+  const srcSub = document.getElementById('shipSourceSub');
+  if (srcSub) srcSub.textContent = isLive ? 'streaming from provider' : 'configure in Admin → Data & API';
+  const srcCard = document.getElementById('shipSourceKpi');
+  if (srcCard) srcCard.style.color = isLive ? 'var(--accent3)' : 'var(--gold)';
 }
 
 // ─── PRODUCT FLOW ────────────────────────────────────────────────────────────
