@@ -2560,13 +2560,26 @@ const AisStream = {
   },
 
   // Build ~±2° bounding boxes around each terminal (focuses volume near our facilities).
+  // AISStream can reject very large BoundingBoxes arrays. Cluster terminals
+  // into a few merged regional boxes (much more reliable than 30+ tiny ones).
   boundingBoxes() {
-    const D = 2.0;
-    const boxes = terminals
-      .filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng))
-      .map(t => [[t.lat - D, t.lng - D], [t.lat + D, t.lng + D]]);
-    // AISStream accepts multiple boxes; cap to keep the subscription reasonable.
-    return boxes.slice(0, 50);
+    const pts = terminals.filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng));
+    if (!pts.length) return [[[-90,-180],[90,180]]];
+    // Simple grid clustering: bucket terminals into ~20° cells, one box per cell.
+    const cells = {};
+    pts.forEach(t => {
+      const key = Math.round(t.lat/20) + '_' + Math.round(t.lng/20);
+      (cells[key] = cells[key] || []).push(t);
+    });
+    const PAD = 3.0;
+    const boxes = Object.values(cells).map(group => {
+      const lats = group.map(t=>t.lat), lngs = group.map(t=>t.lng);
+      const minLat = Math.max(-90, Math.min(...lats)-PAD), maxLat = Math.min(90, Math.max(...lats)+PAD);
+      const minLng = Math.max(-180, Math.min(...lngs)-PAD), maxLng = Math.min(180, Math.max(...lngs)+PAD);
+      // AISStream box format: [[lat1,lon1],[lat2,lon2]] (two opposite corners)
+      return [[minLat, minLng], [maxLat, maxLng]];
+    });
+    return boxes.slice(0, 20);
   },
 
   connect(key) {
@@ -2580,6 +2593,7 @@ const AisStream = {
     } catch (e) { this.setStatus('Connection failed: ' + e.message, true); return; }
 
     this.ws.onopen = () => {
+      this._openedAt = Date.now();
       const boxes = this.boundingBoxes();
       const sub = {
         APIKey: this.key,
@@ -2618,12 +2632,26 @@ const AisStream = {
     this.ws.onerror = () => { this.setStatus('WebSocket error — check key/network.', true); };
     this.ws.onclose = () => {
       this.connected = false; this.updateBtn();
-      if (!this.manualClose) {
-        this.setStatus('Disconnected — retrying in 5s…', true);
-        this.reconnectTimer = setTimeout(() => this.connect(), 5000);
+      const openMs = Date.now() - (this._openedAt || 0);
+      if (this.manualClose) { this.setStatus('Disconnected.'); return; }
+
+      // If the socket dropped within ~4s of opening and we got no messages,
+      // the subscription was almost certainly rejected. Don't hammer-retry.
+      if (openMs < 4000 && !this.msgCount) {
+        this._fastFails = (this._fastFails || 0) + 1;
       } else {
-        this.setStatus('Disconnected.');
+        this._fastFails = 0;
       }
+
+      if (this._fastFails >= 3) {
+        this.setStatus('Connection keeps dropping — likely an invalid API key or rejected subscription. Check your AISStream.io key.', true);
+        console.error('[AIS] Giving up after repeated immediate disconnects. Verify the API key at aisstream.io.');
+        return; // stop the loop
+      }
+
+      const delay = Math.min(5000 * (this._fastFails || 1), 20000);
+      this.setStatus(`Disconnected — retrying in ${Math.round(delay/1000)}s…`, true);
+      this.reconnectTimer = setTimeout(() => this.connect(), delay);
     };
   },
 
@@ -4200,11 +4228,9 @@ loadScript(
           </div>
           <div class="admin-card" id="dataApiCard">
             <div class="admin-card-title">Data & API — Live Connections</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Connect real data providers. Once saved, the site fetches live data and replaces demo data automatically. Endpoints must return JSON arrays (CORS-enabled).</div>
-            <div class="admin-field" style="margin-bottom:10px;"><label>Terminals Data Endpoint (JSON)</label><input type="text" id="epTerminals" placeholder="https://your-api.com/terminals.json"></div>
-            <div class="admin-field" style="margin-bottom:10px;"><label>AIS / Ships Endpoint (MarineTraffic, aisstream proxy, etc.)</label><input type="text" id="epShips" placeholder="https://your-api.com/vessels"></div>
-            <div class="admin-field" style="margin-bottom:10px;"><label>Product Flows Endpoint (JSON)</label><input type="text" id="epFlows" placeholder="https://your-api.com/flows.json"></div>
-            <div class="admin-field" style="margin-bottom:10px;"><label>API Bearer Key (optional, sent as Authorization header)</label><input type="text" id="epAisKey" placeholder="your_provider_api_key"></div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Optional JSON endpoints for terminals and product flows (must return JSON arrays, CORS-enabled). For live vessel tracking, use the AISStream.io card below instead.</div>
+            <div class="admin-field" style="margin-bottom:10px;"><label>Terminals Data Endpoint (JSON, optional)</label><input type="text" id="epTerminals" placeholder="https://your-api.com/terminals.json"></div>
+            <div class="admin-field" style="margin-bottom:10px;"><label>Product Flows Endpoint (JSON, optional)</label><input type="text" id="epFlows" placeholder="https://your-api.com/flows.json"></div>
             <div class="admin-field" style="margin-bottom:10px;"><label>Google Maps API Key</label><input type="text" id="gmapsApiKey" placeholder="AIza••••••••"></div>
             <div class="admin-field" style="margin-bottom:14px;"><label>Data Refresh Interval</label>
               <select id="epRefresh"><option value="300000">Every 5 min</option><option value="900000">Every 15 min</option><option value="3600000">Every 1 hour</option></select>
@@ -5429,16 +5455,13 @@ function loadGoogleMaps() {
 }
 
 function saveDataConfig() {
-  const t = document.getElementById('epTerminals').value.trim();
-  const s = document.getElementById('epShips').value.trim();
-  const f = document.getElementById('epFlows').value.trim();
-  const k = document.getElementById('epAisKey').value.trim();
-  const g = document.getElementById('gmapsApiKey').value.trim();
+  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const t = val('epTerminals');
+  const f = val('epFlows');
+  const g = val('gmapsApiKey');
   const r = document.getElementById('epRefresh').value;
   if (t) DataService.saveEndpoint('terminals', t);
-  if (s) DataService.saveEndpoint('ships', s);
   if (f) DataService.saveEndpoint('flows', f);
-  if (k) { DataService.aisKey = k; localStorage.setItem('tb_ais_key', k); }
   if (g) localStorage.setItem('tb_gmaps_key', g);
   localStorage.setItem('tb_refresh_ms', r);
   DataService.refreshMs = parseInt(r);
@@ -5465,9 +5488,7 @@ async function testDataConfig() {
 function populateDataConfigFields() {
   const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
   set('epTerminals', DataService.endpoints.terminals);
-  set('epShips', DataService.endpoints.ships);
   set('epFlows', DataService.endpoints.flows);
-  set('epAisKey', DataService.aisKey);
   set('gmapsApiKey', getGmapsKey());
   set('aisStreamKey', AisStream.key);
   const st = document.getElementById('aisAdminStatus');
