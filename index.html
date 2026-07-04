@@ -392,15 +392,16 @@ input[type="range"] {
 
 /* TERMINAL DETAIL POPUP */
 .terminal-popup {
-  position: absolute;
+  position: fixed;
   bottom: 30px;
   left: 14px;
-  z-index: 500;
+  z-index: 900;
   background: var(--surface);
   border: 1px solid var(--accent);
   border-radius: 12px;
   padding: 16px;
   width: 300px;
+  max-width: calc(100vw - 28px);
   display: none;
   animation: slideUp 0.3s ease;
 }
@@ -1863,6 +1864,11 @@ function showPopup(t) {
 function closePopup() {
   document.getElementById('terminal-popup').style.display = 'none';
   selectedTerminal = null;
+  // Hide the globe beacon and resume gentle auto-spin.
+  if (globeState && globeState.getGroup) {
+    const g = globeState.getGroup();
+  }
+  if (typeof hideGlobeBeacon === 'function') hideGlobeBeacon();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2214,12 +2220,20 @@ function viewFull() { switchView('benchmark'); }
 function selectTerminalFromList(id) {
   const t = terminals.find(x => x.id === id);
   if (!t) return;
+  const onGlobe = document.getElementById('globe-panel')?.classList.contains('active');
   const onMap = document.getElementById('map-panel')?.classList.contains('active');
-  if (!onMap) {
+
+  if (onGlobe && typeof globeFlyTo === 'function' && globeBuilt) {
+    // Fly the globe to the terminal, drop a pulsing beacon, then show details.
+    const color = (TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port).color;
+    globeFlyTo(t.lat, t.lng, color);
+    showPopup(t);
+  } else if (onMap) {
+    showPopup(t);
+  } else {
+    // From any other view, go to the map and open the popup.
     switchView('map');
     setTimeout(() => showPopup(t), 200);
-  } else {
-    showPopup(t);
   }
 }
 
@@ -2930,6 +2944,9 @@ function closeDrawer() {
 // Hub = Mumbai; destinations = terminal locations. Tap a marker → details.
 // ═══════════════════════════════════════════════════════════════
 let globeBuilt = false, globeCleanup = null, globeLegendOpen = false;
+// Shared handle so outside code (sidebar clicks) can drive the globe:
+// fly to a location, drop a pulsing beacon, etc.
+const globeState = { placeBeacon: null, flyTarget: null, llToVec: null, getGroup: null };
 let globeTypeFilter = 'all';  // 'all' | 'port' | 'refinery' | 'inland'
 const GLOBE_HUB = { name: 'Mumbai', lat: 19.07, lon: 72.87 };
 
@@ -3056,11 +3073,48 @@ function initGlobe() {
     inland: dotTex(TERMINAL_TYPES.inland.color),
   };
   const cityMarkers=[];
+  const MARKER_SIZE = 0.30;  // smaller, uniform across all terminals
   dests.forEach((d) => {
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:DOT_BY_TYPE[d.type]||DOT_BY_TYPE.port, transparent:true, depthWrite:false }));
-    sp.position.copy(llToVec(d.lat,d.lon,PLANET_R+0.04)); sp.scale.set(0.48,0.48,1);
+    sp.position.copy(llToVec(d.lat,d.lon,PLANET_R+0.04)); sp.scale.set(MARKER_SIZE,MARKER_SIZE,1);
     sp.userData={ dest:d }; group.add(sp); cityMarkers.push(sp);
   });
+
+  // ── Pulsing beacon (concentric rings) shown when a terminal is selected ──
+  const beacon = new THREE.Group();
+  beacon.visible = false;
+  const beaconRings = [];
+  for (let i = 0; i < 3; i++) {
+    const ringGeo = new THREE.RingGeometry(0.18, 0.24, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false, fog: false });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.userData.phase = i / 3;
+    beaconRings.push(ring);
+    beacon.add(ring);
+  }
+  // center dot
+  const beaconDot = new THREE.Mesh(
+    new THREE.CircleGeometry(0.12, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, depthWrite: false, fog: false })
+  );
+  beacon.add(beaconDot);
+  group.add(beacon);
+
+  function placeBeacon(lat, lon, color) {
+    const pos = llToVec(lat, lon, PLANET_R + 0.06);
+    beacon.position.copy(pos);
+    // orient rings to lie flat against the sphere surface (face outward)
+    beacon.lookAt(pos.clone().multiplyScalar(2));
+    const c = new THREE.Color(color || 0xffffff);
+    beaconRings.forEach(r => r.material.color = c);
+    beaconDot.material.color = c;
+    beacon.visible = true;
+    beacon._t = 0;
+  }
+  globeState.placeBeacon = placeBeacon;
+  globeState.hideBeacon = () => { beacon.visible = false; };
+  globeState.llToVec = llToVec;
+  globeState.getGroup = () => group;
 
   const starGeo=new THREE.BufferGeometry(); const starN=1200, spos=new Float32Array(starN*3);
   for (let i=0;i<starN;i++){ const r=55+Math.random()*55,u=Math.random()*2-1,a=Math.random()*6.283,s=Math.sqrt(1-u*u); spos[i*3]=r*s*Math.cos(a); spos[i*3+1]=r*u; spos[i*3+2]=r*s*Math.sin(a); }
@@ -3130,7 +3184,36 @@ function initGlobe() {
   function tick(){
     raf=requestAnimationFrame(tick); const dt=Math.min(clock.getDelta(),0.05);
     stars.rotation.y+=dt*0.004;
-    if (!dragging){ velX*=0.94; velY*=0.94; group.rotation.y+=velX+curSpeed; group.rotation.x+=velY; group.rotation.x*=0.985; }
+
+    // Fly-to: ease the globe rotation toward a target orientation.
+    if (globeState.flyTarget) {
+      const ft = globeState.flyTarget;
+      const ease = 0.08;
+      group.rotation.y += (ft.y - group.rotation.y) * ease;
+      group.rotation.x += (ft.x - group.rotation.x) * ease;
+      if (Math.abs(ft.y - group.rotation.y) < 0.002 && Math.abs(ft.x - group.rotation.x) < 0.002) {
+        group.rotation.y = ft.y; group.rotation.x = ft.x;
+        globeState.flyTarget = null;
+        curSpeed = 0;  // pause auto-spin so the user can see the selected point
+      }
+      velX = velY = 0;
+    } else if (!dragging){
+      velX*=0.94; velY*=0.94; group.rotation.y+=velX+curSpeed; group.rotation.x+=velY; group.rotation.x*=0.985;
+    }
+
+    // Beacon pulse (expanding fading rings)
+    if (beacon.visible) {
+      beacon._t = (beacon._t || 0) + dt;
+      beaconRings.forEach((r, i) => {
+        let p = (beacon._t * 0.9 + r.userData.phase) % 1;
+        const s = 0.4 + p * 2.6;
+        r.scale.set(s, s, s);
+        r.material.opacity = 0.6 * (1 - p);
+      });
+      const dp = 0.9 + Math.sin(beacon._t * 5) * 0.12;
+      beaconDot.scale.set(dp, dp, dp);
+    }
+
     renderer.render(scene,camera);
   }
   tick();
@@ -3141,7 +3224,34 @@ function initGlobe() {
     scene.traverse(o=>{ if(o.geometry)o.geometry.dispose?.(); if(o.material){const m=o.material;(Array.isArray(m)?m:[m]).forEach(mm=>{mm.map?.dispose?.();mm.dispose?.();});} });
     renderer.dispose(); if (dom.parentNode===mount) mount.removeChild(dom);
     globeBuilt=false;
+    globeState.placeBeacon = null; globeState.flyTarget = null; globeState.llToVec = null; globeState.getGroup = null;
   };
+}
+
+function hideGlobeBeacon() {
+  if (globeState && globeState.hideBeacon) globeState.hideBeacon();
+}
+
+// Rotate the globe so a given lat/lon faces the camera, and drop a pulsing beacon.
+function globeFlyTo(lat, lon, color) {
+  if (!globeBuilt) return false;
+  // The globe group starts at rotation.y = -1.1; a point at (lat,lon) faces the
+  // camera (+Z) when group.rotation.y ≈ -(lon+180)*deg - offset and rotation.x ≈ lat.
+  const targetY = -((lon + 180) * Math.PI / 180) + Math.PI;   // bring lon to front
+  const targetX = (lat * Math.PI / 180) * 0.9;                // tilt toward lat
+  // Normalize targetY near the current rotation to avoid a long way around.
+  const g = globeState.getGroup && globeState.getGroup();
+  if (g) {
+    let cur = g.rotation.y;
+    let ty = targetY;
+    while (ty - cur > Math.PI) ty -= 2*Math.PI;
+    while (ty - cur < -Math.PI) ty += 2*Math.PI;
+    globeState.flyTarget = { y: ty, x: Math.max(-1.1, Math.min(1.1, targetX)) };
+  } else {
+    globeState.flyTarget = { y: targetY, x: Math.max(-1.1, Math.min(1.1, targetX)) };
+  }
+  if (globeState.placeBeacon) globeState.placeBeacon(lat, lon, color);
+  return true;
 }
 
 function refreshGlobe() {
