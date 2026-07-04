@@ -1,12 +1,12 @@
 [build]
   publish = "."
-  # The Firebase web apiKey is designed to be public (it identifies the project,
-  # it is not a credential). Firestore rules + Authorized Domains enforce security.
-  # Skip the scanner for the files that legitimately contain the public config.
   [build.environment]
-    SECRETS_SCAN_OMIT_PATHS = "index.html,seed-terminals.html"
-    # Also disable smart-detection of the Firebase public key pattern.
-    SECRETS_SCAN_OMIT_KEYS = "AIzaSyDvX0Iy9GVuk42t-MZDQ08CAFpmSCHwDh4"
+    # The Firebase web apiKey is public by design (it identifies the project and
+    # is meant to ship in client code). Real security comes from Firestore rules
+    # and Authorized Domains. Netlify's "smart" scanner flags it as a false
+    # positive, so we disable smart detection. We do NOT list the key value here
+    # (that would itself be flagged). Basic secret scanning stays on.
+    SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
 # Single-page app: always serve index.html
 [[redirects]]
