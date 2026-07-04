@@ -1619,12 +1619,15 @@ const TerminalStore = {
         // If an admin is signed in, push any NEW code terminals not yet in Firestore.
         if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
           const missing = this._codeSeed.filter(t => !existingIds.has(parseInt(t.id)));
+          console.log(`[TANK BAZAAR] Firestore has ${docs.length} terminals; code has ${this._codeSeed.length}; ${missing.length} missing.`);
           if (missing.length) {
-            console.log(`[TANK BAZAAR] Syncing ${missing.length} new terminals to Firestore…`);
-            await Promise.allSettled(missing.map(t => FS_REST.setMerge('terminals', String(t.id), t)));
+            console.log(`[TANK BAZAAR] Syncing ${missing.length} new terminals:`, missing.map(t=>t.name).join(', '));
+            const results = await Promise.allSettled(missing.map(t => FS_REST.setMerge('terminals', String(t.id), t)));
+            const failed = results.filter(r => r.status === 'rejected');
+            if (failed.length) console.error('[TANK BAZAAR] Some terminal writes failed:', failed[0].reason);
             missing.forEach(t => terminals.push(t));
             terminals.sort((a,b)=>(a.id||0)-(b.id||0));
-            if (typeof toast === 'function') toast(`Added ${missing.length} new terminals to the database.`);
+            if (typeof toast === 'function') toast(`Added ${missing.length - failed.length} new terminals to the database.`);
           }
         }
         return true;
@@ -2586,26 +2589,23 @@ const AisStream = {
   },
 
   // Build ~±2° bounding boxes around each terminal (focuses volume near our facilities).
-  // AISStream can reject very large BoundingBoxes arrays. Cluster terminals
-  // into a few merged regional boxes (much more reliable than 30+ tiny ones).
+  // AISStream can reject malformed/oversized boxes silently. Use the exact
+  // global box from AISStream's own docs as a reliable default, plus optional
+  // regional focus. Global box streams every ship the network receives.
   boundingBoxes() {
-    const pts = terminals.filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng));
-    if (!pts.length) return [[[-90,-180],[90,180]]];
-    // Simple grid clustering: bucket terminals into ~20° cells, one box per cell.
-    const cells = {};
-    pts.forEach(t => {
-      const key = Math.round(t.lat/20) + '_' + Math.round(t.lng/20);
-      (cells[key] = cells[key] || []).push(t);
-    });
-    const PAD = 3.0;
-    const boxes = Object.values(cells).map(group => {
-      const lats = group.map(t=>t.lat), lngs = group.map(t=>t.lng);
-      const minLat = Math.max(-90, Math.min(...lats)-PAD), maxLat = Math.min(90, Math.max(...lats)+PAD);
-      const minLng = Math.max(-180, Math.min(...lngs)-PAD), maxLng = Math.min(180, Math.max(...lngs)+PAD);
-      // AISStream box format: [[lat1,lon1],[lat2,lon2]] (two opposite corners)
-      return [[minLat, minLng], [maxLat, maxLng]];
-    });
-    return boxes.slice(0, 20);
+    if (this._useGlobal !== false) {
+      // Known-good box straight from AISStream documentation.
+      return [[[-90, -180], [90, 180]]];
+    }
+    // Focused mode: small well-formed boxes around each terminal (±1.5°).
+    const D = 1.5;
+    return terminals
+      .filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng))
+      .map(t => [
+        [t.lat - D, t.lng - D],   // corner 1 (lat, lon)
+        [t.lat + D, t.lng + D],   // corner 2 (lat, lon)
+      ])
+      .slice(0, 50);
   },
 
   connect(key) {
@@ -2659,7 +2659,10 @@ const AisStream = {
         return;
       }
       this.msgCount = (this.msgCount || 0) + 1;
-      if (this.msgCount === 1) console.log('%c[AIS] First message received ✓', 'color:#6fd98f;font-weight:bold', msg.MessageType);
+      if (this.msgCount === 1) {
+        console.log('%c[AIS] First message received ✓', 'color:#6fd98f;font-weight:bold', msg.MessageType);
+        console.log('[AIS] Raw first message:', JSON.stringify(msg).slice(0, 500));
+      }
       this.ingest(msg);
       this.scheduleRender();
     };
