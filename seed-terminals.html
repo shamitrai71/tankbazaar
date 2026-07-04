@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TANK BAZAAR — Terminal Seeder</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  body { font-family: ui-monospace, Menlo, monospace; background:#0a1512; color:#e8f0ec; max-width:720px; margin:0 auto; padding:40px 20px; line-height:1.6; }
+  h1 { color:#d9a441; font-size:22px; }
+  .card { background:#12201b; border:1px solid #24362c; border-radius:12px; padding:20px; margin:16px 0; }
+  button { background:#d9a441; color:#06110d; border:0; border-radius:8px; padding:12px 20px; font-family:inherit; font-weight:700; font-size:14px; cursor:pointer; }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
+  button.g { background:#2fa37c; }
+  #log { background:#06110d; border:1px solid #24362c; border-radius:8px; padding:14px; font-size:12px; white-space:pre-wrap; max-height:340px; overflow:auto; margin-top:16px; }
+  .ok { color:#6fd98f; } .err { color:#e05c4f; } .muted { color:#7d9388; }
+</style>
+</head>
+<body>
+<h1>⬢ TANK BAZAAR — Terminal Seeder</h1>
+<p class="muted">One-time tool to write the 19 new port terminals (IDs 31–49) directly into Firestore. Works independently of the main site. Sign in with the admin account (esraigroup@gmail.com), then click Seed.</p>
+
+<div class="card">
+  <div id="authState" class="muted">Not signed in.</div>
+  <div style="margin-top:12px;">
+    <button class="g" id="signInBtn" onclick="signIn()">Sign in with Google</button>
+    <button id="seedBtn" onclick="seed()" disabled>Seed 19 Terminals</button>
+  </div>
+</div>
+
+<div id="log">Ready.</div>
+
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDvX0Iy9GVuk42t-MZDQ08CAFpmSCHwDh4",
+  authDomain: "tankbazaar.firebaseapp.com",
+  projectId: "tankbazaar",
+  storageBucket: "tankbazaar.firebasestorage.app",
+  messagingSenderId: "272470012557",
+  appId: "1:272470012557:web:bc0bf5698ae4a47df368c4"
+};
+const FIRESTORE_DB_ID = "tankbazaar";
+
+const NEW_TERMINALS = [
+{ id:31, name:"APSEZ Mundra", country:"India", city:"Mundra, Gujarat", lat:22.74, lng:69.70, cap:9600, tanks:168, berths:14, occ:"87%", products:["Crude","Diesel","LPG","Chemicals"], op:"Adani Ports", size:"xl", type:"port" },
+{ id:32, name:"GCPTCL Dahej", country:"India", city:"Dahej, Gujarat", lat:21.70, lng:72.58, cap:4200, tanks:84, berths:7, occ:"81%", products:["Chemicals","LPG","LNG"], op:"GCPTCL", size:"lg", type:"port" },
+{ id:33, name:"AVTL Kandla", country:"India", city:"Kandla, Gujarat", lat:23.02, lng:70.22, cap:5600, tanks:104, berths:9, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Aegis Vopak", size:"lg", type:"port" },
+{ id:34, name:"AVTL Kochi", country:"India", city:"Kochi, Kerala", lat:9.96, lng:76.26, cap:3800, tanks:76, berths:6, occ:"78%", products:["LPG","Chemicals","Diesel"], op:"Aegis Vopak", size:"lg", type:"port" },
+{ id:35, name:"AVTL Haldia", country:"India", city:"Haldia, West Bengal", lat:22.03, lng:88.09, cap:4100, tanks:82, berths:7, occ:"80%", products:["Crude","Diesel","LPG"], op:"Aegis Vopak", size:"lg", type:"port" },
+{ id:36, name:"AVTL Mangaluru", country:"India", city:"Mangaluru, Karnataka", lat:12.92, lng:74.80, cap:3600, tanks:70, berths:6, occ:"76%", products:["Crude","LPG","Gasoline"], op:"Aegis Vopak", size:"lg", type:"port" },
+{ id:37, name:"IMC Nhava Sheva", country:"India", city:"Nhava Sheva, Maharashtra", lat:18.95, lng:72.94, cap:4400, tanks:88, berths:8, occ:"83%", products:["Chemicals","Diesel","Gasoline"], op:"IMC", size:"lg", type:"port" },
+{ id:38, name:"VIPL Vizag", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.69, lng:83.30, cap:5200, tanks:96, berths:8, occ:"85%", products:["Crude","LPG","Diesel"], op:"VIPL", size:"lg", type:"port" },
+{ id:39, name:"ETTPL Ennore", country:"India", city:"Ennore, Tamil Nadu", lat:13.24, lng:80.33, cap:3900, tanks:78, berths:6, occ:"79%", products:["Crude","LPG","Chemicals"], op:"ETTPL", size:"lg", type:"port" },
+{ id:40, name:"Qatar Mesaieed Terminal", country:"Qatar", city:"Mesaieed", lat:24.98, lng:51.55, cap:9800, tanks:172, berths:13, occ:"90%", products:["Crude","LNG","LPG"], op:"QatarEnergy", size:"xl", type:"port" },
+{ id:41, name:"Ras Tanura Terminal", country:"Saudi Arabia", city:"Ras Tanura", lat:26.64, lng:50.15, cap:13500, tanks:224, berths:18, occ:"94%", products:["Crude","Gasoline","Diesel"], op:"Saudi Aramco", size:"xl", type:"port" },
+{ id:42, name:"Jebel Ali Terminal", country:"UAE", city:"Jebel Ali, Dubai", lat:24.98, lng:55.06, cap:8600, tanks:152, berths:12, occ:"89%", products:["Crude","Gasoline","Chemicals"], op:"ENOC", size:"xl", type:"port" },
+{ id:43, name:"Sohar Port Terminal", country:"Oman", city:"Sohar", lat:24.51, lng:56.63, cap:6200, tanks:114, berths:10, occ:"84%", products:["Crude","Diesel","LPG"], op:"Oman Tank Terminal", size:"xl", type:"port" },
+{ id:44, name:"Basra Oil Terminal", country:"Iraq", city:"Basra", lat:30.05, lng:47.80, cap:11200, tanks:190, berths:15, occ:"91%", products:["Crude"], op:"Basra Oil Co", size:"xl", type:"port" },
+{ id:45, name:"Bandar Abbas Terminal", country:"Iran", city:"Bandar Abbas", lat:27.16, lng:56.21, cap:7400, tanks:132, berths:11, occ:"82%", products:["Crude","Gasoline","LPG"], op:"NIOC", size:"xl", type:"port" },
+{ id:46, name:"Shuaiba Terminal", country:"Kuwait", city:"Shuaiba", lat:29.05, lng:48.15, cap:7800, tanks:140, berths:12, occ:"88%", products:["Crude","Diesel","LPG"], op:"KNPC", size:"xl", type:"port" },
+{ id:47, name:"Sitra Terminal", country:"Bahrain", city:"Sitra", lat:26.15, lng:50.66, cap:4300, tanks:86, berths:7, occ:"83%", products:["Crude","Gasoline","Diesel"], op:"Bapco", size:"lg", type:"port" },
+{ id:48, name:"Sidi Kerir Terminal", country:"Egypt", city:"Sidi Kerir, Alexandria", lat:31.10, lng:29.65, cap:6800, tanks:122, berths:10, occ:"85%", products:["Crude","Diesel"], op:"SUMED", size:"xl", type:"port" },
+{ id:49, name:"Kawasaki Terminal", country:"Japan", city:"Kawasaki", lat:35.51, lng:139.75, cap:5400, tanks:102, berths:9, occ:"86%", products:["Crude","Gasoline","LPG"], op:"ENEOS", size:"lg", type:"port" }
+];
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+let currentUser = null;
+
+const logEl = document.getElementById('log');
+function log(msg, cls){ logEl.innerHTML += '\n' + (cls?`<span class="${cls}">${msg}</span>`:msg); logEl.scrollTop = logEl.scrollHeight; }
+
+auth.onAuthStateChanged(u => {
+  currentUser = u;
+  const st = document.getElementById('authState');
+  if (u) {
+    st.innerHTML = `Signed in as <b style="color:#6fd98f;">${u.email}</b>`;
+    document.getElementById('seedBtn').disabled = false;
+    document.getElementById('signInBtn').textContent = 'Signed in ✓';
+  } else {
+    st.textContent = 'Not signed in.';
+    document.getElementById('seedBtn').disabled = true;
+  }
+});
+
+function signIn(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e => log('Sign-in failed: ' + e.message, 'err'));
+}
+
+// Firestore REST value encoder
+function toValue(v){
+  if (v === null || v === undefined) return { nullValue:null };
+  if (typeof v === 'boolean') return { booleanValue:v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue:String(v) } : { doubleValue:v };
+  if (typeof v === 'string') return { stringValue:v };
+  if (Array.isArray(v)) return { arrayValue:{ values:v.map(toValue) } };
+  if (typeof v === 'object') return { mapValue:{ fields:toFields(v) } };
+  return { stringValue:String(v) };
+}
+function toFields(obj){ const f={}; for (const [k,val] of Object.entries(obj)) f[k]=toValue(val); return f; }
+
+function normalize(t){
+  return Object.assign({
+    metrics: { throughput:null, trt:null, tankTurns:null, utilization:null, lastAudit:null },
+    ownerId: null, claimStatus: 'unclaimed',
+  }, t);
+}
+
+async function seed(){
+  if (!currentUser){ log('Sign in first.', 'err'); return; }
+  document.getElementById('seedBtn').disabled = true;
+  log('\n--- Seeding ' + NEW_TERMINALS.length + ' terminals ---', 'muted');
+  const token = await currentUser.getIdToken();
+  const base = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/${FIRESTORE_DB_ID}/documents`;
+  let ok=0, fail=0;
+  for (const t of NEW_TERMINALS){
+    const doc = normalize(t);
+    const mask = Object.keys(doc).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+    const url = `${base}/terminals/${t.id}?${mask}`;
+    try {
+      const res = await fetch(url, {
+        method:'PATCH',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+        body: JSON.stringify({ fields: toFields(doc) }),
+      });
+      if (res.ok){ ok++; log(`✓ ${t.id} ${t.name}`, 'ok'); }
+      else { fail++; const txt = await res.text(); log(`✗ ${t.id} ${t.name} — ${res.status}: ${txt.slice(0,120)}`, 'err'); }
+    } catch(e){ fail++; log(`✗ ${t.id} ${t.name} — ${e.message}`, 'err'); }
+  }
+  log(`\nDone. ${ok} written, ${fail} failed.`, fail? 'err':'ok');
+  if (ok) log('Now reload tankbazaar.com — it will load all terminals from Firestore.', 'muted');
+  document.getElementById('seedBtn').disabled = false;
+}
+</script>
+</body>
+</html>
