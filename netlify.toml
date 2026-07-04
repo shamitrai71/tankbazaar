@@ -4,7 +4,9 @@
   # it is not a credential). Firestore rules + Authorized Domains enforce security.
   # Skip the scanner for the files that legitimately contain the public config.
   [build.environment]
-    SECRETS_SCAN_OMIT_PATHS = "index.html"
+    SECRETS_SCAN_OMIT_PATHS = "index.html,seed-terminals.html"
+    # Also disable smart-detection of the Firebase public key pattern.
+    SECRETS_SCAN_OMIT_KEYS = "AIzaSyDvX0Iy9GVuk42t-MZDQ08CAFpmSCHwDh4"
 
 # Single-page app: always serve index.html
 [[redirects]]
