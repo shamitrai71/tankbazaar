@@ -1601,15 +1601,32 @@ function normalizeTerminal(t) {
 // The in-file array above is the SEED used to populate an empty database
 // on first run, and a fallback if Firestore is unreachable.
 const TerminalStore = {
+  // Seed terminals defined in code (the in-file array before load() overwrites it).
+  _codeSeed: null,
+
   async load() {
     if (!firebaseReady) return false;
+    // Snapshot the code-defined terminals before we replace the array from Firestore.
+    this._codeSeed = terminals.map(normalizeTerminal);
     try {
       const docs = await FS_REST.listPublic('terminals');
       if (docs && docs.length) {
+        const existingIds = new Set(docs.map(d => parseInt(d.id)));
         terminals.length = 0;
         docs.map(normalizeTerminal)
             .sort((a,b)=>(a.id||0)-(b.id||0))
             .forEach(t => terminals.push(t));
+        // If an admin is signed in, push any NEW code terminals not yet in Firestore.
+        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
+          const missing = this._codeSeed.filter(t => !existingIds.has(parseInt(t.id)));
+          if (missing.length) {
+            console.log(`[TANK BAZAAR] Syncing ${missing.length} new terminals to Firestore…`);
+            await Promise.allSettled(missing.map(t => FS_REST.setMerge('terminals', String(t.id), t)));
+            missing.forEach(t => terminals.push(t));
+            terminals.sort((a,b)=>(a.id||0)-(b.id||0));
+            if (typeof toast === 'function') toast(`Added ${missing.length} new terminals to the database.`);
+          }
+        }
         return true;
       }
       // Empty DB → seed only if an admin is signed in (writes require admin auth).
@@ -1623,7 +1640,7 @@ const TerminalStore = {
     }
   },
   async seed() {
-    const seeds = terminals.map(normalizeTerminal);
+    const seeds = (this._codeSeed || terminals.map(normalizeTerminal));
     terminals.length = 0; seeds.forEach(t => terminals.push(t));
     await Promise.allSettled(seeds.map(t => FS_REST.setMerge('terminals', String(t.id), t)));
   },
@@ -4619,6 +4636,16 @@ async function onUserSignedIn(u) {
     currentUser.name = currentUser.profile.name || currentUser.name;
     applyLoggedInUI();
     trackPageView();
+
+    // If an admin just signed in, sync any new code-defined terminals to Firestore
+    // (load() at startup may have run before auth completed).
+    if (currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+      TerminalStore.load().then(() => {
+        renderTerminalList(typeof filteredTerminals==='function'?filteredTerminals():terminals);
+        if (typeof refreshGlobe === 'function') refreshGlobe();
+        if (typeof refreshMapMarkers === 'function') refreshMapMarkers(terminals);
+      });
+    }
   } catch (e) {
     console.error('[TANK BAZAAR] ❌ Profile write failed (REST):', e.message);
     toast('Signed in, but could not save profile: ' + e.message, 'error');
