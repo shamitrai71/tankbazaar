@@ -1456,26 +1456,13 @@ const DataService = {
 
   // Pull live vessel positions from configured AIS endpoint
   async loadShips() {
-    if (!this.endpoints.ships) return false;
-    try {
-      const data = await this.fetchJSON(this.endpoints.ships);
-      if (Array.isArray(data) && data.length) {
-        ships.length = 0;
-        data.forEach(d => ships.push({
-          name: d.name || d.shipname || 'Unknown',
-          imo: d.imo || '—',
-          type: d.type || d.ship_type || '—',
-          flag: d.flag || '🏳',
-          dwt: d.dwt ? (+d.dwt).toLocaleString() : '—',
-          status: d.status || (d.speed > 0.5 ? 'moving' : 'berthed'),
-          last: d.last_port || d.destination || '—',
-          eta: d.eta || '—',
-          cargo: d.cargo || '—',
-        }));
-        this.isLive.ships = true;
-        return true;
-      }
-    } catch (e) { console.warn('AIS endpoint failed:', e.message); }
+    // Ship data now comes exclusively from the AISStream.io WebSocket adapter
+    // (see AisStream). The old REST ships-endpoint path is disabled to avoid
+    // fetching stale/invalid URLs. Clear any legacy stored endpoint.
+    if (this.endpoints.ships) {
+      this.endpoints.ships = '';
+      try { localStorage.removeItem('tb_ep_ships'); } catch {}
+    }
     return false;
   },
 
@@ -1564,6 +1551,28 @@ const terminals = [
   { id:29, name:"Reliance Jamnagar", country:"India", city:"Jamnagar, Gujarat", lat:22.34, lng:69.85, cap:14500, tanks:240, berths:18, occ:"93%", products:["Crude","Diesel","Gasoline","LPG"], op:"Reliance", size:"xl", type:"refinery" },
   // ── Additional port terminal ──
   { id:30, name:"Vopak Sebarok", country:"Singapore", city:"Pulau Sebarok", lat:1.20, lng:103.80, cap:5400, tanks:100, berths:9, occ:"90%", products:["Crude","Chemicals"], op:"Vopak", size:"lg", type:"port" },
+  // ── India — port-based terminals ──
+  { id:31, name:"APSEZ Mundra", country:"India", city:"Mundra, Gujarat", lat:22.74, lng:69.70, cap:9600, tanks:168, berths:14, occ:"87%", products:["Crude","Diesel","LPG","Chemicals"], op:"Adani Ports", size:"xl", type:"port" },
+  { id:32, name:"GCPTCL Dahej", country:"India", city:"Dahej, Gujarat", lat:21.70, lng:72.58, cap:4200, tanks:84, berths:7, occ:"81%", products:["Chemicals","LPG","LNG"], op:"GCPTCL", size:"lg", type:"port" },
+  { id:33, name:"AVTL Kandla", country:"India", city:"Kandla, Gujarat", lat:23.02, lng:70.22, cap:5600, tanks:104, berths:9, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Aegis Vopak", size:"lg", type:"port" },
+  { id:34, name:"AVTL Kochi", country:"India", city:"Kochi, Kerala", lat:9.96, lng:76.26, cap:3800, tanks:76, berths:6, occ:"78%", products:["LPG","Chemicals","Diesel"], op:"Aegis Vopak", size:"lg", type:"port" },
+  { id:35, name:"AVTL Haldia", country:"India", city:"Haldia, West Bengal", lat:22.03, lng:88.09, cap:4100, tanks:82, berths:7, occ:"80%", products:["Crude","Diesel","LPG"], op:"Aegis Vopak", size:"lg", type:"port" },
+  { id:36, name:"AVTL Mangaluru", country:"India", city:"Mangaluru, Karnataka", lat:12.92, lng:74.80, cap:3600, tanks:70, berths:6, occ:"76%", products:["Crude","LPG","Gasoline"], op:"Aegis Vopak", size:"lg", type:"port" },
+  { id:37, name:"IMC Nhava Sheva", country:"India", city:"Nhava Sheva, Maharashtra", lat:18.95, lng:72.94, cap:4400, tanks:88, berths:8, occ:"83%", products:["Chemicals","Diesel","Gasoline"], op:"IMC", size:"lg", type:"port" },
+  { id:38, name:"VIPL Vizag", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.69, lng:83.30, cap:5200, tanks:96, berths:8, occ:"85%", products:["Crude","LPG","Diesel"], op:"VIPL", size:"lg", type:"port" },
+  { id:39, name:"ETTPL Ennore", country:"India", city:"Ennore, Tamil Nadu", lat:13.24, lng:80.33, cap:3900, tanks:78, berths:6, occ:"79%", products:["Crude","LPG","Chemicals"], op:"ETTPL", size:"lg", type:"port" },
+  // ── Middle East — port-based terminals ──
+  { id:40, name:"Qatar Mesaieed Terminal", country:"Qatar", city:"Mesaieed", lat:24.98, lng:51.55, cap:9800, tanks:172, berths:13, occ:"90%", products:["Crude","LNG","LPG"], op:"QatarEnergy", size:"xl", type:"port" },
+  { id:41, name:"Ras Tanura Terminal", country:"Saudi Arabia", city:"Ras Tanura", lat:26.64, lng:50.15, cap:13500, tanks:224, berths:18, occ:"94%", products:["Crude","Gasoline","Diesel"], op:"Saudi Aramco", size:"xl", type:"port" },
+  { id:42, name:"Jebel Ali Terminal", country:"UAE", city:"Jebel Ali, Dubai", lat:24.98, lng:55.06, cap:8600, tanks:152, berths:12, occ:"89%", products:["Crude","Gasoline","Chemicals"], op:"ENOC", size:"xl", type:"port" },
+  { id:43, name:"Sohar Port Terminal", country:"Oman", city:"Sohar", lat:24.51, lng:56.63, cap:6200, tanks:114, berths:10, occ:"84%", products:["Crude","Diesel","LPG"], op:"Oman Tank Terminal", size:"xl", type:"port" },
+  { id:44, name:"Basra Oil Terminal", country:"Iraq", city:"Basra", lat:30.05, lng:47.80, cap:11200, tanks:190, berths:15, occ:"91%", products:["Crude"], op:"Basra Oil Co", size:"xl", type:"port" },
+  { id:45, name:"Bandar Abbas Terminal", country:"Iran", city:"Bandar Abbas", lat:27.16, lng:56.21, cap:7400, tanks:132, berths:11, occ:"82%", products:["Crude","Gasoline","LPG"], op:"NIOC", size:"xl", type:"port" },
+  { id:46, name:"Shuaiba Terminal", country:"Kuwait", city:"Shuaiba", lat:29.05, lng:48.15, cap:7800, tanks:140, berths:12, occ:"88%", products:["Crude","Diesel","LPG"], op:"KNPC", size:"xl", type:"port" },
+  { id:47, name:"Sitra Terminal", country:"Bahrain", city:"Sitra", lat:26.15, lng:50.66, cap:4300, tanks:86, berths:7, occ:"83%", products:["Crude","Gasoline","Diesel"], op:"Bapco", size:"lg", type:"port" },
+  { id:48, name:"Sidi Kerir Terminal", country:"Egypt", city:"Sidi Kerir, Alexandria", lat:31.10, lng:29.65, cap:6800, tanks:122, berths:10, occ:"85%", products:["Crude","Diesel"], op:"SUMED", size:"xl", type:"port" },
+  // ── Japan — port-based terminal ──
+  { id:49, name:"Kawasaki Terminal", country:"Japan", city:"Kawasaki", lat:35.51, lng:139.75, cap:5400, tanks:102, berths:9, occ:"86%", products:["Crude","Gasoline","LPG"], op:"ENEOS", size:"lg", type:"port" },
 ];
 
 // Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
@@ -2611,6 +2620,15 @@ const AisStream = {
       this.setStatus('● Connected — waiting for vessels in ' + boxes.length + ' areas…');
       if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
       console.log('%c[AIS] Subscribed with ' + boxes.length + ' bounding boxes', 'color:#2fa37c');
+      console.log('[AIS] Bounding boxes:', JSON.stringify(boxes));
+      // Heartbeat: report message count every 5s so we can see if data flows.
+      clearInterval(this._hb);
+      this._hb = setInterval(() => {
+        console.log('[AIS] heartbeat — messages so far:', this.msgCount || 0, '| vessels:', Object.keys(this.vessels).length);
+        if (!this.msgCount) {
+          this.setStatus('● Connected but no AIS messages yet — this area/key may have no live coverage right now.', false);
+        }
+      }, 5000);
     };
 
     this.ws.onmessage = (ev) => {
@@ -2658,6 +2676,7 @@ const AisStream = {
   disconnect(silent) {
     this.manualClose = true;
     clearTimeout(this.reconnectTimer);
+    clearInterval(this._hb);
     if (this.ws) { try { this.ws.close(); } catch {} this.ws = null; }
     this.connected = false;
     this.updateBtn();
