@@ -3016,9 +3016,10 @@ function initGlobe() {
     return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta));
   };
   function dotTex(ring) {
-    const s=48, c=document.createElement('canvas'); c.width=c.height=s; const x=c.getContext('2d');
-    x.beginPath(); x.arc(s/2,s/2,s*0.30,0,7); x.fillStyle='#eef4ef'; x.fill();
-    x.lineWidth=s*0.10; x.strokeStyle=ring; x.beginPath(); x.arc(s/2,s/2,s*0.30,0,7); x.stroke();
+    const s=64, c=document.createElement('canvas'); c.width=c.height=s; const x=c.getContext('2d');
+    // Solid colored dot with a thin bright rim — reads clearly at small sizes.
+    x.beginPath(); x.arc(s/2,s/2,s*0.32,0,7); x.fillStyle=ring; x.fill();
+    x.lineWidth=s*0.07; x.strokeStyle='rgba(238,244,239,0.9)'; x.beginPath(); x.arc(s/2,s/2,s*0.32,0,7); x.stroke();
     const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t;
   }
 
@@ -3073,7 +3074,7 @@ function initGlobe() {
     inland: dotTex(TERMINAL_TYPES.inland.color),
   };
   const cityMarkers=[];
-  const MARKER_SIZE = 0.30;  // smaller, uniform across all terminals
+  const MARKER_SIZE = 0.20;  // small, uniform across all terminals
   dests.forEach((d) => {
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:DOT_BY_TYPE[d.type]||DOT_BY_TYPE.port, transparent:true, depthWrite:false }));
     sp.position.copy(llToVec(d.lat,d.lon,PLANET_R+0.04)); sp.scale.set(MARKER_SIZE,MARKER_SIZE,1);
@@ -3157,7 +3158,11 @@ function initGlobe() {
       setPointer(e); const cm=cityHit();
       if (cm) {
         const d=cm.userData.dest;
-        if (d.terminal && typeof showPopup==='function') { switchView('map'); setTimeout(()=>showPopup(d.terminal),150); }
+        if (d.terminal && typeof showPopup==='function') {
+          const col = (TERMINAL_TYPES[terminalType(d.terminal)] || TERMINAL_TYPES.port).color;
+          if (typeof globeFlyTo === 'function') globeFlyTo(d.terminal.lat, d.terminal.lng, col);
+          showPopup(d.terminal);
+        }
         else { showTip(d.name, e.clientX, e.clientY); clearTimeout(tipT); tipT=setTimeout(hideTip,1600); }
       }
     }
