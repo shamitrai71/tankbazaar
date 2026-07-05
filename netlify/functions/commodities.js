@@ -104,8 +104,9 @@ exports.handler = async function (event) {
     const now = new Date();
     let cache = await readCache();
     const ageHours = cache && cache.fetchedAt ? (now - new Date(cache.fetchedAt)) / 3600000 : Infinity;
+    const forceRefresh = event.queryStringParameters && event.queryStringParameters.force === '1';
 
-    if (!cache || ageHours >= CACHE_TTL_HOURS) {
+    if (!cache || ageHours >= CACHE_TTL_HOURS || forceRefresh) {
       const series = {};
       await Promise.all(Object.entries(SERIES).map(async ([key, def]) => {
         try {

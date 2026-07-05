@@ -3707,11 +3707,18 @@ async function loadMarketPrices() {
   }
 }
 
-async function fetchCommodities() {
-  const res = await fetch('/.netlify/functions/commodities');
+async function fetchCommodities(force) {
+  const url = '/.netlify/functions/commodities' + (force ? '?force=1' : '');
+  const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   if (data.error) throw new Error(data.error);
+  Object.entries(data.series || {}).forEach(([key, s]) => {
+    const obs = s.observations || [];
+    const dates = obs.map(o => o.date);
+    const uniqueDates = new Set(dates).size;
+    console.log(`[Prices] ${key}: ${obs.length} points, ${uniqueDates} unique dates, range ${dates[0]}..${dates[dates.length-1]}${uniqueDates !== obs.length ? ' ⚠ DUPLICATE DATES' : ''}`);
+  });
   return data; // { series: { wti:{label,unit,latest,latestDate,changeAbs,changePct,observations}, ... }, meta }
 }
 
@@ -3728,22 +3735,28 @@ async function fetchFxMetals() {
   if (!res.ok) throw new Error('Frankfurter HTTP ' + res.status);
   const raw = await res.json();
 
-  // Defensive normalization: v2's exact time-series shape isn't fully
-  // documented publicly. Handle both plausible shapes so a format we didn't
-  // anticipate doesn't silently produce empty data:
-  //   Shape A (v1-style):   { rates: { "2026-01-01": { INR: .., XAU: .. }, ... } }
-  //   Shape B (row-style):  { rates: [ { date: "2026-01-01", INR: .., XAU: .. }, ... ] }
-  //   Shape C (top-level array): [ { date: "...", INR: .., ... }, ... ]
+  // CONFIRMED shape (verified live, 2026-07-05): Frankfurter v2's time series
+  // is "long format" — ONE ROW PER (date, quote-currency) PAIR, not one row
+  // per date containing every currency as a column:
+  //   { rates: [ { date:"2026-07-05", base:"USD", quote:"INR", rate:83.5, providers:[...] }, ... ] }
+  // So each date appears MANY times (once per requested symbol) and must be
+  // accumulated into normalized[date][quote] = rate, not overwritten.
   let normalized = {};
   const src = Array.isArray(raw) ? raw : raw.rates;
   if (Array.isArray(src)) {
     src.forEach(row => {
       if (!row || !row.date) return;
-      const { date, providers, ...rest } = row;
-      normalized[date] = rest;
+      if (!normalized[row.date]) normalized[row.date] = {};
+      if (row.quote && typeof row.rate === 'number') {
+        normalized[row.date][row.quote] = row.rate;
+      } else {
+        // Fallback in case a future format change reverts to wide rows.
+        const { date, providers, base, quote, rate, ...rest } = row;
+        Object.assign(normalized[row.date], rest);
+      }
     });
   } else if (src && typeof src === 'object') {
-    normalized = src; // already date-keyed
+    normalized = src; // already date-keyed wide format (older/alternate shape)
   }
 
   if (!Object.keys(normalized).length) {
@@ -6411,9 +6424,9 @@ async function testVesselApi() {
 
 async function testCommoditiesApi() {
   const st = document.getElementById('commoditiesApiStatus');
-  if (st) st.textContent = 'Testing…';
+  if (st) st.textContent = 'Testing (forcing a fresh pull from FRED)…';
   try {
-    const data = await fetchCommodities();
+    const data = await fetchCommodities(true); // force=1: bypass cache to rule out stale data
     pricesData.commodities = data;
     const keys = Object.keys(data.series || {});
     if (!keys.length) {
@@ -6421,9 +6434,9 @@ async function testCommoditiesApi() {
       toast('Commodities test returned no data.', 'error');
       return;
     }
-    const summary = keys.map(k => `${data.series[k].label}: ${data.series[k].latest}`).join(' · ');
-    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${summary} (cache ${data.meta?.cacheAgeHours ?? '?'}h old)`; }
-    toast('FRED commodities working.');
+    const summary = keys.map(k => `${data.series[k].label}: ${data.series[k].latest} (${data.series[k].observations?.length||0} pts)`).join(' · ');
+    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ Fresh pull: ${summary}`; }
+    toast('FRED commodities working — cache force-refreshed.');
     if (document.getElementById('prices-panel')?.classList.contains('active')) renderMarketPrices();
   } catch (e) {
     if (st) { st.style.color = 'var(--danger)'; st.textContent = `✗ ${e.message} — check FRED_API_KEY is set in Netlify env vars, then redeploy.`; }
