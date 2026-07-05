@@ -33,6 +33,26 @@ exports.handler = async function (event) {
     'Cache-Control': 'no-store',
   };
 
+  // Self-service diagnostic: visiting the function URL directly in a browser
+  // (a plain GET, no body) reports whether the function is deployed and
+  // whether VESSELAPI_KEY is configured — WITHOUT exposing the key value.
+  // This lets you confirm the setup with zero code/console needed:
+  //   https://tankbazaar.com/.netlify/functions/vessels
+  if (event.httpMethod === 'GET') {
+    const apiKey = process.env.VESSELAPI_KEY;
+    return {
+      statusCode: 200, headers,
+      body: JSON.stringify({
+        status: 'Function is deployed and reachable ✓',
+        keyConfigured: !!apiKey,
+        keyPreview: apiKey ? (apiKey.slice(0, 4) + '…' + apiKey.slice(-4)) : null,
+        note: apiKey
+          ? 'VESSELAPI_KEY is set. POST { terminals: [...] } to get live vessel data.'
+          : 'VESSELAPI_KEY is NOT set. Add it in Netlify → Site configuration → Environment variables, then redeploy.',
+      }),
+    };
+  }
+
   try {
     const apiKey = process.env.VESSELAPI_KEY;
     if (!apiKey) {
