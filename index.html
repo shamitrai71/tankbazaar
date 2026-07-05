@@ -3769,6 +3769,35 @@ async function fetchFxMetals() {
   const missing = allSymbols.split(',').filter(s => !sampleSymbols.includes(s));
   if (missing.length) console.warn('[Prices] Missing from latest date:', missing.join(', '));
 
+  // XPT/XPD are consistently absent from the time-series query above (likely
+  // sparse/no historical coverage for those two from Frankfurter's current
+  // provider mix). Try a lightweight "latest only" call as a fallback so we
+  // can at least show a current price, even without a trend history for them.
+  const stillMissingMetals = missing.filter(s => METAL_SYMBOLS.includes(s));
+  if (stillMissingMetals.length) {
+    try {
+      const latestUrl = `https://api.frankfurter.dev/v2/rates?base=USD&quotes=${stillMissingMetals.join(',')}`;
+      const latestRes = await fetch(latestUrl);
+      if (latestRes.ok) {
+        const latestRaw = await latestRes.json();
+        const latestRows = Array.isArray(latestRaw) ? latestRaw : (latestRaw.rates || []);
+        const todayKey = sampleDate; // attach to the same "latest" bucket used elsewhere
+        if (!normalized[todayKey]) normalized[todayKey] = {};
+        (Array.isArray(latestRows) ? latestRows : []).forEach(row => {
+          if (row && row.quote && typeof row.rate === 'number') normalized[todayKey][row.quote] = row.rate;
+        });
+        // Also handle a flat {rates:{XPT:.., XPD:..}} "latest" shape if returned instead.
+        if (latestRaw && latestRaw.rates && !Array.isArray(latestRaw.rates)) {
+          Object.entries(latestRaw.rates).forEach(([sym, val]) => {
+            if (typeof val === 'number') normalized[todayKey][sym] = val;
+          });
+        }
+        const gotNow = stillMissingMetals.filter(s => normalized[todayKey][s] != null);
+        console.log(`[Prices] Metals fallback (latest-only): got ${gotNow.join(',') || 'none'} of ${stillMissingMetals.join(',')}`);
+      }
+    } catch (e) { console.warn('[Prices] Metals fallback fetch failed:', e.message); }
+  }
+
   return { base: 'USD', rates: normalized };
 }
 
@@ -3806,14 +3835,18 @@ function computeFxPeriodChange(symbol, periodDays) {
   if (!baseVal || latestVal == null) return null;
   return (latestVal - baseVal) / baseVal * 100;
 }
-function computeSeriesPeriodChange(obs, periodDays) {
+function computeSeriesPeriodChange(obs, periodDays, debugLabel) {
   if (!obs || !obs.length) return null;
   const latest = obs[obs.length-1];
   const targetStr = (() => { const d=new Date(); d.setDate(d.getDate()-periodDays); return d.toISOString().slice(0,10); })();
   let base = obs[0];
   for (const o of obs) { if (o.date <= targetStr) base = o; else break; }
   if (!base || !base.value) return null;
-  return (latest.value - base.value) / base.value * 100;
+  const chg = (latest.value - base.value) / base.value * 100;
+  if (debugLabel) {
+    console.log(`[Prices] ${debugLabel} period=${periodDays}d today=${new Date().toISOString().slice(0,10)} target=${targetStr} → base=${base.date}@${base.value} latest=${latest.date}@${latest.value} chg=${chg.toFixed(2)}%`);
+  }
+  return chg;
 }
 function chgClassOf(chg) { return chg==null?'flat':(chg>0?'up':(chg<0?'down':'flat')); }
 function chgArrowOf(chg) { return chg==null?'':(chg>0?'▲':(chg<0?'▼':'—')); }
@@ -3834,7 +3867,7 @@ function renderCommodityCards() {
     return;
   }
   grid.innerHTML = Object.entries(series).map(([key, s]) => {
-    const chg = computeSeriesPeriodChange(s.observations, pricesData.period);
+    const chg = computeSeriesPeriodChange(s.observations, pricesData.period, key);
     const sel = pricesData.selected?.type==='commodity' && pricesData.selected?.key===key;
     return `
       <div class="price-card ${sel?'selected':''}" onclick="selectPriceItem('commodity','${key}',${JSON.stringify(s.label)})">
@@ -3901,6 +3934,7 @@ function renderTrendChart(sel) {
   if (sel.type === 'commodity') {
     const obs = (pricesData.commodities?.series?.[sel.key]?.observations) || [];
     obs.filter(o => o.date >= cutoffStr).forEach(o => { labels.push(o.date); values.push(o.value); });
+    console.log(`[Prices] chart(${sel.key}) period=${pricesData.period}d cutoff=${cutoffStr} → ${labels.length} pts, range ${labels[0]}..${labels[labels.length-1]}`);
   } else {
     fxDatesSorted().filter(d => d >= cutoffStr).forEach(d => {
       labels.push(d);
