@@ -1387,7 +1387,8 @@ input[type="range"] {
               <th>Flag</th>
               <th>DWT</th>
               <th>Status</th>
-              <th>Last Terminal</th>
+              <th>Nav Status</th>
+              <th>Destination</th>
               <th>ETA</th>
               <th>Cargo</th>
             </tr>
@@ -2381,12 +2382,14 @@ function renderShipMarkersOnMap() {
   withPos.forEach(s => {
     const m = L.marker([s.lat, s.lon], { icon: shipDivIcon(s) });
     const speedTxt = (typeof s.sog === 'number') ? `${s.sog.toFixed(1)} kn` : '—';
+    const dest = s.destination || s.last || '—';
     m.bindPopup(`
-      <div style="font-family:var(--font-mono);min-width:160px;">
+      <div style="font-family:var(--font-mono);min-width:170px;">
         <b>${s.name}</b><br>
         <span style="color:#7d9388;">${s.imo}</span><br>
-        Status: <span style="color:${s.status==='moving'?'#4fd1ff':'#8a9a94'};">${s.status}</span><br>
-        Speed: ${speedTxt} · ${s.last||'—'}
+        Status: <span style="color:${s.status==='moving'?'#4fd1ff':'#8a9a94'};">${s.status}</span> · ${s.navStatus||'—'}<br>
+        Speed: ${speedTxt}<br>
+        Destination: ${dest}${s.eta && s.eta!=='—' ? ' · ETA '+fmtEta(s.eta) : ''}
       </div>
     `);
     shipLayerGroup.addLayer(m);
@@ -3003,8 +3006,8 @@ function toggleAisStream() {
 }
 
 function exportShipsCsv() {
-  const rows = [['Vessel','IMO','Type','Flag','DWT','Status','Destination','ETA','Cargo']]
-    .concat(ships.map(s => [s.name, s.imo, s.type, s.flag, s.dwt, s.status, s.last, s.eta, s.cargo]));
+  const rows = [['Vessel','IMO','Type','Flag','DWT','Status','Nav Status','Destination','ETA','Cargo']]
+    .concat(ships.map(s => [s.name, s.imo, s.type, s.flag, s.dwt, s.status, (s.navStatus||'—'), (s.destination||s.last||'—'), fmtEta(s.eta), s.cargo]));
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
@@ -3024,11 +3027,12 @@ function renderShips() {
       <td>${s.flag}</td>
       <td>${s.dwt}</td>
       <td><span class="status-badge status-${s.status}">${s.status}</span></td>
-      <td style="color:var(--text-muted)">${s.last}</td>
-      <td>${s.eta}</td>
+      <td style="color:var(--text-muted)">${s.navStatus || '—'}</td>
+      <td style="color:var(--text-muted)">${s.destination || s.last || '—'}</td>
+      <td>${fmtEta(s.eta)}</td>
       <td style="color:var(--accent)">${s.cargo}</td>
     </tr>
-  `).join('') || '<tr><td colspan="9" style="color:var(--text-dim);padding:20px;text-align:center;">No vessels yet. Click "Refresh Vessels" above, or check Admin → Data & API.</td></tr>';
+  `).join('') || '<tr><td colspan="10" style="color:var(--text-dim);padding:20px;text-align:center;">No vessels yet. Click "Refresh Vessels" above, or check Admin → Data & API.</td></tr>';
 
   // KPIs computed from the actual vessel set (not hardcoded).
   const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
@@ -3419,8 +3423,9 @@ function initGlobe() {
         if (sm) {
           const s=sm.userData.ship;
           const spd=(typeof s.sog==='number')?`${s.sog.toFixed(1)}kn`:'';
-          showTip(`🚢 ${s.name} · ${s.status}${spd?' · '+spd:''}`, e.clientX, e.clientY);
-          clearTimeout(tipT); tipT=setTimeout(hideTip,2000);
+          const dest = s.destination || s.last;
+          showTip(`🚢 ${s.name} · ${s.status}${spd?' · '+spd:''}${dest&&dest!=='—'?' → '+dest:''}`, e.clientX, e.clientY);
+          clearTimeout(tipT); tipT=setTimeout(hideTip,2200);
         }
       }
     }
@@ -4765,7 +4770,7 @@ loadScript(
               <button class="btn-admin primary" onclick="testVesselApi()">Test VesselAPI Proxy</button>
               <span id="vesselApiStatus" style="font-size:10px;color:var(--text-dim);"></span>
             </div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">⚙ Quota-safe by design: the free plan allows ~150 calls/month, so the function keeps a shared cache (Firestore) and only actually calls VesselAPI once a day, 4 terminals at a time, rotating through your top 20 — about 120 calls/month, well under the cap, no matter how many visitors load the site. Any single view is always a free cache read. Type, flag, DWT, and cargo aren't in this endpoint's response, so those show "—" — honest blanks, not guesses.</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">⚙ Quota-safe by design: the free plan allows ~150 calls/month. The function keeps a shared cache (Firestore) and only actually calls VesselAPI once a day: 3 terminals for positions (rotating through your top 20) + 1 new vessel for destination/ETA — about 120 calls/month total, well under the cap, no matter how many visitors load the site. Destination/ETA coverage starts small and grows daily since each vessel is looked up once and cached for a week (destinations rarely change mid-voyage). Type, flag, DWT, and cargo aren't in VesselAPI's response at all, so those always show "—" — honest blanks, not guesses.</div>
           </div>
           <div class="admin-card">
             <div class="admin-card-title">🛰 Live AIS — AISStream.io (WebSocket, experimental)</div>
@@ -5211,6 +5216,18 @@ function fmtDate(ts) {
     if (!d) return null;
     return d.toLocaleDateString(undefined, { month:'short', year:'numeric' });
   } catch(e) { return null; }
+}
+
+// Crew-reported ETA from AIS is a raw timestamp string; format for readability,
+// and pass through "—" untouched. Never invent a value if none is present.
+function fmtEta(raw) {
+  if (!raw || raw === '—') return '—';
+  try {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw; // not parseable — show as reported rather than hide it
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' ' +
+           d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+  } catch (e) { return raw; }
 }
 
 async function saveProfile() {
@@ -6054,7 +6071,8 @@ async function testVesselApi() {
     const meta = DataService.shipsMeta;
     const ageTxt = meta?.cacheAgeHours != null ? `${Math.round(meta.cacheAgeHours)}h old` : 'just fetched';
     const budgetTxt = meta ? `${meta.callsThisMonth}/${meta.monthlyBudget} calls used this month` : '';
-    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${ships.length} vessels (cache ${ageTxt}${meta?.didRefresh ? ' · refreshed just now' : ''}) · ${budgetTxt}`; }
+    const destTxt = meta ? ` · destination data on ${meta.detailsCoveragePct||0}% of tracked vessels (${meta.detailsCachedCount||0} cached, grows daily)` : '';
+    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${ships.length} vessels (cache ${ageTxt}${meta?.didRefresh ? ' · refreshed just now' : ''}) · ${budgetTxt}${destTxt}`; }
     toast(`VesselAPI working — ${ships.length} live vessels loaded.`);
     if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
     if (typeof renderShipMarkersOnMap === 'function') renderShipMarkersOnMap();

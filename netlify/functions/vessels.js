@@ -9,9 +9,14 @@
 // rotating batches so coverage broadens over days rather than being spent
 // all at once on a handful of ports.
 //
-// Budget math: BATCH_SIZE terminals x 1 refresh/day x 30 days must stay
-// under the monthly cap. With BATCH_SIZE=4 and REFRESH_INTERVAL_HOURS=24:
-// 4 x 30 = 120 calls/month, leaving a ~30-call buffer under a 150 cap.
+// Budget math: (BATCH_SIZE position terminals + DETAIL_BATCH_SIZE destination
+// lookups) x 1 refresh/day x 30 days must stay under the monthly cap. With
+// BATCH_SIZE=3, DETAIL_BATCH_SIZE=1, REFRESH_INTERVAL_HOURS=24:
+// (3+1) x 30 = 120 calls/month, leaving a ~30-call buffer under a 150 cap.
+// Destination/ETA data (GET /v1/vessel/{mmsi}/eta) is looked up once per
+// vessel and cached for DETAILS_TTL_DAYS, since a ship's stated destination
+// rarely changes mid-voyage — so coverage grows over time without spiking
+// usage on any single day.
 //
 // SETUP REQUIRED:
 // 1. Netlify → Site configuration → Environment variables → add
@@ -31,9 +36,11 @@ const NAV_STATUS = {
 };
 
 const HALF_SPAN = 0.9;                 // degrees; |dLat|+|dLon| stays under VesselAPI's 4° cap
-const BATCH_SIZE = 4;                  // terminals refreshed per actual API cycle
+const BATCH_SIZE = 3;                  // terminals refreshed per position-cycle (was 4 — trimmed to make room for destination lookups)
+const DETAIL_BATCH_SIZE = 1;           // NEW vessel destination/ETA lookups per cycle
+const DETAILS_TTL_DAYS = 7;            // a vessel's stated destination rarely changes mid-voyage; re-check only this often
 const REFRESH_INTERVAL_HOURS = 24;     // minimum time between real API-call cycles
-const MONTHLY_BUDGET = 120;            // hard stop well under the 150 free-tier cap
+const MONTHLY_BUDGET = 120;            // (3+1 terminals/details) x 30 days = 120, well under the 150 free-tier cap
 
 const FIREBASE_PROJECT_ID = 'tankbazaar';
 const FIRESTORE_DB_ID = 'tankbazaar';
@@ -127,24 +134,25 @@ exports.handler = async function (event) {
     const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
     let cache = await readCache();
-    if (!cache) cache = { rotationIndex: 0, callsThisMonth: 0, monthKey, lastGlobalFetch: null, byTerminal: {} };
+    if (!cache) cache = { rotationIndex: 0, callsThisMonth: 0, monthKey, lastGlobalFetch: null, byTerminal: {}, vesselDetails: {} };
     if (cache.monthKey !== monthKey) { cache.callsThisMonth = 0; cache.monthKey = monthKey; }
     if (!cache.byTerminal) cache.byTerminal = {};
+    if (!cache.vesselDetails) cache.vesselDetails = {};
 
     const hoursSinceLastFetch = cache.lastGlobalFetch
       ? (now - new Date(cache.lastGlobalFetch)) / 3600000
       : Infinity;
     const dueForRefresh = hoursSinceLastFetch >= REFRESH_INTERVAL_HOURS;
-    const underBudget = (cache.callsThisMonth + BATCH_SIZE) <= MONTHLY_BUDGET;
 
-    let didRefresh = false;
-    if (dueForRefresh && underBudget) {
-      // Rotate through the terminal pool, BATCH_SIZE at a time.
+    let didRefresh = false, didDetailsRefresh = false;
+
+    // 1) Position rotation batch (unchanged approach, smaller batch to leave
+    // room for destination/ETA lookups within the same monthly budget).
+    if (dueForRefresh && (cache.callsThisMonth + BATCH_SIZE) <= MONTHLY_BUDGET) {
       const batch = [];
       for (let i = 0; i < BATCH_SIZE; i++) {
         batch.push(terminals[(cache.rotationIndex + i) % terminals.length]);
       }
-      const errors = [];
       await Promise.all(batch.map(async (t) => {
         const params = new URLSearchParams({
           'filter.latBottom': (t.lat - HALF_SPAN).toFixed(4),
@@ -155,19 +163,15 @@ exports.handler = async function (event) {
         const url = `https://api.vesselapi.com/v1/location/vessels/bounding-box?${params.toString()}`;
         try {
           const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
-          if (!res.ok) { errors.push(`terminal ${t.id}: HTTP ${res.status}`); return; }
+          if (!res.ok) return;
           const data = await res.json();
           const list = data.vessels || data.vesselPositions || [];
           cache.byTerminal[t.id] = { ships: list, fetchedAt: now.toISOString() };
-        } catch (e) {
-          errors.push(`terminal ${t.id}: ${e.message}`);
-        }
+        } catch (e) { /* skip this terminal; try again next cycle */ }
       }));
       cache.rotationIndex = (cache.rotationIndex + BATCH_SIZE) % terminals.length;
       cache.callsThisMonth += BATCH_SIZE;
-      cache.lastGlobalFetch = now.toISOString();
       didRefresh = true;
-      await writeCache(cache);
     }
 
     // Assemble the merged, deduped ship list from whatever's cached per terminal
@@ -180,8 +184,51 @@ exports.handler = async function (event) {
       });
     });
 
+    // 2) Destination/ETA lookups — a SEPARATE, small slice of the same shared
+    // monthly budget (GET /v1/vessel/{mmsi}/eta, one call per vessel). A
+    // vessel's stated destination rarely changes mid-voyage, so once fetched
+    // it's cached for DETAILS_TTL_DAYS rather than re-fetched daily. Each
+    // cycle looks up only vessels we've never checked (or whose cached entry
+    // is stale), so coverage broadens gradually without spiking usage.
+    if (dueForRefresh && (cache.callsThisMonth + DETAIL_BATCH_SIZE) <= MONTHLY_BUDGET) {
+      const knownMmsi = Array.from(vesselMap.values()).map(v => v.mmsi).filter(Boolean);
+      const needsLookup = knownMmsi.filter(mmsi => {
+        const d = cache.vesselDetails[mmsi];
+        if (!d) return true;
+        const ageDays = (now - new Date(d.fetchedAt)) / 86400000;
+        return ageDays >= DETAILS_TTL_DAYS;
+      });
+      const pick = needsLookup.slice(0, DETAIL_BATCH_SIZE);
+      if (pick.length) {
+        await Promise.all(pick.map(async (mmsi) => {
+          try {
+            const url = `https://api.vesselapi.com/v1/vessel/${mmsi}/eta?filter.idType=mmsi`;
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+            if (!res.ok) return; // e.g. 404 = no recent ETA report; leave uncached, retried next cycle
+            const data = await res.json();
+            const e = data.vesselEta || data;
+            cache.vesselDetails[mmsi] = {
+              destination: e.destination || null,
+              destinationPort: e.destination_port || null,
+              eta: e.eta || null,
+              draught: typeof e.draught === 'number' ? e.draught : null,
+              fetchedAt: now.toISOString(),
+            };
+          } catch (e) { /* skip; retried next cycle */ }
+        }));
+        cache.callsThisMonth += pick.length;
+        didDetailsRefresh = true;
+      }
+    }
+
+    if (didRefresh || didDetailsRefresh) {
+      cache.lastGlobalFetch = now.toISOString();
+      await writeCache(cache);
+    }
+
     const ships = Array.from(vesselMap.values()).map(v => {
       const sog = typeof v.sog === 'number' ? v.sog : 0;
+      const details = (v.mmsi && cache.vesselDetails[v.mmsi]) || null;
       return {
         name: v.vessel_name || v.vesselName || ('MMSI ' + (v.mmsi || 'unknown')),
         imo: (v.imo && v.imo !== 0) ? v.imo : (v.mmsi ? ('MMSI ' + v.mmsi) : '—'),
@@ -190,24 +237,32 @@ exports.handler = async function (event) {
         lon: typeof v.longitude === 'number' ? v.longitude : null,
         cog: typeof v.cog === 'number' ? v.cog : null,
         sog: sog,
-        type: '—', flag: '—', dwt: '—', cargo: '—', eta: '—',
+        type: '—', flag: '—', dwt: '—', cargo: '—',
+        destination: (details && details.destination) || '—',
+        destinationPort: (details && details.destinationPort) || null,
+        eta: (details && details.eta) || '—',
+        draught: (details && details.draught != null) ? details.draught : '—',
         status: sog > 0.5 ? 'moving' : 'berthed',
-        last: NAV_STATUS[v.nav_status] != null ? NAV_STATUS[v.nav_status] : '—',
+        navStatus: NAV_STATUS[v.nav_status] != null ? NAV_STATUS[v.nav_status] : '—',
       };
     }).filter(s => s.lat != null && s.lon != null).slice(0, 300);
+
+    const detailsCoverage = ships.length ? Math.round(ships.filter(s => s.destination !== '—').length / ships.length * 100) : 0;
 
     return {
       statusCode: 200, headers,
       body: JSON.stringify({
         ships,
         meta: {
-          didRefresh,
+          didRefresh, didDetailsRefresh,
           fetchedAt: cache.lastGlobalFetch,
           cacheAgeHours: cache.lastGlobalFetch ? Math.round((now - new Date(cache.lastGlobalFetch)) / 3600000 * 10) / 10 : null,
           callsThisMonth: cache.callsThisMonth,
           monthlyBudget: MONTHLY_BUDGET,
           terminalsInRotation: terminals.length,
           batchSize: BATCH_SIZE,
+          detailsCachedCount: Object.keys(cache.vesselDetails).length,
+          detailsCoveragePct: detailsCoverage,
         },
       }),
     };
