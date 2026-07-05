@@ -3716,21 +3716,66 @@ async function fetchCommodities() {
 }
 
 async function fetchFxMetals() {
+  // v1 only has the original ~31 ECB-native currencies — AED, RUB, SAR, KWD,
+  // and ALL precious metals (XAU/XAG/XPT/XPD) are v2-only additions (v2 pulls
+  // from 84 sources, not just ECB). We need v2 for full coverage.
   const allSymbols = [...FX_SYMBOLS, ...METAL_SYMBOLS].join(',');
   const end = new Date();
   const start = new Date(); start.setDate(start.getDate() - 400);
   const fmt = d => d.toISOString().slice(0,10);
-  const url = `https://api.frankfurter.dev/v1/${fmt(start)}..${fmt(end)}?base=USD&symbols=${allSymbols}`;
+  const url = `https://api.frankfurter.dev/v2/rates?base=USD&quotes=${allSymbols}&from=${fmt(start)}&to=${fmt(end)}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Frankfurter HTTP ' + res.status);
-  return res.json(); // { base:'USD', rates: { 'YYYY-MM-DD': {INR:.., XAU:.., ...}, ... } }
+  const raw = await res.json();
+
+  // Defensive normalization: v2's exact time-series shape isn't fully
+  // documented publicly. Handle both plausible shapes so a format we didn't
+  // anticipate doesn't silently produce empty data:
+  //   Shape A (v1-style):   { rates: { "2026-01-01": { INR: .., XAU: .. }, ... } }
+  //   Shape B (row-style):  { rates: [ { date: "2026-01-01", INR: .., XAU: .. }, ... ] }
+  //   Shape C (top-level array): [ { date: "...", INR: .., ... }, ... ]
+  let normalized = {};
+  const src = Array.isArray(raw) ? raw : raw.rates;
+  if (Array.isArray(src)) {
+    src.forEach(row => {
+      if (!row || !row.date) return;
+      const { date, providers, ...rest } = row;
+      normalized[date] = rest;
+    });
+  } else if (src && typeof src === 'object') {
+    normalized = src; // already date-keyed
+  }
+
+  if (!Object.keys(normalized).length) {
+    throw new Error('Frankfurter v2 returned no recognizable time-series data');
+  }
+  const dateKeys = Object.keys(normalized);
+  const sampleDate = dateKeys[dateKeys.length - 1];
+  const sampleSymbols = sampleDate ? Object.keys(normalized[sampleDate]) : [];
+  console.log(`[Prices] Frankfurter v2: ${dateKeys.length} dates, latest=${sampleDate}, symbols=${sampleSymbols.join(',')}`);
+  const missing = allSymbols.split(',').filter(s => !sampleSymbols.includes(s));
+  if (missing.length) console.warn('[Prices] Missing from latest date:', missing.join(', '));
+
+  return { base: 'USD', rates: normalized };
 }
 
 // Metals come back from Frankfurter as "troy oz per USD" (a tiny fraction)
 // since we query with base=USD; invert to show the conventional "USD per oz".
+// Defensively unwrap a rate value in case v2 nests it (e.g. {rate: X} or
+// {value: X}) rather than returning a plain number directly.
+function unwrapRate(v) {
+  if (v == null) return null;
+  if (typeof v === 'number') return v;
+  if (typeof v === 'object') {
+    if (typeof v.rate === 'number') return v.rate;
+    if (typeof v.value === 'number') return v.value;
+  }
+  return null;
+}
 function fxDisplayValue(symbol, rawRate) {
-  if (rawRate == null) return null;
-  return METAL_SYMBOLS.includes(symbol) ? (1 / rawRate) : rawRate;
+  const num = unwrapRate(rawRate);
+  if (num == null) return null;
+  return METAL_SYMBOLS.includes(symbol) ? (1 / num) : num;
 }
 function fxDatesSorted() {
   if (!pricesData.fx || !pricesData.fx.rates) return [];
@@ -3740,11 +3785,11 @@ function computeFxPeriodChange(symbol, periodDays) {
   const dates = fxDatesSorted();
   if (!dates.length) return null;
   const latestDate = dates[dates.length-1];
-  const latestVal = fxDisplayValue(symbol, pricesData.fx.rates[latestDate][symbol]);
+  const latestVal = fxDisplayValue(symbol, pricesData.fx.rates[latestDate]?.[symbol]);
   const targetStr = (() => { const d=new Date(); d.setDate(d.getDate()-periodDays); return d.toISOString().slice(0,10); })();
   let baseDate = dates[0];
   for (const d of dates) { if (d <= targetStr) baseDate = d; else break; }
-  const baseVal = fxDisplayValue(symbol, pricesData.fx.rates[baseDate][symbol]);
+  const baseVal = fxDisplayValue(symbol, pricesData.fx.rates[baseDate]?.[symbol]);
   if (!baseVal || latestVal == null) return null;
   return (latestVal - baseVal) / baseVal * 100;
 }
@@ -3794,7 +3839,7 @@ function renderMetalCards() {
   if (!dates.length) { grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:16px;">Loading…</div>'; return; }
   const latestDate = dates[dates.length-1];
   grid.innerHTML = METAL_SYMBOLS.map(sym => {
-    const val = fxDisplayValue(sym, pricesData.fx.rates[latestDate][sym]);
+    const val = fxDisplayValue(sym, pricesData.fx.rates[latestDate]?.[sym]);
     const chg = computeFxPeriodChange(sym, pricesData.period);
     const sel = pricesData.selected?.type==='metal' && pricesData.selected?.key===sym;
     return `
@@ -3813,7 +3858,7 @@ function renderFxCards() {
   if (!dates.length) { grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:16px;">Loading…</div>'; return; }
   const latestDate = dates[dates.length-1];
   grid.innerHTML = FX_SYMBOLS.map(sym => {
-    const val = fxDisplayValue(sym, pricesData.fx.rates[latestDate][sym]);
+    const val = fxDisplayValue(sym, pricesData.fx.rates[latestDate]?.[sym]);
     const chg = computeFxPeriodChange(sym, pricesData.period);
     const sel = pricesData.selected?.type==='fx' && pricesData.selected?.key===sym;
     return `
@@ -3846,7 +3891,7 @@ function renderTrendChart(sel) {
   } else {
     fxDatesSorted().filter(d => d >= cutoffStr).forEach(d => {
       labels.push(d);
-      values.push(fxDisplayValue(sel.key, pricesData.fx.rates[d][sel.key]));
+      values.push(fxDisplayValue(sel.key, pricesData.fx.rates[d]?.[sel.key]));
     });
   }
 
