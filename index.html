@@ -374,6 +374,8 @@ input[type="range"] {
   transition: all 0.2s;
 }
 .map-btn:hover { background: var(--surface2); border-color: var(--accent); }
+.map-btn.active { background: rgba(79,209,255,0.15); border-color: #4fd1ff; color: #4fd1ff; }
+.ship-div-icon { background: none !important; border: none !important; filter: drop-shadow(0 0 3px rgba(79,209,255,0.6)); }
 
 .map-legend {
   position: absolute;
@@ -907,6 +909,17 @@ input[type="range"] {
 .globe-seg-btn i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .globe-seg-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
 .globe-seg-btn.active { background: var(--accent); color: #06110d; }
+.globe-ship-toggle-row { pointer-events: auto; margin-top: 8px; display: flex; justify-content: center; }
+.globe-ship-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(16,24,20,0.72); border: 1px solid var(--border);
+  border-radius: 9px; padding: 6px 12px; cursor: pointer;
+  color: var(--text-muted); font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  backdrop-filter: blur(6px); transition: all 0.18s;
+}
+.globe-ship-chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.globe-ship-chip:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.globe-ship-chip.active { background: rgba(79,209,255,0.15); border-color: #4fd1ff; color: #4fd1ff; }
 .globe-seg-btn.active i { box-shadow: 0 0 0 1.5px rgba(6,17,13,0.3); }
 .globe-legend {
   position: absolute; z-index: 18; left: 14px; bottom: 14px;
@@ -1138,6 +1151,11 @@ input[type="range"] {
           <button class="globe-seg-btn" data-type="refinery" onclick="setGlobeType('refinery')"><i style="background:#d9a441;"></i>Refineries</button>
           <button class="globe-seg-btn" data-type="inland" onclick="setGlobeType('inland')"><i style="background:#5b8ac0;"></i>Inland</button>
         </div>
+        <div class="globe-ship-toggle-row">
+          <button class="globe-ship-chip" id="globeShipToggle" onclick="toggleGlobeShips()">
+            <i style="background:#4fd1ff;"></i>🚢 Live Ships <span id="globeShipCount"></span>
+          </button>
+        </div>
       </div>
       <div class="globe-legend" id="globeLegend" style="display:none;">
         <button class="globe-legend-btn" onclick="toggleGlobeLegend()">
@@ -1161,6 +1179,7 @@ input[type="range"] {
         <button class="map-btn" title="Zoom Out" onclick="mapZoomOut()">−</button>
         <button class="map-btn" title="Fit All" onclick="fitAll()">⊙</button>
         <button class="map-btn" title="Toggle Heat" onclick="toggleHeat()">🌡</button>
+        <button class="map-btn" id="shipToggleBtn" title="Toggle Live Ships" onclick="toggleShipLayerOnMap()" style="font-size:15px;">🚢</button>
       </div>
       <div class="map-legend">
         <h4>Facility Type</h4>
@@ -1168,6 +1187,7 @@ input[type="range"] {
         <div class="legend-item"><div class="legend-dot" style="background:#d9a441;width:11px;height:11px;"></div>Refinery Tank Farm</div>
         <div class="legend-item"><div class="legend-dot" style="background:#5b8ac0;width:11px;height:11px;"></div>Inland Terminal</div>
         <div class="legend-item" style="opacity:0.7;margin-top:4px;font-size:9px;">Dot size = capacity</div>
+        <div class="legend-item" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;"><div class="legend-dot" style="background:#4fd1ff;width:9px;height:9px;border-radius:2px;"></div>Live Ship <span id="shipLegendCount" style="color:var(--text-dim);margin-left:4px;"></span></div>
       </div>
       <div class="terminal-popup" id="terminal-popup">
         <button class="popup-close" onclick="closePopup()">×</button>
@@ -1464,33 +1484,35 @@ const DataService = {
   // Pull live vessel positions from configured AIS endpoint
   async loadShips() {
     // Primary ship data source: VesselAPI.com via our own Netlify Function
-    // proxy (/.netlify/functions/vessels). The proxy holds the API key
-    // server-side and queries around our largest terminals. AISStream.io
-    // (WebSocket) remains available as a secondary manual option on the
-    // Ship Tracking page, but has a confirmed open upstream bug (connects,
-    // subscribes, delivers zero messages — aisstream/aisstream#15) so it's
-    // no longer the default.
+    // proxy (/.netlify/functions/vessels). The function keeps a shared
+    // Firestore cache and only actually calls VesselAPI in small rotating
+    // batches roughly once a day — this call is always cheap (a Firestore
+    // read) no matter how often it's made. AISStream.io (WebSocket) remains
+    // available as a secondary manual option on the Ship Tracking page, but
+    // has a confirmed open upstream bug (aisstream/aisstream#15).
     try {
-      const topTerminals = [...terminals]
+      // Send a broader rotation POOL (not all queried every time — the
+      // function itself picks a small rotating batch from this list).
+      const pool = [...terminals]
         .sort((a, b) => (b.cap || 0) - (a.cap || 0))
-        .slice(0, 15)
+        .slice(0, 20)
         .map(t => ({ id: t.id, lat: t.lat, lng: t.lng, cap: t.cap }));
-      if (!topTerminals.length) return false;
+      if (!pool.length) return false;
 
       const res = await fetch('/.netlify/functions/vessels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ terminals: topTerminals }),
+        body: JSON.stringify({ terminals: pool }),
       });
       if (!res.ok) { console.warn('[Vessels] proxy HTTP', res.status); return false; }
       const data = await res.json();
       if (data.error) { console.warn('[Vessels] proxy error:', data.error); return false; }
-      if (Array.isArray(data.ships) && data.ships.length) {
+      if (Array.isArray(data.ships)) {
         ships.length = 0;
         data.ships.forEach(s => ships.push(s));
-        this.isLive.ships = true;
+        this.isLive.ships = ships.length > 0;
         this.shipsMeta = data.meta || null;
-        return true;
+        return ships.length > 0;
       }
       return false;
     } catch (e) {
@@ -1525,6 +1547,8 @@ const DataService = {
       if (typeof refreshGlobe === 'function') refreshGlobe();
     }
     if (this.isLive.ships && document.getElementById('ship-tbody').innerHTML) renderShips();
+    if (typeof renderShipMarkersOnMap === 'function') renderShipMarkersOnMap();
+    if (typeof refreshGlobeShips === 'function') refreshGlobeShips();
     updateDataSourceStatus();
     return results;
   },
@@ -2250,6 +2274,61 @@ async function deleteListing(id) {
 
 function fitAll() { if (usingGoogle && gMap) { gMap.setCenter({lat:20,lng:10}); gMap.setZoom(2); } else if (map) map.setView([20, 10], 2); }
 function toggleHeat() { /* future: add heatmap layer */ }
+
+// ── LIVE SHIPS ON THE MAP ──────────────────────────────────────────────────
+let shipLayerGroup = null, shipLayerVisible = false;
+
+function shipDivIcon(ship) {
+  const color = ship.status === 'moving' ? '#4fd1ff' : '#8a9a94';
+  const rot = (typeof ship.cog === 'number') ? ship.cog : 0;
+  // Small triangle pointing along course-over-ground; grey + static if berthed/anchored.
+  const html = `<div style="width:14px;height:14px;transform:rotate(${rot}deg);">
+      <svg viewBox="0 0 24 24" width="14" height="14">
+        <polygon points="12,2 20,20 12,15 4,20" fill="${color}" stroke="#0a1512" stroke-width="1"/>
+      </svg>
+    </div>`;
+  return L.divIcon({ html, className: 'ship-div-icon', iconSize: [14,14], iconAnchor: [7,7] });
+}
+
+function renderShipMarkersOnMap() {
+  if (!map || usingGoogle) return; // ship layer implemented for the Leaflet engine
+  if (!shipLayerGroup) shipLayerGroup = L.layerGroup();
+  shipLayerGroup.clearLayers();
+  const withPos = ships.filter(s => typeof s.lat === 'number' && typeof s.lon === 'number');
+  withPos.forEach(s => {
+    const m = L.marker([s.lat, s.lon], { icon: shipDivIcon(s) });
+    const speedTxt = (typeof s.sog === 'number') ? `${s.sog.toFixed(1)} kn` : '—';
+    m.bindPopup(`
+      <div style="font-family:var(--font-mono);min-width:160px;">
+        <b>${s.name}</b><br>
+        <span style="color:#7d9388;">${s.imo}</span><br>
+        Status: <span style="color:${s.status==='moving'?'#4fd1ff':'#8a9a94'};">${s.status}</span><br>
+        Speed: ${speedTxt} · ${s.last||'—'}
+      </div>
+    `);
+    shipLayerGroup.addLayer(m);
+  });
+  const cnt = document.getElementById('shipLegendCount');
+  if (cnt) cnt.textContent = withPos.length ? `(${withPos.length})` : '';
+  if (shipLayerVisible) shipLayerGroup.addTo(map);
+}
+
+function toggleShipLayerOnMap() {
+  if (usingGoogle) { toast('Live ships overlay is available on the default map engine.', 'error'); return; }
+  if (!map) return;
+  shipLayerVisible = !shipLayerVisible;
+  const btn = document.getElementById('shipToggleBtn');
+  if (btn) btn.classList.toggle('active', shipLayerVisible);
+  if (!shipLayerGroup) renderShipMarkersOnMap();
+  if (shipLayerVisible) {
+    shipLayerGroup.addTo(map);
+    if (!ships.some(s => typeof s.lat === 'number')) {
+      toast('No live ship positions yet — try "Refresh Vessels" on the Ship Tracking page.', 'error');
+    }
+  } else {
+    map.removeLayer(shipLayerGroup);
+  }
+}
 function viewFull() { switchView('benchmark'); }
 
 // ─── SIDEBAR LIST ────────────────────────────────────────────────────────────
@@ -2885,7 +2964,15 @@ function renderShips() {
     if (srcCard) srcCard.style.color = 'var(--accent3)';
   } else if (vesselApiLive) {
     set('shipSourceKpi', 'Live (VesselAPI)');
-    if (srcSub) srcSub.textContent = 'VesselAPI.com · terrestrial AIS';
+    const meta = DataService.shipsMeta;
+    if (srcSub) {
+      if (meta && meta.cacheAgeHours != null) {
+        const ageTxt = meta.cacheAgeHours < 1 ? 'just now' : `~${Math.round(meta.cacheAgeHours)}h ago`;
+        srcSub.textContent = `VesselAPI · updated ${ageTxt} (rotates daily to protect free quota)`;
+      } else {
+        srcSub.textContent = 'VesselAPI.com · terrestrial AIS';
+      }
+    }
     if (srcCard) srcCard.style.color = 'var(--accent3)';
   } else {
     set('shipSourceKpi', 'Demo');
@@ -2901,6 +2988,8 @@ async function refreshVesselsNow() {
   const ok = await DataService.loadShips();
   if (btn) { btn.disabled = false; btn.textContent = '⟳ Refresh Vessels'; }
   renderShips();
+  if (typeof renderShipMarkersOnMap === 'function') renderShipMarkersOnMap();
+  if (typeof refreshGlobeShips === 'function') refreshGlobeShips();
   if (ok) toast(`Loaded ${ships.length} live vessels (VesselAPI).`);
   else toast('No live vessel data yet — check Admin → Data & API for setup.', 'error');
 }
@@ -3007,9 +3096,12 @@ function closeDrawer() {
 let globeBuilt = false, globeCleanup = null, globeLegendOpen = false;
 // Shared handle so outside code (sidebar clicks) can drive the globe:
 // fly to a location, drop a pulsing beacon, etc.
-const globeState = { placeBeacon: null, flyTarget: null, llToVec: null, getGroup: null };
+const globeState = { placeBeacon: null, flyTarget: null, llToVec: null, getGroup: null, planetR: null };
 let globeTypeFilter = 'all';  // 'all' | 'port' | 'refinery' | 'inland'
 const GLOBE_HUB = { name: 'Mumbai', lat: 19.07, lon: 72.87 };
+
+// Live ship markers on the globe — separate from terminal markers, toggled independently.
+let globeShipSprites = [], globeShipsVisible = false, globeShipPulseRaf = null, _shipTexCache = null;
 
 function onGlobeShown() {
   if (globeBuilt) { window.dispatchEvent(new Event('resize')); return; }
@@ -3184,6 +3276,11 @@ function initGlobe() {
   globeState.hideBeacon = () => { beacon.visible = false; };
   globeState.llToVec = llToVec;
   globeState.getGroup = () => group;
+  globeState.planetR = PLANET_R;
+  // If ships were toggled on before a globe rebuild (e.g. filter change), restore them.
+  if (globeShipsVisible && typeof buildGlobeShipMarkers === 'function') {
+    setTimeout(buildGlobeShipMarkers, 0);
+  }
 
   const starGeo=new THREE.BufferGeometry(); const starN=1200, spos=new Float32Array(starN*3);
   for (let i=0;i<starN;i++){ const r=55+Math.random()*55,u=Math.random()*2-1,a=Math.random()*6.283,s=Math.sqrt(1-u*u); spos[i*3]=r*s*Math.cos(a); spos[i*3+1]=r*u; spos[i*3+2]=r*s*Math.sin(a); }
@@ -3221,6 +3318,7 @@ function initGlobe() {
     }
   };
   let tipT;
+  const shipHit=()=>{ raycaster.setFromCamera(pointer,camera); const h=raycaster.intersectObjects(globeShipSprites,false).filter(x=>nearSide(x.object)); return h.length?h[0].object:null; };
   const onUp=(e)=>{
     dragging=false;
     if (!moved && performance.now()-downT<500) {
@@ -3233,6 +3331,14 @@ function initGlobe() {
           showPopup(d.terminal);
         }
         else { showTip(d.name, e.clientX, e.clientY); clearTimeout(tipT); tipT=setTimeout(hideTip,1600); }
+      } else if (globeShipsVisible) {
+        const sm=shipHit();
+        if (sm) {
+          const s=sm.userData.ship;
+          const spd=(typeof s.sog==='number')?`${s.sog.toFixed(1)}kn`:'';
+          showTip(`🚢 ${s.name} · ${s.status}${spd?' · '+spd:''}`, e.clientX, e.clientY);
+          clearTimeout(tipT); tipT=setTimeout(hideTip,2000);
+        }
       }
     }
   };
@@ -3298,7 +3404,8 @@ function initGlobe() {
     scene.traverse(o=>{ if(o.geometry)o.geometry.dispose?.(); if(o.material){const m=o.material;(Array.isArray(m)?m:[m]).forEach(mm=>{mm.map?.dispose?.();mm.dispose?.();});} });
     renderer.dispose(); if (dom.parentNode===mount) mount.removeChild(dom);
     globeBuilt=false;
-    globeState.placeBeacon = null; globeState.flyTarget = null; globeState.llToVec = null; globeState.getGroup = null;
+    globeState.placeBeacon = null; globeState.flyTarget = null; globeState.llToVec = null; globeState.getGroup = null; globeState.planetR = null;
+    globeShipSprites = []; _shipTexCache = null; cancelAnimationFrame(globeShipPulseRaf);
   };
 }
 
@@ -3331,6 +3438,76 @@ function globeFlyTo(lat, lon, color) {
 function refreshGlobe() {
   if (globeBuilt && globeCleanup) { globeCleanup(); globeCleanup=null; }
   if (document.getElementById('globe-panel')?.classList.contains('active')) onGlobeShown();
+}
+
+// ── LIVE SHIPS ON THE GLOBE ──────────────────────────────────────────────────
+function shipDotTexture() {
+  const s = 48, c = document.createElement('canvas'); c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.beginPath(); x.arc(s/2, s/2, s*0.30, 0, 7); x.fillStyle = '#4fd1ff'; x.fill();
+  x.lineWidth = s*0.08; x.strokeStyle = 'rgba(255,255,255,0.9)';
+  x.beginPath(); x.arc(s/2, s/2, s*0.30, 0, 7); x.stroke();
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+
+function clearGlobeShipMarkers() {
+  const group = globeState.getGroup && globeState.getGroup();
+  if (group) globeShipSprites.forEach(sp => group.remove(sp));
+  globeShipSprites = [];
+}
+
+function buildGlobeShipMarkers() {
+  if (!globeBuilt || !globeState.getGroup || !globeState.llToVec) return;
+  const group = globeState.getGroup();
+  if (!group) return;
+  clearGlobeShipMarkers();
+  if (!globeShipsVisible) return;
+  if (!_shipTexCache) _shipTexCache = shipDotTexture();
+  const r = (globeState.planetR || 8) + 0.05;
+  const withPos = ships.filter(s => typeof s.lat === 'number' && typeof s.lon === 'number');
+  withPos.forEach(s => {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: _shipTexCache, transparent: true, depthWrite: false }));
+    sp.position.copy(globeState.llToVec(s.lat, s.lon, r));
+    sp.scale.set(0.16, 0.16, 1);
+    sp.userData = { ship: s };
+    group.add(sp);
+    globeShipSprites.push(sp);
+  });
+  const cnt = document.getElementById('globeShipCount');
+  if (cnt) cnt.textContent = withPos.length ? `(${withPos.length})` : '(0)';
+}
+
+// Called after ship data refreshes elsewhere (map/table) — rebuilds globe
+// markers only if the ship layer is currently toggled on.
+function refreshGlobeShips() {
+  if (globeShipsVisible) buildGlobeShipMarkers();
+}
+
+function startGlobeShipPulse() {
+  cancelAnimationFrame(globeShipPulseRaf);
+  if (!globeShipsVisible) return;
+  let t = 0;
+  (function tick() {
+    if (!globeShipsVisible || !globeBuilt) return;
+    t += 0.05;
+    globeShipSprites.forEach((sp, i) => {
+      const p = (Math.sin(t + i * 0.7) + 1) / 2; // 0..1 pulse, phase-offset per ship
+      const s = 0.14 + p * 0.06;
+      sp.scale.set(s, s, 1);
+    });
+    globeShipPulseRaf = requestAnimationFrame(tick);
+  })();
+}
+
+function toggleGlobeShips() {
+  globeShipsVisible = !globeShipsVisible;
+  const btn = document.getElementById('globeShipToggle');
+  if (btn) btn.classList.toggle('active', globeShipsVisible);
+  buildGlobeShipMarkers();
+  startGlobeShipPulse();
+  if (globeShipsVisible && !ships.some(s => typeof s.lat === 'number')) {
+    toast('No live ship positions yet — try "Refresh Vessels" on the Ship Tracking page.', 'error');
+  }
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
@@ -4477,7 +4654,7 @@ loadScript(
               <button class="btn-admin primary" onclick="testVesselApi()">Test VesselAPI Proxy</button>
               <span id="vesselApiStatus" style="font-size:10px;color:var(--text-dim);"></span>
             </div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">The proxy queries around your 15 largest terminals. Vessel type, flag, DWT, and cargo aren't in this endpoint's response, so those columns show "—" — honest blanks, not guesses.</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">⚙ Quota-safe by design: the free plan allows ~150 calls/month, so the function keeps a shared cache (Firestore) and only actually calls VesselAPI once a day, 4 terminals at a time, rotating through your top 20 — about 120 calls/month, well under the cap, no matter how many visitors load the site. Any single view is always a free cache read. Type, flag, DWT, and cargo aren't in this endpoint's response, so those show "—" — honest blanks, not guesses.</div>
           </div>
           <div class="admin-card">
             <div class="admin-card-title">🛰 Live AIS — AISStream.io (WebSocket, experimental)</div>
@@ -5758,12 +5935,16 @@ async function testVesselApi() {
   const ok = await DataService.loadShips();
   if (ok) {
     const meta = DataService.shipsMeta;
-    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${ships.length} vessels found (queried ${meta?.terminalsQueried||'?'} terminals)`; }
+    const ageTxt = meta?.cacheAgeHours != null ? `${Math.round(meta.cacheAgeHours)}h old` : 'just fetched';
+    const budgetTxt = meta ? `${meta.callsThisMonth}/${meta.monthlyBudget} calls used this month` : '';
+    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${ships.length} vessels (cache ${ageTxt}${meta?.didRefresh ? ' · refreshed just now' : ''}) · ${budgetTxt}`; }
     toast(`VesselAPI working — ${ships.length} live vessels loaded.`);
     if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
+    if (typeof renderShipMarkersOnMap === 'function') renderShipMarkersOnMap();
+    if (typeof refreshGlobeShips === 'function') refreshGlobeShips();
   } else {
-    if (st) { st.style.color = 'var(--danger)'; st.textContent = '✗ No data — check VESSELAPI_KEY is set in Netlify env vars, then redeploy.'; }
-    toast('VesselAPI test failed — see status message below the button.', 'error');
+    if (st) { st.style.color = 'var(--danger)'; st.textContent = '✗ No data yet — check VESSELAPI_KEY is set in Netlify env vars, then redeploy. (Zero vessels found near your terminals right now is also possible and not an error.)'; }
+    toast('VesselAPI test returned no vessels — see status message below the button.', 'error');
   }
 }
 

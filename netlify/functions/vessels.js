@@ -1,18 +1,27 @@
-// TANK BAZAAR — Live vessel proxy (VesselAPI.com)
+// TANK BAZAAR — Live vessel proxy (VesselAPI.com) with quota-safe caching.
 //
-// Why this exists: browser-direct calls to maritime APIs expose the API key
-// to anyone viewing page source, and many providers (including AISStream)
-// explicitly ask integrators not to do this. This function holds the key
-// server-side (Netlify environment variable) and proxies requests from the
-// app, returning only the normalized vessel data the client needs.
+// WHY THIS DESIGN: the free VesselAPI tier allows only ~150 calls/month.
+// If every visitor triggered a fresh API call, that budget would be gone in
+// hours. Instead, this function keeps a SHARED cache in Firestore
+// (liveDataCache/vessels). Every request first reads that cache — a free
+// Firestore read — and only actually calls VesselAPI if the cache is stale
+// AND the daily/monthly budget allows it. Terminals are refreshed in small
+// rotating batches so coverage broadens over days rather than being spent
+// all at once on a handful of ports.
 //
-// SETUP REQUIRED: in Netlify → Site configuration → Environment variables,
-// add VESSELAPI_KEY = <your VesselAPI.com API key>. Get a free key (no card
-// required) at https://vesselapi.com — sign up, then Dashboard → API Keys.
+// Budget math: BATCH_SIZE terminals x 1 refresh/day x 30 days must stay
+// under the monthly cap. With BATCH_SIZE=4 and REFRESH_INTERVAL_HOURS=24:
+// 4 x 30 = 120 calls/month, leaving a ~30-call buffer under a 150 cap.
 //
-// The client POSTs { terminals: [{id, lat, lng, cap}, ...] } and this
-// function queries VesselAPI's bounding-box endpoint around each terminal,
-// merges/dedupes the results, and returns { ships: [...], meta: {...} }.
+// SETUP REQUIRED:
+// 1. Netlify → Site configuration → Environment variables → add
+//    VESSELAPI_KEY = <your VesselAPI.com key> (free, no card, vesselapi.com).
+// 2. Firestore rules must allow read/write on `liveDataCache` (see
+//    firestore.rules — this is a public, non-sensitive cache of AIS
+//    positions, written only by this function).
+//
+// The client POSTs { terminals: [{id, lat, lng, cap}, ...] } — a broader
+// rotation POOL (e.g. top 20 terminals) — and gets back { ships, meta }.
 
 const NAV_STATUS = {
   0: 'Under way using engine', 1: 'At anchor', 2: 'Not under command',
@@ -21,23 +30,68 @@ const NAV_STATUS = {
   9: 'Reserved (HSC)', 10: 'Reserved (WIG)', 14: 'AIS-SART active', 15: 'Undefined',
 };
 
-// Half-span in degrees for each terminal's query box. VesselAPI requires
-// |dLat| + |dLon| <= 4 degrees total; 2 x HALF x 2 dims = 3.6, safely under.
-const HALF_SPAN = 0.9;
-const MAX_TERMINALS_PER_CALL = 15;   // keep API usage modest on free tier
-const BATCH_SIZE = 5;                // small concurrency batches
+const HALF_SPAN = 0.9;                 // degrees; |dLat|+|dLon| stays under VesselAPI's 4° cap
+const BATCH_SIZE = 4;                  // terminals refreshed per actual API cycle
+const REFRESH_INTERVAL_HOURS = 24;     // minimum time between real API-call cycles
+const MONTHLY_BUDGET = 120;            // hard stop well under the 150 free-tier cap
+
+const FIREBASE_PROJECT_ID = 'tankbazaar';
+const FIRESTORE_DB_ID = 'tankbazaar';
+const CACHE_COLLECTION = 'liveDataCache';
+const CACHE_DOC = 'vessels';
+const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/${FIRESTORE_DB_ID}/documents`;
+
+// ---- Minimal Firestore REST helpers (no auth needed; the cache doc has a
+// public read/write rule since it holds no sensitive data — see firestore.rules) ----
+function toValue(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (typeof v === 'string') return { stringValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(toValue) } };
+  if (typeof v === 'object') return { mapValue: { fields: toFields(v) } };
+  return { stringValue: String(v) };
+}
+function toFields(obj) { const f = {}; for (const [k, val] of Object.entries(obj)) f[k] = toValue(val); return f; }
+function fromValue(v) {
+  if (!v) return null;
+  if ('nullValue' in v) return null;
+  if ('booleanValue' in v) return v.booleanValue;
+  if ('integerValue' in v) return parseInt(v.integerValue, 10);
+  if ('doubleValue' in v) return v.doubleValue;
+  if ('stringValue' in v) return v.stringValue;
+  if ('arrayValue' in v) return (v.arrayValue.values || []).map(fromValue);
+  if ('mapValue' in v) return fromFields(v.mapValue.fields);
+  return null;
+}
+function fromFields(fields) { const o = {}; if (!fields) return o; for (const [k, v] of Object.entries(fields)) o[k] = fromValue(v); return o; }
+
+async function readCache() {
+  try {
+    const res = await fetch(`${FS_BASE}/${CACHE_COLLECTION}/${CACHE_DOC}`);
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const doc = await res.json();
+    return fromFields(doc.fields);
+  } catch (e) { return null; }
+}
+async function writeCache(data) {
+  const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+  const url = `${FS_BASE}/${CACHE_COLLECTION}/${CACHE_DOC}?${mask}`;
+  try {
+    await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: toFields(data) }),
+    });
+  } catch (e) { /* best-effort; a failed cache write just means next call re-fetches */ }
+}
 
 exports.handler = async function (event) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'no-store',
-  };
+  const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 
-  // Self-service diagnostic: visiting the function URL directly in a browser
-  // (a plain GET, no body) reports whether the function is deployed and
-  // whether VESSELAPI_KEY is configured — WITHOUT exposing the key value.
-  // This lets you confirm the setup with zero code/console needed:
-  //   https://tankbazaar.com/.netlify/functions/vessels
+  // Self-service diagnostic (plain GET, no body) — confirms deployment + key,
+  // never exposes the full key value.
   if (event.httpMethod === 'GET') {
     const apiKey = process.env.VESSELAPI_KEY;
     return {
@@ -56,36 +110,41 @@ exports.handler = async function (event) {
   try {
     const apiKey = process.env.VESSELAPI_KEY;
     if (!apiKey) {
-      return {
-        statusCode: 200, headers,
-        body: JSON.stringify({
-          error: 'VESSELAPI_KEY is not set. Add it in Netlify → Site configuration → Environment variables, then redeploy.',
-          ships: [],
-        }),
-      };
+      return { statusCode: 200, headers, body: JSON.stringify({ error: 'VESSELAPI_KEY is not set.', ships: [] }) };
     }
 
     let terminals = [];
     try {
       const parsed = event.body ? JSON.parse(event.body) : {};
       terminals = Array.isArray(parsed.terminals) ? parsed.terminals : [];
-    } catch (e) { /* fall through with empty terminals */ }
-
+    } catch (e) { /* fall through empty */ }
+    terminals = terminals.filter(t => typeof t.lat === 'number' && typeof t.lng === 'number');
     if (!terminals.length) {
-      return { statusCode: 200, headers, body: JSON.stringify({ error: 'No terminals provided in request body.', ships: [] }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ error: 'No terminals provided.', ships: [] }) };
     }
 
-    // Prioritize the largest facilities first if the caller sent more than we'll use.
-    terminals = terminals
-      .filter(t => typeof t.lat === 'number' && typeof t.lng === 'number')
-      .sort((a, b) => (b.cap || 0) - (a.cap || 0))
-      .slice(0, MAX_TERMINALS_PER_CALL);
+    const now = new Date();
+    const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
-    const vesselMap = new Map();
-    const errors = [];
+    let cache = await readCache();
+    if (!cache) cache = { rotationIndex: 0, callsThisMonth: 0, monthKey, lastGlobalFetch: null, byTerminal: {} };
+    if (cache.monthKey !== monthKey) { cache.callsThisMonth = 0; cache.monthKey = monthKey; }
+    if (!cache.byTerminal) cache.byTerminal = {};
 
-    for (let i = 0; i < terminals.length; i += BATCH_SIZE) {
-      const batch = terminals.slice(i, i + BATCH_SIZE);
+    const hoursSinceLastFetch = cache.lastGlobalFetch
+      ? (now - new Date(cache.lastGlobalFetch)) / 3600000
+      : Infinity;
+    const dueForRefresh = hoursSinceLastFetch >= REFRESH_INTERVAL_HOURS;
+    const underBudget = (cache.callsThisMonth + BATCH_SIZE) <= MONTHLY_BUDGET;
+
+    let didRefresh = false;
+    if (dueForRefresh && underBudget) {
+      // Rotate through the terminal pool, BATCH_SIZE at a time.
+      const batch = [];
+      for (let i = 0; i < BATCH_SIZE; i++) {
+        batch.push(terminals[(cache.rotationIndex + i) % terminals.length]);
+      }
+      const errors = [];
       await Promise.all(batch.map(async (t) => {
         const params = new URLSearchParams({
           'filter.latBottom': (t.lat - HALF_SPAN).toFixed(4),
@@ -96,46 +155,60 @@ exports.handler = async function (event) {
         const url = `https://api.vesselapi.com/v1/location/vessels/bounding-box?${params.toString()}`;
         try {
           const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
-          if (!res.ok) {
-            const txt = await res.text().catch(() => '');
-            errors.push(`terminal ${t.id}: HTTP ${res.status} ${txt.slice(0, 150)}`);
-            return;
-          }
+          if (!res.ok) { errors.push(`terminal ${t.id}: HTTP ${res.status}`); return; }
           const data = await res.json();
           const list = data.vessels || data.vesselPositions || [];
-          list.forEach(v => {
-            const key = v.mmsi || v.imo || `${v.latitude},${v.longitude}`;
-            if (!vesselMap.has(key)) vesselMap.set(key, v);
-          });
+          cache.byTerminal[t.id] = { ships: list, fetchedAt: now.toISOString() };
         } catch (e) {
           errors.push(`terminal ${t.id}: ${e.message}`);
         }
       }));
+      cache.rotationIndex = (cache.rotationIndex + BATCH_SIZE) % terminals.length;
+      cache.callsThisMonth += BATCH_SIZE;
+      cache.lastGlobalFetch = now.toISOString();
+      didRefresh = true;
+      await writeCache(cache);
     }
 
-    // Normalize into the shape the app's ship table expects. Fields the
-    // bounding-box endpoint doesn't provide (type, flag, DWT, destination,
-    // cargo) are left as "—" rather than guessed — honest blanks, not fakes.
+    // Assemble the merged, deduped ship list from whatever's cached per terminal
+    // (mix of freshly-updated and older-but-still-useful entries).
+    const vesselMap = new Map();
+    Object.values(cache.byTerminal).forEach(entry => {
+      (entry.ships || []).forEach(v => {
+        const key = v.mmsi || v.imo || `${v.latitude},${v.longitude}`;
+        if (!vesselMap.has(key)) vesselMap.set(key, v);
+      });
+    });
+
     const ships = Array.from(vesselMap.values()).map(v => {
       const sog = typeof v.sog === 'number' ? v.sog : 0;
       return {
         name: v.vessel_name || v.vesselName || ('MMSI ' + (v.mmsi || 'unknown')),
         imo: (v.imo && v.imo !== 0) ? v.imo : (v.mmsi ? ('MMSI ' + v.mmsi) : '—'),
-        type: '—',
-        flag: '—',
-        dwt: '—',
+        mmsi: v.mmsi || null,
+        lat: typeof v.latitude === 'number' ? v.latitude : null,
+        lon: typeof v.longitude === 'number' ? v.longitude : null,
+        cog: typeof v.cog === 'number' ? v.cog : null,
+        sog: sog,
+        type: '—', flag: '—', dwt: '—', cargo: '—', eta: '—',
         status: sog > 0.5 ? 'moving' : 'berthed',
         last: NAV_STATUS[v.nav_status] != null ? NAV_STATUS[v.nav_status] : '—',
-        eta: '—',
-        cargo: '—',
       };
-    }).slice(0, 200);
+    }).filter(s => s.lat != null && s.lon != null).slice(0, 300);
 
     return {
       statusCode: 200, headers,
       body: JSON.stringify({
         ships,
-        meta: { terminalsQueried: terminals.length, vesselsFound: ships.length, errors: errors.slice(0, 5) },
+        meta: {
+          didRefresh,
+          fetchedAt: cache.lastGlobalFetch,
+          cacheAgeHours: cache.lastGlobalFetch ? Math.round((now - new Date(cache.lastGlobalFetch)) / 3600000 * 10) / 10 : null,
+          callsThisMonth: cache.callsThisMonth,
+          monthlyBudget: MONTHLY_BUDGET,
+          terminalsInRotation: terminals.length,
+          batchSize: BATCH_SIZE,
+        },
       }),
     };
   } catch (e) {

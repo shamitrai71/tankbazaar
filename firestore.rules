@@ -54,5 +54,16 @@ service cloud.firestore {
       allow update, delete: if isAdmin()
                     || (isSignedIn() && resource.data.ownerId == request.auth.uid);
     }
+
+    // Live vessel-position cache: written only by our Netlify Function
+    // (vessels.js), which runs server-side without a user auth token — so
+    // this collection is intentionally public read/write. It holds no
+    // sensitive data (just cached, publicly-available AIS positions and a
+    // call-count used to stay under the VesselAPI free-tier quota), so the
+    // tradeoff is reasonable. If tighter control is ever needed, switch the
+    // function to the Firebase Admin SDK with a service-account key instead.
+    match /liveDataCache/{doc} {
+      allow read, write: if true;
+    }
   }
 }
