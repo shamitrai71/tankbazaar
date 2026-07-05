@@ -1721,13 +1721,17 @@ const TerminalStore = {
 let map, gMap, markers = [], selectedTerminal = null, usingGoogle = false;
 
 function getGmapsKey() { return localStorage.getItem('tb_gmaps_key') || ''; }
+// Adding a Google Maps key (e.g. just for the Add-Terminal address autocomplete)
+// should NOT silently switch the live public map away from Leaflet/OSM. The
+// main map only switches to Google if this separate opt-in flag is also on.
+function useGmapsForMainMap() { return localStorage.getItem('tb_use_gmaps_main') === '1'; }
 
 function initMap() {
   const key = getGmapsKey();
-  if (key) {
-    // Load Google Maps JS API
+  if (key && useGmapsForMainMap()) {
+    // Load Google Maps JS API (main map engine)
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&callback=initGoogleMap&loading=async`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&callback=initGoogleMap&loading=async`;
     s.onerror = () => { console.warn('Google Maps failed to load, falling back to OSM'); initLeafletMap(); };
     window.initGoogleMap = initGoogleMap;
     document.head.appendChild(s);
@@ -1761,6 +1765,85 @@ function initGoogleMap() {
   });
   terminals.forEach(t => addMarker(t));
   updateDataSourceStatus();
+}
+
+// ── ADDRESS AUTOCOMPLETE (Add Terminal form) ──────────────────────────────
+// Independent of the main map engine choice — this only powers the "Search
+// Address" field in Admin → Add Terminal, so users can type a port/city name
+// instead of hand-entering coordinates. Works whether or not the live public
+// map itself uses Google (see useGmapsForMainMap()).
+function initTerminalAutocomplete() {
+  const input = document.getElementById('nt-search');
+  const note = document.getElementById('nt-search-note');
+  const key = getGmapsKey();
+
+  if (!key) {
+    if (input) { input.disabled = true; input.placeholder = 'Configure a Google Maps API key to enable this'; }
+    if (note) note.innerHTML = 'Not configured — add a free Google Maps API key (with Places enabled) in <b>Admin → Data & API</b> to auto-fill City/Country/Lat/Lng from an address search. Manual entry below still works fine without it.';
+    return;
+  }
+
+  if (window.google && google.maps && google.maps.places) {
+    attachTerminalAutocomplete();
+    return;
+  }
+
+  if (note) note.textContent = 'Loading Google Places…';
+  if (window._tbGmapsLoading) {
+    // Another call already kicked off the load — just wait for it.
+    const wait = setInterval(() => {
+      if (window.google && google.maps && google.maps.places) { clearInterval(wait); attachTerminalAutocomplete(); }
+    }, 300);
+    setTimeout(() => clearInterval(wait), 8000);
+    return;
+  }
+
+  window._tbGmapsLoading = true;
+  window.tbPlacesReady = () => { window._tbGmapsLoading = false; attachTerminalAutocomplete(); };
+  const s = document.createElement('script');
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&callback=tbPlacesReady&loading=async`;
+  s.onerror = () => {
+    window._tbGmapsLoading = false;
+    if (note) { note.style.color = 'var(--danger)'; note.textContent = 'Could not load Google Places — check the API key and that the Places API is enabled for it.'; }
+  };
+  document.head.appendChild(s);
+}
+
+function attachTerminalAutocomplete() {
+  const input = document.getElementById('nt-search');
+  const note = document.getElementById('nt-search-note');
+  if (!input || input._tbAutocompleteAttached) {
+    if (note) { note.style.color = 'var(--accent2)'; note.textContent = '✓ Autocomplete active — start typing above.'; }
+    return;
+  }
+  const ac = new google.maps.places.Autocomplete(input, {
+    fields: ['address_components', 'geometry', 'name'],
+  });
+  ac.addListener('place_changed', () => {
+    const place = ac.getPlace();
+    if (!place || !place.geometry || !place.geometry.location) {
+      if (note) { note.style.color = 'var(--danger)'; note.textContent = 'No location details for that result — try a more specific search.'; }
+      return;
+    }
+    document.getElementById('nt-lat').value = place.geometry.location.lat().toFixed(5);
+    document.getElementById('nt-lng').value = place.geometry.location.lng().toFixed(5);
+
+    let city = '', country = '';
+    (place.address_components || []).forEach(c => {
+      if (c.types.includes('locality') || c.types.includes('postal_town')) city = c.long_name;
+      else if (!city && c.types.includes('administrative_area_level_1')) city = c.long_name;
+      if (c.types.includes('country')) country = c.long_name;
+    });
+    if (city) document.getElementById('nt-city').value = city;
+    if (country) document.getElementById('nt-country').value = country;
+
+    const nameField = document.getElementById('nt-name');
+    if (nameField && !nameField.value.trim() && place.name) nameField.value = place.name;
+
+    if (note) { note.style.color = 'var(--accent2)'; note.textContent = `✓ Filled from "${place.name || input.value}".`; }
+  });
+  input._tbAutocompleteAttached = true;
+  if (note) { note.style.color = 'var(--accent2)'; note.textContent = '✓ Autocomplete active — start typing above.'; }
 }
 
 // ── LEAFLET / OSM ENGINE ──
@@ -3835,6 +3918,23 @@ loadScript(
 .admin-form-grid.one { grid-template-columns: 1fr; }
 .admin-field { display: flex; flex-direction: column; gap: 5px; }
 .admin-field label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+
+/* Google Places Autocomplete dropdown — restyle to match the dark theme
+   (Google renders this in a body-level .pac-container we can't reach via
+   scoped selectors, so these rules are intentionally global). */
+.pac-container {
+  background: var(--surface, #12201b) !important;
+  border: 1px solid var(--border, #24362c) !important;
+  border-radius: 8px !important;
+  font-family: var(--font-mono, monospace) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+  margin-top: 4px;
+}
+.pac-item { color: #cfe0d8 !important; border-color: #24362c !important; font-size: 12px !important; padding: 8px 10px !important; }
+.pac-item:hover, .pac-item-selected { background: rgba(47,163,124,0.12) !important; }
+.pac-item-query { color: #eef4ef !important; }
+.pac-matched { color: var(--accent2, #2fa37c) !important; }
+.pac-icon { filter: invert(0.8); }
 .admin-field input, .admin-field select, .admin-field textarea {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 7px; color: var(--text);
@@ -4465,6 +4565,11 @@ loadScript(
             <div class="admin-field"><label>Terminal Name</label><input type="text" id="nt-name" placeholder="e.g. Vopak Rotterdam"></div>
             <div class="admin-field"><label>Operator / Company</label><input type="text" id="nt-op" placeholder="e.g. Vopak"></div>
           </div>
+          <div class="admin-field" id="nt-search-wrap" style="margin-bottom:6px;">
+            <label>🔍 Search Address (auto-fills City/Country/Lat/Lng)</label>
+            <input type="text" id="nt-search" placeholder="Start typing a port, city, or address…" autocomplete="off">
+            <div id="nt-search-note" style="font-size:9px;color:var(--text-dim);margin-top:5px;"></div>
+          </div>
           <div class="admin-form-grid three">
             <div class="admin-field"><label>City</label><input type="text" id="nt-city" placeholder="Rotterdam"></div>
             <div class="admin-field"><label>Country</label><input type="text" id="nt-country" placeholder="Netherlands"></div>
@@ -4634,6 +4739,12 @@ loadScript(
             <div class="admin-field" style="margin-bottom:10px;"><label>Terminals Data Endpoint (JSON, optional)</label><input type="text" id="epTerminals" placeholder="https://your-api.com/terminals.json"></div>
             <div class="admin-field" style="margin-bottom:10px;"><label>Product Flows Endpoint (JSON, optional)</label><input type="text" id="epFlows" placeholder="https://your-api.com/flows.json"></div>
             <div class="admin-field" style="margin-bottom:10px;"><label>Google Maps API Key</label><input type="text" id="gmapsApiKey" placeholder="AIza••••••••"></div>
+            <div class="admin-field" style="margin-bottom:10px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;">
+                <input type="checkbox" id="useGmapsMain" style="width:auto;">
+                Also use Google Maps for the main public Map view (optional — otherwise the key only powers address-autocomplete in Add Terminal)
+              </label>
+            </div>
             <div class="admin-field" style="margin-bottom:14px;"><label>Data Refresh Interval</label>
               <select id="epRefresh"><option value="300000">Every 5 min</option><option value="900000">Every 15 min</option><option value="3600000">Every 1 hour</option></select>
             </div>
@@ -5173,6 +5284,7 @@ function adminNav(section, clickedEl) {
   document.getElementById('sec-' + section).classList.add('active');
   if (section === 'claims') loadClaims();
   if (section === 'listings') loadAdminListings();
+  if (section === 'addterminal') initTerminalAutocomplete();
 }
 
 // Data & API nav → opens Site Settings and scrolls to the connection cards.
@@ -5654,7 +5766,7 @@ function editTerminalForm(id) {
 
 function clearTerminalForm() {
   editingTerminalId = null;
-  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes'].forEach(id => {
+  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes','nt-search'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -5884,10 +5996,12 @@ function saveDataConfig() {
   const t = val('epTerminals');
   const f = val('epFlows');
   const g = val('gmapsApiKey');
+  const useMain = document.getElementById('useGmapsMain') ? document.getElementById('useGmapsMain').checked : false;
   const r = document.getElementById('epRefresh').value;
   if (t) DataService.saveEndpoint('terminals', t);
   if (f) DataService.saveEndpoint('flows', f);
   if (g) localStorage.setItem('tb_gmaps_key', g);
+  localStorage.setItem('tb_use_gmaps_main', useMain ? '1' : '0');
   localStorage.setItem('tb_refresh_ms', r);
   DataService.refreshMs = parseInt(r);
   DataService.startAutoRefresh();
@@ -5896,6 +6010,7 @@ function saveDataConfig() {
     if (live.length) toast(`Connected live: ${live.join(', ')}`);
     else toast('Saved. No endpoints responded yet — check URLs/CORS.', 'error');
   });
+  if (g && !useMain) toast('Google Maps key saved — powers address-autocomplete in Add Terminal. Main map stays on OpenStreetMap.');
   logActivity('Data API config updated', 'info');
 }
 
@@ -5915,6 +6030,8 @@ function populateDataConfigFields() {
   set('epTerminals', DataService.endpoints.terminals);
   set('epFlows', DataService.endpoints.flows);
   set('gmapsApiKey', getGmapsKey());
+  const useMainEl = document.getElementById('useGmapsMain');
+  if (useMainEl) useMainEl.checked = useGmapsForMainMap();
   set('aisStreamKey', AisStream.key);
   const st = document.getElementById('aisAdminStatus');
   if (st) st.textContent = AisStream.connected ? '● Live' : '';
