@@ -518,7 +518,8 @@ input[type="range"] {
 .price-card:hover { border-color: var(--accent2); }
 .price-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .price-card-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; }
-.price-card-val { font-family: var(--font-display); font-size: 21px; font-weight: 800; color: var(--text); margin-top: 4px; }
+.price-card-val { font-family: var(--font-display); font-size: 21px; font-weight: 800; color: var(--accent); margin-top: 4px; }
+.price-card.metal .price-card-val { color: var(--gold); }
 .price-card-val span { font-size: 11px; color: var(--text-dim); font-weight: 400; margin-left: 3px; }
 .price-card-chg { font-size: 11px; margin-top: 4px; font-weight: 600; }
 .price-card-chg.up { color: var(--accent3, #6fd98f); }
@@ -532,7 +533,7 @@ input[type="range"] {
 .fx-card:hover { border-color: var(--accent2); }
 .fx-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .fx-card-code { font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; }
-.fx-card-val { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text); margin-top: 3px; }
+.fx-card-val { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--accent2); margin-top: 3px; }
 .fx-card-chg { font-size: 9.5px; margin-top: 2px; }
 
 .kpi-card {
@@ -3889,7 +3890,7 @@ function renderMetalCards() {
     const chg = computeFxPeriodChange(sym, pricesData.period);
     const sel = pricesData.selected?.type==='metal' && pricesData.selected?.key===sym;
     return `
-      <div class="price-card ${sel?'selected':''}" onclick="selectPriceItem('metal','${sym}',${JSON.stringify(METAL_LABELS[sym])})">
+      <div class="price-card metal ${sel?'selected':''}" onclick="selectPriceItem('metal','${sym}',${JSON.stringify(METAL_LABELS[sym])})">
         <div class="price-card-label">${METAL_LABELS[sym]}</div>
         <div class="price-card-val">${val!=null?val.toFixed(2):'—'}<span>USD/oz t</span></div>
         <div class="price-card-chg ${chgClassOf(chg)}">${chg!=null? chgArrowOf(chg)+' '+Math.abs(chg).toFixed(2)+'% ('+periodLabel(pricesData.period)+')' : '—'}</div>
