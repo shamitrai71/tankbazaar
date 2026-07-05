@@ -1,5 +1,6 @@
 [build]
   publish = "."
+  functions = "netlify/functions"
   [build.environment]
     # The Firebase web apiKey is public by design (it identifies the project and
     # is meant to ship in client code). Real security comes from Firestore rules
@@ -8,7 +9,8 @@
     # (that would itself be flagged). Basic secret scanning stays on.
     SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
-# Single-page app: always serve index.html
+# Single-page app: always serve index.html (functions are matched first,
+# so /.netlify/functions/* still routes to the function, not index.html)
 [[redirects]]
   from = "/*"
   to = "/index.html"

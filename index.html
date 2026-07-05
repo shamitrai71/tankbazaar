@@ -986,10 +986,15 @@ input[type="range"] {
   .logo { font-size: 15px; flex-shrink: 0; }
   .logo .logo-icon { flex-shrink: 0; }
 
-  /* Compact the signed-in pill so it never pushes past the screen edge */
-  .admin-user-pill { padding: 3px 8px; gap: 5px; max-width: 46vw; overflow: hidden; }
+  /* Compact the signed-in pill so it never pushes past the screen edge.
+     Icon-only buttons on mobile — this is what actually fixes the overflow,
+     since "Profile"/"Admin"/"Logout" text was wider than the available space. */
+  .admin-user-pill { padding: 3px 7px; gap: 4px; max-width: 40vw; overflow: hidden; }
   .admin-user-pill #pillName { display: none; }
-  .admin-user-pill button { font-size: 9px; padding: 2px 6px; }
+  .admin-user-pill button { font-size: 13px; padding: 3px 5px; min-width: 24px; }
+  .admin-user-pill .pill-icon { display: inline; }
+  .admin-user-pill .pill-label { display: none; }
+  .admin-user-pill #pillAvatar { width: 18px !important; height: 18px !important; font-size: 8px !important; }
 
   /* Sidebar becomes a slide-out drawer */
   .sidebar {
@@ -1050,9 +1055,9 @@ input[type="range"] {
     <div class="admin-user-pill" id="userPill" style="display:none;">
       <div class="user-avatar" id="pillAvatar" style="width:22px;height:22px;font-size:9px;">U</div>
       <span id="pillName"></span>
-      <button onclick="openProfilePage()">Profile</button>
-      <button onclick="openAdminPanel()" id="pillAdminBtn" style="display:none;">Admin</button>
-      <button onclick="userLogout()">Logout</button>
+      <button onclick="openProfilePage()"><span class="pill-icon">👤</span><span class="pill-label">Profile</span></button>
+      <button onclick="openAdminPanel()" id="pillAdminBtn" style="display:none;"><span class="pill-icon">⚙️</span><span class="pill-label">Admin</span></button>
+      <button onclick="userLogout()"><span class="pill-icon">⏻</span><span class="pill-label">Logout</span></button>
     </div>
   </div>
 </header>
@@ -1341,8 +1346,9 @@ input[type="range"] {
       </div>
       <div class="search-bar">
         <input type="text" id="shipSearch" placeholder="Search vessel name or IMO..." oninput="renderShips()">
-        <button class="btn-small" id="aisConnectBtn" onclick="toggleAisStream()">🛰 Connect Live AIS</button>
-        <button class="btn-small primary" onclick="exportShipsCsv()">Export CSV</button>
+        <button class="btn-small primary" onclick="refreshVesselsNow()" id="refreshVesselsBtn">⟳ Refresh Vessels</button>
+        <button class="btn-small" id="aisConnectBtn" onclick="toggleAisStream()" title="AISStream.io has a known upstream bug (connects but delivers no data). Kept as a secondary option in case it's fixed.">🛰 Live AIS (WebSocket, experimental)</button>
+        <button class="btn-small" onclick="exportShipsCsv()">Export CSV</button>
       </div>
       <div id="aisStatusLine" style="font-size:11px;color:var(--text-muted);margin-bottom:12px;display:none;"></div>
       <div class="kpi-grid" style="margin-bottom:16px;">
@@ -1457,14 +1463,40 @@ const DataService = {
 
   // Pull live vessel positions from configured AIS endpoint
   async loadShips() {
-    // Ship data now comes exclusively from the AISStream.io WebSocket adapter
-    // (see AisStream). The old REST ships-endpoint path is disabled to avoid
-    // fetching stale/invalid URLs. Clear any legacy stored endpoint.
-    if (this.endpoints.ships) {
-      this.endpoints.ships = '';
-      try { localStorage.removeItem('tb_ep_ships'); } catch {}
+    // Primary ship data source: VesselAPI.com via our own Netlify Function
+    // proxy (/.netlify/functions/vessels). The proxy holds the API key
+    // server-side and queries around our largest terminals. AISStream.io
+    // (WebSocket) remains available as a secondary manual option on the
+    // Ship Tracking page, but has a confirmed open upstream bug (connects,
+    // subscribes, delivers zero messages — aisstream/aisstream#15) so it's
+    // no longer the default.
+    try {
+      const topTerminals = [...terminals]
+        .sort((a, b) => (b.cap || 0) - (a.cap || 0))
+        .slice(0, 15)
+        .map(t => ({ id: t.id, lat: t.lat, lng: t.lng, cap: t.cap }));
+      if (!topTerminals.length) return false;
+
+      const res = await fetch('/.netlify/functions/vessels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ terminals: topTerminals }),
+      });
+      if (!res.ok) { console.warn('[Vessels] proxy HTTP', res.status); return false; }
+      const data = await res.json();
+      if (data.error) { console.warn('[Vessels] proxy error:', data.error); return false; }
+      if (Array.isArray(data.ships) && data.ships.length) {
+        ships.length = 0;
+        data.ships.forEach(s => ships.push(s));
+        this.isLive.ships = true;
+        this.shipsMeta = data.meta || null;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.warn('[Vessels] fetch failed:', e.message);
+      return false;
     }
-    return false;
   },
 
   async loadFlows() {
@@ -1718,10 +1750,17 @@ function initLeafletMap() {
     return;
   }
   usingGoogle = false;
-  map = L.map('map', { zoomControl: false }).setView([20, 10], 2);
+  map = L.map('map', {
+    zoomControl: false,
+    minZoom: 2,                              // can't zoom out far enough to see repeated worlds
+    maxBounds: [[-90, -180], [90, 180]],      // hard-clamp panning to a single world
+    maxBoundsViscosity: 1.0,                  // fully resist dragging past the bounds
+    worldCopyJump: false,
+  }).setView([20, 10], 2);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
     maxZoom: 18,
+    noWrap: true,   // don't tile the map repeatedly east/west
   }).addTo(map);
   terminals.forEach(t => addMarker(t));
   updateDataSourceStatus();
@@ -2827,21 +2866,43 @@ function renderShips() {
       <td>${s.eta}</td>
       <td style="color:var(--accent)">${s.cargo}</td>
     </tr>
-  `).join('') || '<tr><td colspan="9" style="color:var(--text-dim);padding:20px;text-align:center;">No vessels. Connect Live AIS to stream real positions.</td></tr>';
+  `).join('') || '<tr><td colspan="9" style="color:var(--text-dim);padding:20px;text-align:center;">No vessels yet. Click "Refresh Vessels" above, or check Admin → Data & API.</td></tr>';
 
   // KPIs computed from the actual vessel set (not hardcoded).
   const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   const berthed = ships.filter(s => s.status === 'berthed' || s.status === 'at berth').length;
   const moving = ships.filter(s => s.status === 'moving' || s.status === 'at sea').length;
-  const isLive = DataService.isLive.ships;
+  const aisLive = typeof AisStream !== 'undefined' && AisStream.connected;
+  const vesselApiLive = DataService.isLive.ships && !aisLive;
   set('shipTotalKpi', ships.length.toLocaleString());
   set('shipBerthKpi', berthed.toLocaleString());
   set('shipMovingKpi', moving.toLocaleString());
-  set('shipSourceKpi', isLive ? 'Live AIS' : 'Demo');
   const srcSub = document.getElementById('shipSourceSub');
-  if (srcSub) srcSub.textContent = isLive ? 'AISStream.io · live' : 'connect above or in Admin';
   const srcCard = document.getElementById('shipSourceKpi');
-  if (srcCard) srcCard.style.color = isLive ? 'var(--accent3)' : 'var(--gold)';
+  if (aisLive) {
+    set('shipSourceKpi', 'Live AIS');
+    if (srcSub) srcSub.textContent = 'AISStream.io (WebSocket) · live';
+    if (srcCard) srcCard.style.color = 'var(--accent3)';
+  } else if (vesselApiLive) {
+    set('shipSourceKpi', 'Live (VesselAPI)');
+    if (srcSub) srcSub.textContent = 'VesselAPI.com · terrestrial AIS';
+    if (srcCard) srcCard.style.color = 'var(--accent3)';
+  } else {
+    set('shipSourceKpi', 'Demo');
+    if (srcSub) srcSub.textContent = 'click Refresh Vessels above';
+    if (srcCard) srcCard.style.color = 'var(--gold)';
+  }
+}
+
+// Manual "Refresh Vessels" button — calls the VesselAPI proxy and re-renders.
+async function refreshVesselsNow() {
+  const btn = document.getElementById('refreshVesselsBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Refreshing…'; }
+  const ok = await DataService.loadShips();
+  if (btn) { btn.disabled = false; btn.textContent = '⟳ Refresh Vessels'; }
+  renderShips();
+  if (ok) toast(`Loaded ${ships.length} live vessels (VesselAPI).`);
+  else toast('No live vessel data yet — check Admin → Data & API for setup.', 'error');
 }
 
 // ─── PRODUCT FLOW ────────────────────────────────────────────────────────────
@@ -3074,11 +3135,18 @@ function initGlobe() {
     inland: dotTex(TERMINAL_TYPES.inland.color),
   };
   const cityMarkers=[];
-  const MARKER_SIZE = 0.20;  // small, uniform across all terminals
+  const MARKER_SIZE = 0.20;   // small, uniform visible dot
+  const HIT_SIZE = 0.60;      // larger invisible tap target — touch fingers are imprecise
   dests.forEach((d) => {
+    const pos = llToVec(d.lat,d.lon,PLANET_R+0.04);
+    // Visible small colored dot (decorative only — not raycast against).
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:DOT_BY_TYPE[d.type]||DOT_BY_TYPE.port, transparent:true, depthWrite:false }));
-    sp.position.copy(llToVec(d.lat,d.lon,PLANET_R+0.04)); sp.scale.set(MARKER_SIZE,MARKER_SIZE,1);
-    sp.userData={ dest:d }; group.add(sp); cityMarkers.push(sp);
+    sp.position.copy(pos); sp.scale.set(MARKER_SIZE,MARKER_SIZE,1);
+    group.add(sp);
+    // Invisible larger hit target — this is what taps/clicks actually register against.
+    const hit=new THREE.Sprite(new THREE.SpriteMaterial({ transparent:true, opacity:0, depthWrite:false }));
+    hit.position.copy(pos); hit.scale.set(HIT_SIZE,HIT_SIZE,1);
+    hit.userData={ dest:d }; group.add(hit); cityMarkers.push(hit);
   });
 
   // ── Pulsing beacon (concentric rings) shown when a terminal is selected ──
@@ -3132,13 +3200,14 @@ function initGlobe() {
   let autoSpeed=REDUCED?0:0.0013, curSpeed=autoSpeed;
   let dragging=false, moved=false, lastX=0,lastY=0,downX=0,downY=0,downT=0,velX=0,velY=0;
   const dom=renderer.domElement;
+  dom.style.touchAction = 'none';  // belt-and-suspenders alongside the CSS rule
   const setPointer=(e)=>{ const r=dom.getBoundingClientRect(); pointer.x=((e.clientX-r.left)/r.width)*2-1; pointer.y=-((e.clientY-r.top)/r.height)*2+1; };
   const nearSide=(o)=>{ const w=new THREE.Vector3(); o.getWorldPosition(w); return w.normalize().dot(camera.position.clone().normalize())>0.05; };
   const cityHit=()=>{ raycaster.setFromCamera(pointer,camera); const h=raycaster.intersectObjects(cityMarkers,false).filter(x=>nearSide(x.object)); return h.length?h[0].object:null; };
   const showTip=(txt,x,y)=>{ tip.textContent=txt; tip.style.left=x+'px'; tip.style.top=y+'px'; tip.style.opacity='1'; };
   const hideTip=()=>{ tip.style.opacity='0'; };
 
-  const onDown=(e)=>{ dragging=true; moved=false; dom.setPointerCapture(e.pointerId); lastX=downX=e.clientX; lastY=downY=e.clientY; downT=performance.now(); };
+  const onDown=(e)=>{ dragging=true; moved=false; dom.setPointerCapture(e.pointerId); lastX=downX=e.clientX; lastY=downY=e.clientY; downT=performance.now(); if (e.cancelable) e.preventDefault(); };
   const onMove=(e)=>{
     if (dragging) {
       const dx=e.clientX-lastX, dy=e.clientY-lastY;
@@ -3176,7 +3245,7 @@ function initGlobe() {
     const w=mount.clientWidth||innerWidth, h=mount.clientHeight||innerHeight;
     renderer.setSize(w,h); camera.aspect=w/h;
     const tanV=Math.tan((camera.fov*Math.PI/180)/2), tanH=tanV*camera.aspect;
-    const margin = w>=768 ? 1.02 : 0.90;
+    const margin = w>=768 ? 1.02 : 0.81;
     let dist=Math.max(FIT_R/tanV, FIT_R/tanH)*margin; dist=Math.max(dist,16);
     const headroom=Math.max(0, dist*tanV-FIT_R);
     const yOffset=Math.min(headroom*0.4, FIT_R*0.10);
@@ -3359,6 +3428,8 @@ loadScript(
   border-radius: 4px; transition: all 0.2s;
 }
 .admin-user-pill button:hover { color: var(--accent2); background: rgba(47,163,124,0.1); }
+.admin-user-pill .pill-icon { display: none; }
+.admin-user-pill .pill-label { display: inline; }
 
 /* ── LOGIN MODAL ── */
 .modal-overlay {
@@ -4382,7 +4453,7 @@ loadScript(
           </div>
           <div class="admin-card" id="dataApiCard">
             <div class="admin-card-title">Data & API — Live Connections</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Optional JSON endpoints for terminals and product flows (must return JSON arrays, CORS-enabled). For live vessel tracking, use the AISStream.io card below instead.</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Optional JSON endpoints for terminals and product flows (must return JSON arrays, CORS-enabled). For live vessel tracking, see the VesselAPI card below.</div>
             <div class="admin-field" style="margin-bottom:10px;"><label>Terminals Data Endpoint (JSON, optional)</label><input type="text" id="epTerminals" placeholder="https://your-api.com/terminals.json"></div>
             <div class="admin-field" style="margin-bottom:10px;"><label>Product Flows Endpoint (JSON, optional)</label><input type="text" id="epFlows" placeholder="https://your-api.com/flows.json"></div>
             <div class="admin-field" style="margin-bottom:10px;"><label>Google Maps API Key</label><input type="text" id="gmapsApiKey" placeholder="AIza••••••••"></div>
@@ -4395,15 +4466,28 @@ loadScript(
             </div>
           </div>
           <div class="admin-card">
-            <div class="admin-card-title">🛰 Live AIS — AISStream.io (WebSocket)</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Free real-time vessel positions streamed directly to the browser. Get a free key at <span style="color:var(--accent2);">aisstream.io</span> (no card required). The stream subscribes to areas around your terminals and shows live tankers on the Ship Tracking page.</div>
+            <div class="admin-card-title">🚢 Live AIS — VesselAPI.com (recommended)</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Real vessel positions via REST, proxied through a Netlify Function so the key never reaches the browser. Terrestrial AIS coverage (coastal & port areas) — matches our terminal use case.</div>
+            <ol style="font-size:10.5px;color:var(--text-muted);line-height:1.9;margin:0 0 12px 18px;padding:0;">
+              <li>Sign up free at <span style="color:var(--accent2);">vesselapi.com</span> (no card) → Dashboard → API Keys → copy your key.</li>
+              <li>In <b>Netlify</b> → Site configuration → Environment variables, add:<br><code style="background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--gold);">VESSELAPI_KEY</code> = your key, then trigger a redeploy.</li>
+              <li>Come back here and click Test — or just open Ship Tracking and click "Refresh Vessels".</li>
+            </ol>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn-admin primary" onclick="testVesselApi()">Test VesselAPI Proxy</button>
+              <span id="vesselApiStatus" style="font-size:10px;color:var(--text-dim);"></span>
+            </div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">The proxy queries around your 15 largest terminals. Vessel type, flag, DWT, and cargo aren't in this endpoint's response, so those columns show "—" — honest blanks, not guesses.</div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-title">🛰 Live AIS — AISStream.io (WebSocket, experimental)</div>
+            <div style="font-size:10px;color:#e05c4f;margin-bottom:10px;line-height:1.5;">⚠ AISStream has a confirmed, currently-open bug where connections succeed and subscribe correctly but deliver zero messages (<span style="color:var(--accent2);">github.com/aisstream/aisstream, issue #15</span>). We've verified our integration is correct against their own docs and a working reference implementation — this is on their end. Kept here in case it's fixed upstream; VesselAPI above is the reliable option for now.</div>
             <div class="admin-field" style="margin-bottom:10px;"><label>AISStream.io API Key</label><input type="text" id="aisStreamKey" placeholder="your_aisstream_api_key"></div>
             <div style="display:flex;gap:8px;align-items:center;">
-              <button class="btn-admin primary" onclick="saveAndConnectAis()">Save & Connect Live</button>
+              <button class="btn-admin" onclick="saveAndConnectAis()">Save & Connect Live</button>
               <button class="btn-admin" onclick="AisStream.disconnect()">Disconnect</button>
               <span id="aisAdminStatus" style="font-size:10px;color:var(--text-dim);"></span>
             </div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Note: the key is used from the browser (AISStream keys are free & read-only). AIS broadcasts don't include DWT or cargo, so those columns show "—". Coverage is terrestrial (near-coast), strongest around ports.</div>
           </div>
         </div>
       </div>
@@ -5666,6 +5750,21 @@ function saveAndConnectAis() {
   const st = document.getElementById('aisAdminStatus');
   if (st) st.textContent = 'Connecting…';
   logActivity('Connected live AIS (AISStream.io)', 'success');
+}
+
+async function testVesselApi() {
+  const st = document.getElementById('vesselApiStatus');
+  if (st) st.textContent = 'Testing…';
+  const ok = await DataService.loadShips();
+  if (ok) {
+    const meta = DataService.shipsMeta;
+    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${ships.length} vessels found (queried ${meta?.terminalsQueried||'?'} terminals)`; }
+    toast(`VesselAPI working — ${ships.length} live vessels loaded.`);
+    if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
+  } else {
+    if (st) { st.style.color = 'var(--danger)'; st.textContent = '✗ No data — check VESSELAPI_KEY is set in Netlify env vars, then redeploy.'; }
+    toast('VesselAPI test failed — see status message below the button.', 'error');
+  }
 }
 
 // ── SITE SETTINGS ────────────────────────────────────────────────
