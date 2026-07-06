@@ -691,16 +691,24 @@ input[type="range"] {
 #tracking-panel { overflow-y: auto; padding: 24px; }
 #tracking-panel::-webkit-scrollbar { width: 4px; }
 #tracking-panel::-webkit-scrollbar-thumb { background: var(--border); }
+#prices-panel { overflow-y: auto; padding: 24px; }
+#prices-panel::-webkit-scrollbar { width: 4px; }
+#prices-panel::-webkit-scrollbar-thumb { background: var(--border); }
 
 .ship-table-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
+.ship-table-wrap::-webkit-scrollbar { height: 5px; }
+.ship-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .ship-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 11px;
 }
