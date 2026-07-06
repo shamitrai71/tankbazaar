@@ -700,8 +700,9 @@ input[type="range"] {
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
 }
 .ship-table-wrap::-webkit-scrollbar { height: 5px; }
 .ship-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -3707,7 +3708,7 @@ async function loadMarketPrices() {
     else console.warn('[Market] FX/metals failed:', fxRes.reason?.message);
     pricesData.loaded = true;
     if (!pricesData.selected && pricesData.commodities?.series?.wti) {
-      pricesData.selected = { type:'commodity', key:'wti', label: pricesData.commodities.series.wti.label };
+      pricesData.selected = { type:'commodity', key:'wti', label: priceItemLabel('commodity','wti') };
     }
     renderMarketPrices();
   } catch (e) {
@@ -3879,7 +3880,7 @@ function renderCommodityCards() {
     const chg = computeSeriesPeriodChange(s.observations, pricesData.period, key);
     const sel = pricesData.selected?.type==='commodity' && pricesData.selected?.key===key;
     return `
-      <div class="price-card ${sel?'selected':''}" onclick="selectPriceItem('commodity','${key}',${JSON.stringify(s.label)})">
+      <div class="price-card ${sel?'selected':''}" onclick="selectPriceItem('commodity','${key}')">
         <div class="price-card-label">${s.label}</div>
         <div class="price-card-val">${s.latest!=null?s.latest.toFixed(2):'—'}<span>${s.unit}</span></div>
         <div class="price-card-chg ${chgClassOf(chg)}">${chg!=null? chgArrowOf(chg)+' '+Math.abs(chg).toFixed(2)+'% ('+periodLabel(pricesData.period)+')' : '—'}</div>
@@ -3898,7 +3899,7 @@ function renderMetalCards() {
     const chg = computeFxPeriodChange(sym, pricesData.period);
     const sel = pricesData.selected?.type==='metal' && pricesData.selected?.key===sym;
     return `
-      <div class="price-card metal ${sel?'selected':''}" onclick="selectPriceItem('metal','${sym}',${JSON.stringify(METAL_LABELS[sym])})">
+      <div class="price-card metal ${sel?'selected':''}" onclick="selectPriceItem('metal','${sym}')">
         <div class="price-card-label">${METAL_LABELS[sym]}</div>
         <div class="price-card-val">${val!=null?val.toFixed(2):'—'}<span>USD/oz t</span></div>
         <div class="price-card-chg ${chgClassOf(chg)}">${chg!=null? chgArrowOf(chg)+' '+Math.abs(chg).toFixed(2)+'% ('+periodLabel(pricesData.period)+')' : '—'}</div>
@@ -3917,7 +3918,7 @@ function renderFxCards() {
     const chg = computeFxPeriodChange(sym, pricesData.period);
     const sel = pricesData.selected?.type==='fx' && pricesData.selected?.key===sym;
     return `
-      <div class="fx-card ${sel?'selected':''}" onclick="selectPriceItem('fx','${sym}',${JSON.stringify((CURRENCY_NAMES[sym]||sym)+' (USD/'+sym+')')})">
+      <div class="fx-card ${sel?'selected':''}" onclick="selectPriceItem('fx','${sym}')">
         <div class="fx-card-code">USD → ${sym}</div>
         <div class="fx-card-val">${val!=null? val.toLocaleString(undefined,{maximumFractionDigits: val<10?4:2}) : '—'}</div>
         <div class="fx-card-chg ${chgClassOf(chg)}">${chg!=null? chgArrowOf(chg)+' '+Math.abs(chg).toFixed(2)+'%' : '—'}</div>
@@ -3925,8 +3926,14 @@ function renderFxCards() {
   }).join('');
 }
 
-function selectPriceItem(type, key, label) {
-  pricesData.selected = { type, key, label };
+function priceItemLabel(type, key) {
+  if (type === 'commodity') return pricesData.commodities?.series?.[key]?.label || key;
+  if (type === 'metal') return METAL_LABELS[key] || key;
+  if (type === 'fx') return (CURRENCY_NAMES[key] || key) + ' (USD/' + key + ')';
+  return key;
+}
+function selectPriceItem(type, key) {
+  pricesData.selected = { type, key, label: priceItemLabel(type, key) };
   renderMarketPrices();
 }
 
@@ -3942,10 +3949,20 @@ function renderTrendChart(sel) {
 
   if (sel.type === 'commodity') {
     const obs = (pricesData.commodities?.series?.[sel.key]?.observations) || [];
-    obs.filter(o => o.date >= cutoffStr).forEach(o => { labels.push(o.date); values.push(o.value); });
+    let windowed = obs.filter(o => o.date >= cutoffStr);
+    // FRED has data gaps (weekends/holidays/reporting lag). For short periods
+    // like 7D, a strict date cutoff can leave just 1 point — which can't draw a
+    // line. Fall back to the last few available observations so a trend always
+    // renders. Roughly map each period to a minimum sensible point count.
+    const minPts = pricesData.period <= 7 ? 5 : (pricesData.period <= 30 ? 12 : 20);
+    if (windowed.length < minPts) windowed = obs.slice(-minPts);
+    windowed.forEach(o => { labels.push(o.date); values.push(o.value); });
     console.log(`[Prices] chart(${sel.key}) period=${pricesData.period}d cutoff=${cutoffStr} → ${labels.length} pts, range ${labels[0]}..${labels[labels.length-1]}`);
   } else {
-    fxDatesSorted().filter(d => d >= cutoffStr).forEach(d => {
+    let dates = fxDatesSorted().filter(d => d >= cutoffStr);
+    const minPts = pricesData.period <= 7 ? 5 : (pricesData.period <= 30 ? 12 : 20);
+    if (dates.length < minPts) dates = fxDatesSorted().slice(-minPts);
+    dates.forEach(d => {
       labels.push(d);
       values.push(fxDisplayValue(sel.key, pricesData.fx.rates[d]?.[sel.key]));
     });
