@@ -2125,7 +2125,8 @@ function showPopup(t) {
   const el = document.querySelector(`[data-id="${t.id}"]`);
   if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 
-  mapPanTo(t.lat, t.lng);
+  // Only pan the Leaflet/Google map when the map view is actually active.
+  if (document.getElementById('map-panel')?.classList.contains('active')) mapPanTo(t.lat, t.lng);
 }
 
 function closePopup() {
@@ -2542,7 +2543,55 @@ function toggleShipLayerOnMap() {
     map.removeLayer(shipLayerGroup);
   }
 }
-function viewFull() { switchView('benchmark'); }
+// Open a dedicated fact sheet for the currently-selected terminal. Previously
+// this jumped to the Benchmark page, which only lists the top terminals by
+// capacity — so smaller terminals had no fact sheet there. This shows the
+// specific terminal's full details regardless of its size/ranking.
+function viewFull() {
+  const t = selectedTerminal;
+  if (!t) return;
+  const ty = TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port;
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('fs-name', t.name);
+  document.getElementById('fs-loc').innerHTML = `${t.city}, ${t.country} · <span style="color:${ty.color};">● ${ty.short}</span> · operated by ${t.op || '—'}`;
+  set('fs-cap', `${(t.cap/1000).toFixed(1)}M kbd`);
+  set('fs-occ', t.occ || '—');
+  set('fs-tanks', t.tanks != null ? t.tanks : '—');
+  set('fs-berths', t.berths != null ? t.berths : '—');
+  document.getElementById('fs-products').innerHTML = (t.products || []).map(p => `<span class="popup-product">${p}</span>`).join('') || '<span style="color:var(--text-dim);font-size:11px;">—</span>';
+
+  const m = t.metrics || {};
+  const fmtM = (v, suffix) => (v == null || v === '') ? '—' : (v + (suffix || ''));
+  set('fs-throughput', fmtM(m.throughput));
+  set('fs-trt', fmtM(m.trt));
+  set('fs-tankturns', fmtM(m.tankTurns));
+  set('fs-utilization', m.utilization != null && m.utilization !== '' ? m.utilization + '%' : '—');
+  const anyMetric = ['throughput','trt','tankTurns','utilization'].some(k => m[k] != null && m[k] !== '');
+  document.getElementById('fs-metrics-note').textContent = anyMetric
+    ? (m.lastAudit ? `Last audited ${m.lastAudit}.` : 'Self-reported by the operator.')
+    : 'No operational metrics reported yet. Verified operators can add these via the terminal popup.';
+
+  const status = t.claimStatus || 'unclaimed';
+  const ownerEl = document.getElementById('fs-owner');
+  if (status === 'owned' && t.ownerId) ownerEl.innerHTML = t.ownerCompany ? `✓ Verified operator: <b>${t.ownerCompany}</b>` : '✓ Claimed &amp; verified';
+  else if (status === 'pending') ownerEl.textContent = '⏳ A claim for this terminal is under review';
+  else ownerEl.textContent = '○ Unclaimed — this terminal has no verified operator yet';
+
+  document.getElementById('factSheetModal').classList.remove('hidden');
+}
+
+function closeFactSheet() {
+  document.getElementById('factSheetModal').classList.add('hidden');
+}
+
+// From the fact sheet, jump to the map centered on this terminal with its popup.
+function factSheetLocate() {
+  const t = selectedTerminal;
+  closeFactSheet();
+  if (!t) return;
+  switchView('map');
+  setTimeout(() => { showPopup(t); mapPanTo(t.lat, t.lng); if (map) map.setView([t.lat, t.lng], 6); }, 250);
+}
 
 // ─── SIDEBAR LIST ────────────────────────────────────────────────────────────
 
@@ -2561,10 +2610,16 @@ function selectTerminalFromList(id) {
     showPopup(t);
   } else if (onMap) {
     showPopup(t);
+    // Zoom in on the terminal so the sidebar click clearly "points to" it.
+    if (map) map.setView([t.lat, t.lng], 6, { animate: true });
+    else if (usingGoogle && gMap) { gMap.panTo({ lat: t.lat, lng: t.lng }); gMap.setZoom(6); }
   } else {
-    // From any other view, go to the map and open the popup.
+    // From any other view, go to the map, open the popup, and zoom to it.
     switchView('map');
-    setTimeout(() => showPopup(t), 200);
+    setTimeout(() => {
+      showPopup(t);
+      if (map) map.setView([t.lat, t.lng], 6, { animate: true });
+    }, 250);
   }
 }
 
@@ -3652,23 +3707,28 @@ function hideGlobeBeacon() {
   if (globeState && globeState.hideBeacon) globeState.hideBeacon();
 }
 
-// Rotate the globe so a given lat/lon faces the camera, and drop a pulsing beacon.
+// Rotate the globe so a given lat/lon faces the camera (+Z), and drop a pulsing beacon.
 function globeFlyTo(lat, lon, color) {
   if (!globeBuilt) return false;
-  // The globe group starts at rotation.y = -1.1; a point at (lat,lon) faces the
-  // camera (+Z) when group.rotation.y ≈ -(lon+180)*deg - offset and rotation.x ≈ lat.
-  const targetY = -((lon + 180) * Math.PI / 180) + Math.PI;   // bring lon to front
-  const targetX = (lat * Math.PI / 180) * 0.9;                // tilt toward lat
-  // Normalize targetY near the current rotation to avoid a long way around.
+  // Derived from llToVec: a point's pre-rotation position is
+  //   x = -sin(phi)cos(theta), z = sin(phi)sin(theta), with theta=(lon+180)°.
+  // The camera looks down +Z, so to bring the point to the front we rotate the
+  // group around Y by the negative of the point's current angle from +Z, which
+  // is atan2(x, z) = atan2(-cos(theta), sin(theta)) at the equator. Rotating x
+  // (tilt) by the latitude brings it to vertical center.
+  const theta = (lon + 180) * Math.PI / 180;
+  const targetY = -Math.atan2(-Math.cos(theta), Math.sin(theta));
+  const targetX = Math.max(-1.1, Math.min(1.1, (lat * Math.PI / 180)));
+  // Normalize targetY near the current rotation to take the short way around.
   const g = globeState.getGroup && globeState.getGroup();
   if (g) {
     let cur = g.rotation.y;
     let ty = targetY;
-    while (ty - cur > Math.PI) ty -= 2*Math.PI;
-    while (ty - cur < -Math.PI) ty += 2*Math.PI;
-    globeState.flyTarget = { y: ty, x: Math.max(-1.1, Math.min(1.1, targetX)) };
+    while (ty - cur > Math.PI) ty -= 2 * Math.PI;
+    while (ty - cur < -Math.PI) ty += 2 * Math.PI;
+    globeState.flyTarget = { y: ty, x: targetX };
   } else {
-    globeState.flyTarget = { y: targetY, x: Math.max(-1.1, Math.min(1.1, targetX)) };
+    globeState.flyTarget = { y: targetY, x: targetX };
   }
   if (globeState.placeBeacon) globeState.placeBeacon(lat, lon, color);
   return true;
@@ -4170,6 +4230,10 @@ loadScript(
 }
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 .modal-overlay.hidden { display: none; }
+.fs-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.fs-stat-label { font-size: 9px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); }
+.fs-stat-val { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text); margin-top: 3px; }
+.fs-section-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; font-weight: 600; }
 
 .login-box {
   background: var(--surface);
@@ -4643,6 +4707,43 @@ loadScript(
       <input type="date" id="m-lastaudit">
     </div>
     <button class="popup-btn" style="margin-top:8px;" onclick="saveMetrics()" id="metricsSaveBtn">Save Operational Data</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="factSheetModal">
+  <div class="login-box" style="max-width:560px;text-align:left;">
+    <button class="modal-close-x" onclick="closeFactSheet()">×</button>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:2px;">
+      <h2 style="font-family:var(--font-display);margin:0;" id="fs-name">—</h2>
+    </div>
+    <p style="color:var(--text-muted);font-size:12px;margin:4px 0 16px;" id="fs-loc">—</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div class="fs-stat"><div class="fs-stat-label">Storage Capacity</div><div class="fs-stat-val" id="fs-cap">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Berth Occupancy</div><div class="fs-stat-val" id="fs-occ">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Tanks</div><div class="fs-stat-val" id="fs-tanks">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Berths</div><div class="fs-stat-val" id="fs-berths">—</div></div>
+    </div>
+
+    <div class="fs-section-label">Products Stored</div>
+    <div id="fs-products" style="margin-bottom:16px;"></div>
+
+    <div class="fs-section-label">Operational Metrics</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+      <div class="fs-stat"><div class="fs-stat-label">Throughput (kbd)</div><div class="fs-stat-val" id="fs-throughput">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Avg TRT (hrs)</div><div class="fs-stat-val" id="fs-trt">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Tank Turns / Yr</div><div class="fs-stat-val" id="fs-tankturns">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Utilization</div><div class="fs-stat-val" id="fs-utilization">—</div></div>
+    </div>
+    <p style="color:var(--text-dim);font-size:10px;margin:8px 0 16px;" id="fs-metrics-note"></p>
+
+    <div class="fs-section-label">Ownership</div>
+    <div id="fs-owner" style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">—</div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="popup-btn" style="flex:1;min-width:140px;" onclick="factSheetLocate()" id="fs-locate-btn">📍 Show on Map</button>
+      <button class="popup-btn" style="flex:1;min-width:140px;background:none;border:1px solid var(--border);color:var(--text-muted);" onclick="closeFactSheet()">Close</button>
+    </div>
   </div>
 </div>
 
