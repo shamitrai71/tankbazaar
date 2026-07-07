@@ -709,7 +709,7 @@ input[type="range"] {
 
 .ship-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 880px;
   border-collapse: collapse;
   font-size: 11px;
 }
@@ -1433,6 +1433,7 @@ input[type="range"] {
               <th>DWT</th>
               <th>Status</th>
               <th>Nav Status</th>
+              <th>Position</th>
               <th>Destination</th>
               <th>ETA</th>
               <th>Cargo</th>
@@ -3085,8 +3086,8 @@ function toggleAisStream() {
 }
 
 function exportShipsCsv() {
-  const rows = [['Vessel','IMO','Type','Flag','DWT','Status','Nav Status','Destination','ETA','Cargo']]
-    .concat(ships.map(s => [s.name, s.imo, s.type, s.flag, s.dwt, s.status, (s.navStatus||'—'), (s.destination||s.last||'—'), fmtEta(s.eta), s.cargo]));
+  const rows = [['Vessel','IMO','Type','Flag','DWT','Status','Nav Status','Position','Destination','ETA','Cargo']]
+    .concat(ships.map(s => [s.name, s.imo, s.type, s.flag, s.dwt, s.status, (s.navStatus||'—'), fmtPosition(s), (s.destination||s.last||'—'), fmtEta(s.eta), s.cargo]));
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
@@ -3107,11 +3108,12 @@ function renderShips() {
       <td>${s.dwt}</td>
       <td><span class="status-badge status-${s.status}">${s.status}</span></td>
       <td style="color:var(--text-muted)">${s.navStatus || '—'}</td>
+      <td style="color:var(--text-muted);font-size:10px;white-space:nowrap;">${fmtPosition(s)}</td>
       <td style="color:var(--text-muted)">${s.destination || s.last || '—'}</td>
       <td>${fmtEta(s.eta)}</td>
       <td style="color:var(--accent)">${s.cargo}</td>
     </tr>
-  `).join('') || '<tr><td colspan="10" style="color:var(--text-dim);padding:20px;text-align:center;">No vessels yet. Click "Refresh Vessels" above, or check Admin → Data & API.</td></tr>';
+  `).join('') || '<tr><td colspan="11" style="color:var(--text-dim);padding:20px;text-align:center;">No vessels yet. Click "Refresh Vessels" above, or check Admin → Data & API.</td></tr>';
 
   // KPIs computed from the actual vessel set (not hardcoded).
   const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
@@ -5155,7 +5157,7 @@ loadScript(
               <button class="btn-admin primary" onclick="testVesselApi()">Test VesselAPI Proxy</button>
               <span id="vesselApiStatus" style="font-size:10px;color:var(--text-dim);"></span>
             </div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">⚙ Quota-safe by design: the free plan allows ~150 calls/month. The function keeps a shared cache (Firestore) and only actually calls VesselAPI once a day: 3 terminals for positions (rotating through your top 20) + 1 new vessel for destination/ETA — about 120 calls/month total, well under the cap, no matter how many visitors load the site. Destination/ETA coverage starts small and grows daily since each vessel is looked up once and cached for a week (destinations rarely change mid-voyage). Type, flag, DWT, and cargo aren't in VesselAPI's response at all, so those always show "—" — honest blanks, not guesses.</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">⚙ Quota-safe by design: the free plan allows ~150 calls/month. The function keeps a shared cache (Firestore) and refreshes once a day: 4 terminals for positions (rotating through your top 20, full cycle every 5 days) + every other day, 1 vessel gets enriched with its type, flag, DWT, destination & ETA (2 calls each). Capped hard at 145 calls/month regardless of traffic. Enrichment (type/flag/DWT/destination) starts blank and fills in gradually — each vessel is looked up once and cached ~2 weeks, since a ship's identity and destination rarely change mid-voyage. Live GPS position, speed, course & nav-status come with every position refresh; cargo isn't published via AIS so it stays "—".</div>
           </div>
           <div class="admin-card">
             <div class="admin-card-title">🛰 Live AIS — AISStream.io (WebSocket, experimental)</div>
@@ -5627,6 +5629,15 @@ function fmtEta(raw) {
     return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' ' +
            d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
   } catch (e) { return raw; }
+}
+
+// Format a vessel's live GPS position as compact coordinates (e.g. "25.3°N 55.4°E").
+// These come from the bounding-box endpoint and are the most reliable AIS fields.
+function fmtPosition(s) {
+  if (typeof s.lat !== 'number' || typeof s.lon !== 'number') return '—';
+  const lat = Math.abs(s.lat).toFixed(2) + '°' + (s.lat >= 0 ? 'N' : 'S');
+  const lon = Math.abs(s.lon).toFixed(2) + '°' + (s.lon >= 0 ? 'E' : 'W');
+  return lat + ' ' + lon;
 }
 
 async function saveProfile() {
@@ -6469,9 +6480,10 @@ async function testVesselApi() {
   if (ok) {
     const meta = DataService.shipsMeta;
     const ageTxt = meta?.cacheAgeHours != null ? `${Math.round(meta.cacheAgeHours)}h old` : 'just fetched';
-    const budgetTxt = meta ? `${meta.callsThisMonth}/${meta.monthlyBudget} calls used this month` : '';
-    const destTxt = meta ? ` · destination data on ${meta.detailsCoveragePct||0}% of tracked vessels (${meta.detailsCachedCount||0} cached, grows daily)` : '';
-    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${ships.length} vessels (cache ${ageTxt}${meta?.didRefresh ? ' · refreshed just now' : ''}) · ${budgetTxt}${destTxt}`; }
+    const budgetTxt = meta ? `${meta.callsThisMonth}/${meta.monthlyBudget} calls this month` : '';
+    const coverageTxt = meta ? ` · enriched (type/flag/DWT): ${meta.enrichedCoveragePct||0}%, destination/ETA: ${meta.detailsCoveragePct||0}% — both grow over days` : '';
+    const rotationTxt = meta ? ` · ${meta.terminalsCovered||0}/${meta.terminalsInRotation||0} terminals in rotation` : '';
+    if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ ${ships.length} vessels (positions ${ageTxt}${meta?.didRefresh ? ' · refreshed now' : ''}) · ${budgetTxt}${rotationTxt}${coverageTxt}`; }
     toast(`VesselAPI working — ${ships.length} live vessels loaded.`);
     if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
     if (typeof renderShipMarkersOnMap === 'function') renderShipMarkersOnMap();

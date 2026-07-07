@@ -36,11 +36,16 @@ const NAV_STATUS = {
 };
 
 const HALF_SPAN = 0.9;                 // degrees; |dLat|+|dLon| stays under VesselAPI's 4° cap
-const BATCH_SIZE = 3;                  // terminals refreshed per position-cycle (was 4 — trimmed to make room for destination lookups)
-const DETAIL_BATCH_SIZE = 1;           // NEW vessel destination/ETA lookups per cycle
-const DETAILS_TTL_DAYS = 7;            // a vessel's stated destination rarely changes mid-voyage; re-check only this often
+const BATCH_SIZE = 4;                  // terminals refreshed per position-cycle (full 20-terminal rotation every 5 cycles)
+const DETAIL_BATCH_SIZE = 1;           // vessels enriched per ELIGIBLE cycle (each costs 2 calls: eta + static)
+const DETAILS_EVERY_N_CYCLES = 2;      // only enrich on every Nth cycle, to protect the monthly budget
+const DETAILS_TTL_DAYS = 14;           // static identity + destination rarely change; re-check infrequently
 const REFRESH_INTERVAL_HOURS = 24;     // minimum time between real API-call cycles
-const MONTHLY_BUDGET = 120;            // (3+1 terminals/details) x 30 days = 120, well under the 150 free-tier cap
+const MONTHLY_BUDGET = 145;            // just under the 150 free-tier cap
+// Budget math (worst case, once/day): positions 4/day * 30 = 120, plus
+// enrichment 2 calls on every 2nd day = ~30/month → ~150 ceiling, guarded by
+// the hard MONTHLY_BUDGET check so it never exceeds the cap even if traffic
+// triggers extra cycles.
 
 const FIREBASE_PROJECT_ID = 'tankbazaar';
 const FIRESTORE_DB_ID = 'tankbazaar';
@@ -171,6 +176,7 @@ exports.handler = async function (event) {
       }));
       cache.rotationIndex = (cache.rotationIndex + BATCH_SIZE) % terminals.length;
       cache.callsThisMonth += BATCH_SIZE;
+      cache.cycleCount = (cache.cycleCount || 0) + 1;
       didRefresh = true;
     }
 
@@ -184,13 +190,17 @@ exports.handler = async function (event) {
       });
     });
 
-    // 2) Destination/ETA lookups — a SEPARATE, small slice of the same shared
-    // monthly budget (GET /v1/vessel/{mmsi}/eta, one call per vessel). A
-    // vessel's stated destination rarely changes mid-voyage, so once fetched
-    // it's cached for DETAILS_TTL_DAYS rather than re-fetched daily. Each
-    // cycle looks up only vessels we've never checked (or whose cached entry
-    // is stale), so coverage broadens gradually without spiking usage.
-    if (dueForRefresh && (cache.callsThisMonth + DETAIL_BATCH_SIZE) <= MONTHLY_BUDGET) {
+    // 2) Per-vessel enrichment — a SEPARATE, small slice of the same shared
+    // monthly budget. For each picked vessel we fetch BOTH its crew-reported
+    // ETA/destination (GET /v1/vessel/{mmsi}/eta) AND its static data
+    // (GET /v1/vessel/{mmsi} → type, flag/country, DWT), since the position
+    // bounding-box endpoint returns none of those. Both are cached for
+    // DETAILS_TTL_DAYS (a vessel's identity/destination rarely change
+    // mid-voyage), so coverage broadens gradually without spiking usage.
+    // Each picked vessel costs 2 calls (eta + static), so the effective
+    // per-cycle detail cost is DETAIL_BATCH_SIZE * 2.
+    const enrichmentDue = didRefresh && (cache.cycleCount % DETAILS_EVERY_N_CYCLES === 0);
+    if (enrichmentDue && (cache.callsThisMonth + DETAIL_BATCH_SIZE * 2) <= MONTHLY_BUDGET) {
       const knownMmsi = Array.from(vesselMap.values()).map(v => v.mmsi).filter(Boolean);
       const needsLookup = knownMmsi.filter(mmsi => {
         const d = cache.vesselDetails[mmsi];
@@ -201,22 +211,35 @@ exports.handler = async function (event) {
       const pick = needsLookup.slice(0, DETAIL_BATCH_SIZE);
       if (pick.length) {
         await Promise.all(pick.map(async (mmsi) => {
+          const entry = { fetchedAt: now.toISOString() };
+          // (a) ETA / destination
           try {
-            const url = `https://api.vesselapi.com/v1/vessel/${mmsi}/eta?filter.idType=mmsi`;
-            const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
-            if (!res.ok) return; // e.g. 404 = no recent ETA report; leave uncached, retried next cycle
-            const data = await res.json();
-            const e = data.vesselEta || data;
-            cache.vesselDetails[mmsi] = {
-              destination: e.destination || null,
-              destinationPort: e.destination_port || null,
-              eta: e.eta || null,
-              draught: typeof e.draught === 'number' ? e.draught : null,
-              fetchedAt: now.toISOString(),
-            };
-          } catch (e) { /* skip; retried next cycle */ }
+            const etaRes = await fetch(`https://api.vesselapi.com/v1/vessel/${mmsi}/eta?filter.idType=mmsi`, { headers: { Authorization: `Bearer ${apiKey}` } });
+            if (etaRes.ok) {
+              const data = await etaRes.json();
+              const e = data.vesselEta || data;
+              entry.destination = e.destination || null;
+              entry.destinationPort = e.destination_port || null;
+              entry.eta = e.eta || null;
+              entry.draught = typeof e.draught === 'number' ? e.draught : null;
+            }
+          } catch (e) { /* skip */ }
+          // (b) Static data — type, flag (country), deadweight tonnage
+          try {
+            const stRes = await fetch(`https://api.vesselapi.com/v1/vessel/${mmsi}?filter.idType=mmsi`, { headers: { Authorization: `Bearer ${apiKey}` } });
+            if (stRes.ok) {
+              const data = await stRes.json();
+              const s = data.vessel || data;
+              entry.type = s.vessel_type || s.ship_type || null;
+              entry.flag = s.country || s.flag || null;
+              entry.dwt = (typeof s.deadweight === 'number' ? s.deadweight
+                          : typeof s.dwt === 'number' ? s.dwt
+                          : typeof s.deadweight_tonnage === 'number' ? s.deadweight_tonnage : null);
+            }
+          } catch (e) { /* skip */ }
+          cache.vesselDetails[mmsi] = entry;
         }));
-        cache.callsThisMonth += pick.length;
+        cache.callsThisMonth += pick.length * 2; // eta + static per vessel
         didDetailsRefresh = true;
       }
     }
@@ -237,7 +260,10 @@ exports.handler = async function (event) {
         lon: typeof v.longitude === 'number' ? v.longitude : null,
         cog: typeof v.cog === 'number' ? v.cog : null,
         sog: sog,
-        type: '—', flag: '—', dwt: '—', cargo: '—',
+        type: (details && details.type) || '—',
+        flag: (details && details.flag) || '—',
+        dwt: (details && details.dwt != null) ? details.dwt : '—',
+        cargo: '—',
         destination: (details && details.destination) || '—',
         destinationPort: (details && details.destinationPort) || null,
         eta: (details && details.eta) || '—',
@@ -248,6 +274,8 @@ exports.handler = async function (event) {
     }).filter(s => s.lat != null && s.lon != null).slice(0, 300);
 
     const detailsCoverage = ships.length ? Math.round(ships.filter(s => s.destination !== '—').length / ships.length * 100) : 0;
+    const enrichedCoverage = ships.length ? Math.round(ships.filter(s => s.type !== '—').length / ships.length * 100) : 0;
+    const terminalsCovered = Object.keys(cache.byTerminal).length;
 
     return {
       statusCode: 200, headers,
@@ -260,9 +288,11 @@ exports.handler = async function (event) {
           callsThisMonth: cache.callsThisMonth,
           monthlyBudget: MONTHLY_BUDGET,
           terminalsInRotation: terminals.length,
+          terminalsCovered,
           batchSize: BATCH_SIZE,
           detailsCachedCount: Object.keys(cache.vesselDetails).length,
           detailsCoveragePct: detailsCoverage,
+          enrichedCoveragePct: enrichedCoverage,
         },
       }),
     };
