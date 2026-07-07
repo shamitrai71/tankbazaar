@@ -1255,28 +1255,33 @@ input[type="range"] {
         <div class="legend-item" style="opacity:0.7;margin-top:4px;font-size:9px;">Dot size = capacity</div>
         <div class="legend-item legend-filter" id="mapShipLegendToggle" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;" onclick="toggleShipLayerOnMap()"><div class="legend-dot" style="background:#4fd1ff;width:9px;height:9px;border-radius:2px;"></div>Live Ships <span id="shipLegendCount" style="color:var(--text-dim);margin-left:4px;"></span></div>
       </div>
-      <div class="terminal-popup" id="terminal-popup">
-        <button class="popup-close" onclick="closePopup()">×</button>
-        <div class="popup-header">
-          <div class="popup-name" id="p-name"></div>
-          <div class="popup-location" id="p-loc"></div>
-        </div>
-        <div class="popup-stats">
-          <div class="popup-stat"><div class="popup-stat-label">Capacity</div><div class="popup-stat-value" id="p-cap"></div></div>
-          <div class="popup-stat"><div class="popup-stat-label">Tanks</div><div class="popup-stat-value" id="p-tanks"></div></div>
-          <div class="popup-stat"><div class="popup-stat-label">Berths</div><div class="popup-stat-value" id="p-berths"></div></div>
-          <div class="popup-stat"><div class="popup-stat-label">Occupancy</div><div class="popup-stat-value" id="p-occ"></div></div>
-        </div>
-        <div class="popup-products">
-          <div class="popup-products-label">Products Stored</div>
-          <div class="popup-product-list" id="p-products"></div>
-        </div>
-        <div class="popup-metrics" id="p-metrics" style="display:none;"></div>
-        <div class="popup-owner" id="p-owner" style="display:none;"></div>
-        <button class="popup-btn" onclick="viewFull()">View Full Fact Sheet →</button>
-        <button class="popup-btn popup-btn-claim" id="p-claim-btn" onclick="openClaimForm()" style="display:none;">⚑ Claim this terminal</button>
-        <button class="popup-btn popup-btn-owner" id="p-metrics-btn" onclick="openMetricsForm()" style="display:none;">✎ Edit operational data</button>
+    </div>
+
+    <!-- Terminal detail popup — a direct child of the content area (NOT inside
+         any view-panel) so it can float over the globe or the map. If it lived
+         inside #map-panel, that panel's display:none on other views would hide
+         it even though it's position:fixed. -->
+    <div class="terminal-popup" id="terminal-popup">
+      <button class="popup-close" onclick="closePopup()">×</button>
+      <div class="popup-header">
+        <div class="popup-name" id="p-name"></div>
+        <div class="popup-location" id="p-loc"></div>
       </div>
+      <div class="popup-stats">
+        <div class="popup-stat"><div class="popup-stat-label">Capacity</div><div class="popup-stat-value" id="p-cap"></div></div>
+        <div class="popup-stat"><div class="popup-stat-label">Tanks</div><div class="popup-stat-value" id="p-tanks"></div></div>
+        <div class="popup-stat"><div class="popup-stat-label">Berths</div><div class="popup-stat-value" id="p-berths"></div></div>
+        <div class="popup-stat"><div class="popup-stat-label">Occupancy</div><div class="popup-stat-value" id="p-occ"></div></div>
+      </div>
+      <div class="popup-products">
+        <div class="popup-products-label">Products Stored</div>
+        <div class="popup-product-list" id="p-products"></div>
+      </div>
+      <div class="popup-metrics" id="p-metrics" style="display:none;"></div>
+      <div class="popup-owner" id="p-owner" style="display:none;"></div>
+      <button class="popup-btn" onclick="viewFull()">View Full Fact Sheet →</button>
+      <button class="popup-btn popup-btn-claim" id="p-claim-btn" onclick="openClaimForm()" style="display:none;">⚑ Claim this terminal</button>
+      <button class="popup-btn popup-btn-owner" id="p-metrics-btn" onclick="openMetricsForm()" style="display:none;">✎ Edit operational data</button>
     </div>
 
     <!-- LISTINGS MARKETPLACE VIEW -->
