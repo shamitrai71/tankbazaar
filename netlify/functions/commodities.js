@@ -29,7 +29,10 @@ const SERIES = {
   natgas:   { id: 'DHHNGSP',      label: 'Henry Hub Nat Gas', unit: 'USD/MMBtu' },
 };
 
-const CACHE_TTL_HOURS = 6;   // FRED series update at most once/day; a few hours is plenty fresh
+const CACHE_TTL_HOURS = 1;   // refresh hourly. FRED publishes ~once/business-day, but a
+                             // 1h cache means we pick up each new day's value promptly
+                             // (and correct any stale weekend snapshot) at negligible cost —
+                             // FRED is free with generous limits, so frequent checks are fine.
 const HISTORY_DAYS = 400;    // enough trading days to cover a 1-year trendline
 
 const FIREBASE_PROJECT_ID = 'tankbazaar';
