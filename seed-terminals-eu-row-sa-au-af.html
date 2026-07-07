@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TANK BAZAAR — Seed New Terminals (50–63)</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  body { font-family: ui-monospace, Menlo, monospace; background:#0a1512; color:#e8f0ec; max-width:760px; margin:0 auto; padding:40px 20px; line-height:1.6; }
+  h1 { color:#d9a441; font-size:22px; }
+  .card { background:#12201b; border:1px solid #24362c; border-radius:12px; padding:20px; margin:16px 0; }
+  button { background:#d9a441; color:#06110d; border:0; border-radius:8px; padding:12px 20px; font-family:inherit; font-weight:700; font-size:14px; cursor:pointer; }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
+  button.g { background:#2fa37c; }
+  #log { background:#06110d; border:1px solid #24362c; border-radius:8px; padding:14px; font-size:12px; white-space:pre-wrap; max-height:360px; overflow:auto; margin-top:16px; }
+  .ok { color:#6fd98f; } .err { color:#e05c4f; } .muted { color:#7d9388; }
+</style>
+</head>
+<body>
+<h1>⬢ TANK BAZAAR — Seed New Terminals (IDs 50–63)</h1>
+<p class="muted">One-time tool to write the 14 new port terminals (Europe, Russia, South America, Australia, Africa) directly into Firestore. Only needed if the app's automatic admin-sync didn't add them. Safe to run more than once — it just overwrites the same 14 records. Sign in with the admin account (esraigroup@gmail.com), then click Seed.</p>
+
+<div class="card">
+  <div id="authState" class="muted">Not signed in.</div>
+  <div style="margin-top:12px;">
+    <button class="g" id="signInBtn" onclick="signIn()">Sign in with Google</button>
+    <button id="seedBtn" onclick="seed()" disabled>Seed 14 Terminals</button>
+  </div>
+</div>
+
+<div id="log">Ready.</div>
+
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDvX0Iy9GVuk42t-MZDQ08CAFpmSCHwDh4",
+  authDomain: "tankbazaar.firebaseapp.com",
+  projectId: "tankbazaar",
+  storageBucket: "tankbazaar.firebasestorage.app",
+  messagingSenderId: "272470012557",
+  appId: "1:272470012557:web:bc0bf5698ae4a47df368c4"
+};
+const FIRESTORE_DB_ID = "tankbazaar";
+
+const NEW_TERMINALS = [
+{ id:50, name:"Vopak Algeciras", country:"Spain", city:"Algeciras", lat:36.13, lng:-5.44, cap:4030, tanks:88, berths:7, occ:"82%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"lg", type:"port" },
+{ id:51, name:"Oiltanking Malta", country:"Malta", city:"Birżebbuġa", lat:35.83, lng:14.55, cap:2800, tanks:74, berths:6, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"Oiltanking", size:"md", type:"port" },
+{ id:52, name:"CLH Bilbao", country:"Spain", city:"Bilbao", lat:43.35, lng:-3.06, cap:3200, tanks:80, berths:6, occ:"84%", products:["Diesel","Gasoline","Chemicals"], op:"Exolum", size:"md", type:"port" },
+{ id:53, name:"Primorsk Oil Terminal", country:"Russia", city:"Primorsk", lat:60.34, lng:28.62, cap:7600, tanks:118, berths:8, occ:"88%", products:["Crude","Diesel"], op:"Transneft", size:"xl", type:"port" },
+{ id:54, name:"Novorossiysk CPC", country:"Russia", city:"Novorossiysk", lat:44.66, lng:37.79, cap:8200, tanks:130, berths:9, occ:"90%", products:["Crude"], op:"Transneft", size:"xl", type:"port" },
+{ id:55, name:"Ust-Luga Terminal", country:"Russia", city:"Ust-Luga", lat:59.67, lng:28.27, cap:5100, tanks:96, berths:7, occ:"85%", products:["Crude","Diesel","Gasoline"], op:"Rosneft", size:"lg", type:"port" },
+{ id:56, name:"Petrobras São Sebastião", country:"Brazil", city:"São Sebastião", lat:-23.80, lng:-45.40, cap:6200, tanks:110, berths:8, occ:"81%", products:["Crude","Diesel","Gasoline"], op:"Petrobras", size:"xl", type:"port" },
+{ id:57, name:"Oiltanking Cartagena", country:"Colombia", city:"Cartagena", lat:10.32, lng:-75.51, cap:3400, tanks:78, berths:6, occ:"77%", products:["Crude","LPG","Chemicals"], op:"Oiltanking", size:"md", type:"port" },
+{ id:58, name:"Vopak Buenos Aires", country:"Argentina", city:"Buenos Aires", lat:-34.62, lng:-58.36, cap:2900, tanks:72, berths:5, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"md", type:"port" },
+{ id:59, name:"Vopak Botany Bay", country:"Australia", city:"Sydney", lat:-33.98, lng:151.20, cap:3100, tanks:76, berths:5, occ:"80%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"md", type:"port" },
+{ id:60, name:"Kwinana Terminal", country:"Australia", city:"Perth", lat:-32.23, lng:115.77, cap:3600, tanks:82, berths:6, occ:"83%", products:["Crude","Diesel","Gasoline"], op:"BP", size:"md", type:"port" },
+{ id:61, name:"Saldanha Bay Terminal", country:"South Africa", city:"Saldanha", lat:-33.02, lng:17.94, cap:5800, tanks:104, berths:7, occ:"79%", products:["Crude"], op:"Vopak", size:"lg", type:"port" },
+{ id:62, name:"Mombasa Oil Terminal", country:"Kenya", city:"Mombasa", lat:-4.04, lng:39.65, cap:2700, tanks:70, berths:5, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"KPC", size:"md", type:"port" },
+{ id:63, name:"Oiltanking Abidjan", country:"Ivory Coast", city:"Abidjan", lat:5.25, lng:-4.00, cap:2500, tanks:66, berths:5, occ:"73%", products:["Diesel","Gasoline","LPG"], op:"Oiltanking", size:"md", type:"port" }
+];
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+let currentUser = null;
+
+const logEl = document.getElementById('log');
+function log(msg, cls){ logEl.innerHTML += '\n' + (cls?`<span class="${cls}">${msg}</span>`:msg); logEl.scrollTop = logEl.scrollHeight; }
+
+auth.onAuthStateChanged(u => {
+  currentUser = u;
+  const st = document.getElementById('authState');
+  if (u) {
+    st.innerHTML = `Signed in as <b style="color:#6fd98f;">${u.email}</b>`;
+    document.getElementById('seedBtn').disabled = false;
+    document.getElementById('signInBtn').textContent = 'Signed in ✓';
+  } else {
+    st.textContent = 'Not signed in.';
+    document.getElementById('seedBtn').disabled = true;
+  }
+});
+
+function signIn(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e => log('Sign-in failed: ' + e.message, 'err'));
+}
+
+// Firestore REST value encoder
+function toValue(v){
+  if (v === null || v === undefined) return { nullValue:null };
+  if (typeof v === 'boolean') return { booleanValue:v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue:String(v) } : { doubleValue:v };
+  if (typeof v === 'string') return { stringValue:v };
+  if (Array.isArray(v)) return { arrayValue:{ values:v.map(toValue) } };
+  if (typeof v === 'object') return { mapValue:{ fields:toFields(v) } };
+  return { stringValue:String(v) };
+}
+function toFields(obj){ const f={}; for (const [k,val] of Object.entries(obj)) f[k]=toValue(val); return f; }
+
+// Match the app's normalizeTerminal(): every record carries metrics + ownership.
+function normalize(t){
+  return Object.assign({
+    metrics: { throughput:null, trt:null, tankTurns:null, utilization:null, lastAudit:null },
+    ownerId: null, claimStatus: 'unclaimed',
+  }, t);
+}
+
+async function seed(){
+  if (!currentUser){ log('Sign in first.', 'err'); return; }
+  document.getElementById('seedBtn').disabled = true;
+  log('\n--- Seeding ' + NEW_TERMINALS.length + ' terminals ---', 'muted');
+  const token = await currentUser.getIdToken();
+  const base = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/${FIRESTORE_DB_ID}/documents`;
+  let ok=0, fail=0;
+  for (const t of NEW_TERMINALS){
+    const doc = normalize(t);
+    const mask = Object.keys(doc).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+    const url = `${base}/terminals/${t.id}?${mask}`;
+    try {
+      const res = await fetch(url, {
+        method:'PATCH',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+        body: JSON.stringify({ fields: toFields(doc) }),
+      });
+      if (res.ok){ ok++; log(`✓ ${t.id} ${t.name} (${t.country})`, 'ok'); }
+      else { fail++; const txt = await res.text(); log(`✗ ${t.id} ${t.name} — ${res.status}: ${txt.slice(0,120)}`, 'err'); }
+    } catch(e){ fail++; log(`✗ ${t.id} ${t.name} — ${e.message}`, 'err'); }
+  }
+  log(`\nDone. ${ok} written, ${fail} failed.`, fail? 'err':'ok');
+  if (ok) log('Now reload tankbazaar.com — all 63 terminals will load from Firestore.', 'muted');
+  document.getElementById('seedBtn').disabled = false;
+}
+</script>
+</body>
+</html>
