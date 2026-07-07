@@ -1167,10 +1167,15 @@ input[type="range"] {
         <select id="filter-region" onchange="filterTerminals()">
           <option>All Regions</option>
           <option>ARA (NW Europe)</option>
+          <option>Mediterranean Europe</option>
+          <option>Russia & Caspian</option>
           <option>Middle East</option>
           <option>Southeast Asia</option>
           <option>North America</option>
+          <option>South America</option>
           <option>West Africa</option>
+          <option>East &amp; South Africa</option>
+          <option>Australia</option>
           <option>India Subcontinent</option>
         </select>
       </div>
@@ -1727,6 +1732,25 @@ const terminals = [
   { id:48, name:"Sidi Kerir Terminal", country:"Egypt", city:"Sidi Kerir, Alexandria", lat:31.10, lng:29.65, cap:6800, tanks:122, berths:10, occ:"85%", products:["Crude","Diesel"], op:"SUMED", size:"xl", type:"port" },
   // ── Japan — port-based terminal ──
   { id:49, name:"Kawasaki Terminal", country:"Japan", city:"Kawasaki", lat:35.51, lng:139.75, cap:5400, tanks:102, berths:9, occ:"86%", products:["Crude","Gasoline","LPG"], op:"ENEOS", size:"lg", type:"port" },
+  // ── Europe ──
+  { id:50, name:"Vopak Algeciras", country:"Spain", city:"Algeciras", lat:36.13, lng:-5.44, cap:4030, tanks:88, berths:7, occ:"82%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"lg", type:"port" },
+  { id:51, name:"Oiltanking Malta", country:"Malta", city:"Birżebbuġa", lat:35.83, lng:14.55, cap:2800, tanks:74, berths:6, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"Oiltanking", size:"md", type:"port" },
+  { id:52, name:"CLH Bilbao", country:"Spain", city:"Bilbao", lat:43.35, lng:-3.06, cap:3200, tanks:80, berths:6, occ:"84%", products:["Diesel","Gasoline","Chemicals"], op:"Exolum", size:"md", type:"port" },
+  // ── Russia ──
+  { id:53, name:"Primorsk Oil Terminal", country:"Russia", city:"Primorsk", lat:60.34, lng:28.62, cap:7600, tanks:118, berths:8, occ:"88%", products:["Crude","Diesel"], op:"Transneft", size:"xl", type:"port" },
+  { id:54, name:"Novorossiysk CPC", country:"Russia", city:"Novorossiysk", lat:44.66, lng:37.79, cap:8200, tanks:130, berths:9, occ:"90%", products:["Crude"], op:"Transneft", size:"xl", type:"port" },
+  { id:55, name:"Ust-Luga Terminal", country:"Russia", city:"Ust-Luga", lat:59.67, lng:28.27, cap:5100, tanks:96, berths:7, occ:"85%", products:["Crude","Diesel","Gasoline"], op:"Rosneft", size:"lg", type:"port" },
+  // ── South America ──
+  { id:56, name:"Petrobras São Sebastião", country:"Brazil", city:"São Sebastião", lat:-23.80, lng:-45.40, cap:6200, tanks:110, berths:8, occ:"81%", products:["Crude","Diesel","Gasoline"], op:"Petrobras", size:"xl", type:"port" },
+  { id:57, name:"Oiltanking Cartagena", country:"Colombia", city:"Cartagena", lat:10.32, lng:-75.51, cap:3400, tanks:78, berths:6, occ:"77%", products:["Crude","LPG","Chemicals"], op:"Oiltanking", size:"md", type:"port" },
+  { id:58, name:"Vopak Buenos Aires", country:"Argentina", city:"Buenos Aires", lat:-34.62, lng:-58.36, cap:2900, tanks:72, berths:5, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  // ── Australia ──
+  { id:59, name:"Vopak Botany Bay", country:"Australia", city:"Sydney", lat:-33.98, lng:151.20, cap:3100, tanks:76, berths:5, occ:"80%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:60, name:"Kwinana Terminal", country:"Australia", city:"Perth", lat:-32.23, lng:115.77, cap:3600, tanks:82, berths:6, occ:"83%", products:["Crude","Diesel","Gasoline"], op:"BP", size:"md", type:"port" },
+  // ── Africa ──
+  { id:61, name:"Saldanha Bay Terminal", country:"South Africa", city:"Saldanha", lat:-33.02, lng:17.94, cap:5800, tanks:104, berths:7, occ:"79%", products:["Crude"], op:"Vopak", size:"lg", type:"port" },
+  { id:62, name:"Mombasa Oil Terminal", country:"Kenya", city:"Mombasa", lat:-4.04, lng:39.65, cap:2700, tanks:70, berths:5, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"KPC", size:"md", type:"port" },
+  { id:63, name:"Oiltanking Abidjan", country:"Ivory Coast", city:"Abidjan", lat:5.25, lng:-4.00, cap:2500, tanks:66, berths:5, occ:"73%", products:["Diesel","Gasoline","LPG"], op:"Oiltanking", size:"md", type:"port" },
 ];
 
 // Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
@@ -2574,10 +2598,15 @@ function currentTypeFilter() {
 // Map each region label to the countries it covers.
 const REGION_COUNTRIES = {
   'ARA (NW Europe)': ['Netherlands','Belgium','UK','Germany'],
+  'Mediterranean Europe': ['Spain','Malta','Italy','France','Greece'],
+  'Russia & Caspian': ['Russia','Kazakhstan','Azerbaijan'],
   'Middle East': ['UAE','Saudi Arabia','Kuwait','Qatar','Bahrain','Oman'],
   'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines'],
   'North America': ['USA','Canada','Mexico'],
-  'West Africa': ['Nigeria','Angola','Ghana'],
+  'South America': ['Brazil','Colombia','Argentina','Venezuela','Chile','Peru'],
+  'West Africa': ['Nigeria','Angola','Ghana','Ivory Coast'],
+  'East & South Africa': ['South Africa','Kenya','Tanzania','Mozambique','Egypt'],
+  'Australia': ['Australia','New Zealand'],
   'India Subcontinent': ['India','Bangladesh','Pakistan','Sri Lanka'],
 };
 
@@ -5023,9 +5052,12 @@ loadScript(
           <div class="admin-form-grid three">
             <div class="admin-field"><label>Region</label>
               <select id="nt-region">
-                <option>ARA (NW Europe)</option><option>Middle East</option>
+                <option>ARA (NW Europe)</option><option>Mediterranean Europe</option>
+                <option>Russia &amp; Caspian</option><option>Middle East</option>
                 <option>Southeast Asia</option><option>North America</option>
-                <option>West Africa</option><option>India Subcontinent</option>
+                <option>South America</option><option>West Africa</option>
+                <option>East &amp; South Africa</option><option>Australia</option>
+                <option>India Subcontinent</option>
               </select>
             </div>
             <div class="admin-field"><label>Latitude</label><input type="text" id="nt-lat" placeholder="51.92"></div>
