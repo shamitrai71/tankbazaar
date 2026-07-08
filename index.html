@@ -1454,10 +1454,8 @@ input[type="range"] {
       <div class="search-bar">
         <input type="text" id="shipSearch" placeholder="Search vessel name or IMO..." oninput="renderShips()">
         <button class="btn-small primary" onclick="refreshVesselsNow()" id="refreshVesselsBtn">⟳ Refresh Vessels</button>
-        <button class="btn-small" id="aisConnectBtn" onclick="toggleAisStream()" title="AISStream.io has a known upstream bug (connects but delivers no data). Kept as a secondary option in case it's fixed.">🛰 Live AIS (WebSocket, experimental)</button>
         <button class="btn-small" onclick="exportShipsCsv()">Export CSV</button>
       </div>
-      <div id="aisStatusLine" style="font-size:11px;color:var(--text-muted);margin-bottom:12px;display:none;"></div>
       <div class="kpi-grid" style="margin-bottom:16px;">
         <div class="kpi-card"><div class="kpi-label">Vessels Tracked</div><div class="kpi-value" style="color:var(--accent)" id="shipTotalKpi">—</div><div class="kpi-delta" id="shipTotalSub">in current view</div></div>
         <div class="kpi-card green"><div class="kpi-label">At Berth</div><div class="kpi-value" id="shipBerthKpi">—</div><div class="kpi-delta" id="shipBerthSub">&nbsp;</div></div>
@@ -1520,7 +1518,7 @@ input[type="range"] {
         </div>
       </div>
 
-      <div class="price-section-label">🛢 Energy Commodities <span style="color:var(--text-dim);font-weight:400;">· source: FRED (U.S. Federal Reserve)</span></div>
+      <div class="price-section-label">🛢 Energy Commodities <span style="color:var(--text-dim);font-weight:400;">· source: OilPriceAPI (spot prices)</span></div>
       <div class="price-kpi-grid" id="commodityKpiGrid">
         <div style="color:var(--text-dim);font-size:12px;padding:16px;">Loading…</div>
       </div>
@@ -1536,7 +1534,7 @@ input[type="range"] {
         <div class="chart-wrap" style="height:280px;"><canvas id="priceTrendChart"></canvas></div>
       </div>
 
-      <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Commodity prices are FRED daily reference series (published the next business day, not real-time). Currency and metal rates are ECB/central-bank daily closes via Frankfurter. Click any card to plot its trend for the selected period.</div>
+      <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Commodity prices are OilPriceAPI spot prices, refreshed up to twice daily; their trend charts build up over time as new daily points are collected. Currency and metal rates are ECB/central-bank daily closes via Frankfurter. Click any card to plot its trend for the selected period.</div>
     </div>
 
   </div><!-- /content-area -->
@@ -2970,248 +2968,8 @@ const ships = [
   {name:"VLCC Emerald Sea",imo:"9012345",type:"VLCC",flag:"🇸🇬",dwt:"315,000",status:"moving",last:"Pengerang",eta:"Apr 05",cargo:"Crude"},
 ];
 
-// ═══════════════════════════════════════════════════════════════
-// LIVE AIS via AISStream.io (WebSocket)
-// Connects to aisstream.io, subscribes to bounding boxes around our
-// terminals, merges PositionReport + ShipStaticData into vessel records,
-// and feeds the ship table + KPIs. Key stored locally (free read-only key).
-// ═══════════════════════════════════════════════════════════════
-const AisStream = {
-  ws: null,
-  key: localStorage.getItem('tb_aisstream_key') || '',
-  vessels: {},        // mmsi -> merged record
-  connected: false,
-  renderTimer: null,
-  reconnectTimer: null,
-  manualClose: false,
-
-  // AIS ship-type code → label (tankers are 80-89).
-  shipTypeLabel(code) {
-    code = parseInt(code) || 0;
-    if (code >= 80 && code <= 89) return 'Tanker';
-    if (code >= 70 && code <= 79) return 'Cargo';
-    if (code >= 60 && code <= 69) return 'Passenger';
-    if (code >= 40 && code <= 49) return 'High-speed';
-    if (code >= 30 && code <= 39) return 'Fishing/Tug';
-    if (code >= 50 && code <= 59) return 'Special';
-    return code ? 'Other' : '—';
-  },
-
-  // Rough flag emoji from MMSI MID (first 3 digits) for common maritime nations.
-  flagFromMmsi(mmsi) {
-    const mid = String(mmsi).slice(0, 3);
-    const map = {
-      '419':'🇮🇳','563':'🇸🇬','564':'🇸🇬','565':'🇸🇬','566':'🇸🇬',
-      '470':'🇦🇪','471':'🇦🇪','403':'🇸🇦','425':'🇮🇶','422':'🇮🇷',
-      '447':'🇰🇼','445':'🇰🇵','244':'🇳🇱','245':'🇳🇱','246':'🇳🇱',
-      '205':'🇧🇪','232':'🇬🇧','233':'🇬🇧','234':'🇬🇧','235':'🇬🇧',
-      '338':'🇺🇸','366':'🇺🇸','367':'🇺🇸','368':'🇺🇸','369':'🇺🇸',
-      '353':'🇵🇦','354':'🇵🇦','355':'🇵🇦','256':'🇲🇹','248':'🇲🇹',
-      '538':'🇲🇭','636':'🇱🇷','477':'🇭🇰','431':'🇯🇵','432':'🇯🇵',
-      '440':'🇰🇷','441':'🇰🇷','525':'🇮🇩','533':'🇲🇾','657':'🇳🇬',
-      '605':'🇩🇿','208':'🇧🇬','237':'🇬🇷','239':'🇬🇷','240':'🇬🇷','241':'🇬🇷',
-    };
-    return map[mid] || '🏳';
-  },
-
-  // Build ~±2° bounding boxes around each terminal (focuses volume near our facilities).
-  // AISStream can reject malformed/oversized boxes silently. Use the exact
-  // global box from AISStream's own docs as a reliable default, plus optional
-  // regional focus. Global box streams every ship the network receives.
-  boundingBoxes() {
-    if (this._useGlobal !== false) {
-      // Known-good box straight from AISStream documentation.
-      return [[[-90, -180], [90, 180]]];
-    }
-    // Focused mode: small well-formed boxes around each terminal (±1.5°).
-    const D = 1.5;
-    return terminals
-      .filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng))
-      .map(t => [
-        [t.lat - D, t.lng - D],   // corner 1 (lat, lon)
-        [t.lat + D, t.lng + D],   // corner 2 (lat, lon)
-      ])
-      .slice(0, 50);
-  },
-
-  connect(key) {
-    if (key) { this.key = key.trim(); localStorage.setItem('tb_aisstream_key', this.key); }
-    if (!this.key) { toast('Enter your AISStream.io API key in Admin → Data & API first.', 'error'); return; }
-    if (this.ws) this.disconnect(true);
-    this.manualClose = false;
-    this.setStatus('Connecting to AISStream.io…');
-    try {
-      this.ws = new WebSocket('wss://stream.aisstream.io/v0/stream');
-    } catch (e) { this.setStatus('Connection failed: ' + e.message, true); return; }
-
-    this.ws.onopen = () => {
-      this._openedAt = Date.now();
-      const boxes = this.boundingBoxes();
-      const sub = {
-        APIKey: this.key,
-        BoundingBoxes: boxes,
-        FilterMessageTypes: ['PositionReport', 'ShipStaticData'],
-      };
-      this.ws.send(JSON.stringify(sub));
-      this.connected = true;
-      this.msgCount = 0;
-      this.vessels = {};
-      // Clear demo data immediately so the table honestly reflects live state.
-      ships.length = 0;
-      DataService.isLive.ships = true;
-      this.updateBtn();
-      this.setStatus('● Connected — waiting for vessels in ' + boxes.length + ' areas…');
-      if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
-      console.log('%c[AIS] Subscribed with ' + boxes.length + ' bounding boxes', 'color:#2fa37c');
-      console.log('[AIS] Bounding boxes:', JSON.stringify(boxes));
-      // Heartbeat: report message count every 5s so we can see if data flows.
-      clearInterval(this._hb);
-      this._hb = setInterval(() => {
-        console.log('[AIS] heartbeat — messages so far:', this.msgCount || 0, '| vessels:', Object.keys(this.vessels).length);
-        if (!this.msgCount) {
-          this.setStatus('● Connected but no AIS messages yet — this area/key may have no live coverage right now.', false);
-        }
-      }, 5000);
-    };
-
-    this.ws.onmessage = (ev) => {
-      let msg; try { msg = JSON.parse(ev.data); } catch { return; }
-      // Error envelope from AISStream (bad key, bad subscription, throttling).
-      if (msg.error || msg.Error || (msg.MessageType === 'Error')) {
-        const err = msg.error || msg.Error || JSON.stringify(msg);
-        this.setStatus('AISStream error: ' + err, true);
-        console.error('[AIS] error:', err);
-        this.disconnect(true);
-        return;
-      }
-      this.msgCount = (this.msgCount || 0) + 1;
-      if (this.msgCount === 1) {
-        console.log('%c[AIS] First message received ✓', 'color:#6fd98f;font-weight:bold', msg.MessageType);
-        console.log('[AIS] Raw first message:', JSON.stringify(msg).slice(0, 500));
-      }
-      this.ingest(msg);
-      this.scheduleRender();
-    };
-
-    this.ws.onerror = () => { this.setStatus('WebSocket error — check key/network.', true); };
-    this.ws.onclose = () => {
-      this.connected = false; this.updateBtn();
-      const openMs = Date.now() - (this._openedAt || 0);
-      if (this.manualClose) { this.setStatus('Disconnected.'); return; }
-
-      // If the socket dropped within ~4s of opening and we got no messages,
-      // the subscription was almost certainly rejected. Don't hammer-retry.
-      if (openMs < 4000 && !this.msgCount) {
-        this._fastFails = (this._fastFails || 0) + 1;
-      } else {
-        this._fastFails = 0;
-      }
-
-      if (this._fastFails >= 3) {
-        this.setStatus('Connection keeps dropping — likely an invalid API key or rejected subscription. Check your AISStream.io key.', true);
-        console.error('[AIS] Giving up after repeated immediate disconnects. Verify the API key at aisstream.io.');
-        return; // stop the loop
-      }
-
-      const delay = Math.min(5000 * (this._fastFails || 1), 20000);
-      this.setStatus(`Disconnected — retrying in ${Math.round(delay/1000)}s…`, true);
-      this.reconnectTimer = setTimeout(() => this.connect(), delay);
-    };
-  },
-
-  disconnect(silent) {
-    this.manualClose = true;
-    clearTimeout(this.reconnectTimer);
-    clearInterval(this._hb);
-    if (this.ws) { try { this.ws.close(); } catch {} this.ws = null; }
-    this.connected = false;
-    this.updateBtn();
-    if (!silent) { this.setStatus('Disconnected.'); DataService.isLive.ships = false; renderShips(); }
-  },
-
-  ingest(msg) {
-    const meta = msg.MetaData || {};
-    const mmsi = meta.MMSI || (msg.Message && (
-      (msg.Message.PositionReport && msg.Message.PositionReport.UserID) ||
-      (msg.Message.ShipStaticData && msg.Message.ShipStaticData.UserID)));
-    if (!mmsi) return;
-    const v = this.vessels[mmsi] || { mmsi };
-
-    if (msg.MessageType === 'PositionReport' && msg.Message.PositionReport) {
-      const p = msg.Message.PositionReport;
-      v.lat = p.Latitude; v.lon = p.Longitude;
-      v.sog = p.Sog; v.cog = p.Cog;
-      v.navStatus = p.NavigationalStatus;
-    }
-    if (msg.MessageType === 'ShipStaticData' && msg.Message.ShipStaticData) {
-      const s = msg.Message.ShipStaticData;
-      v.name = (s.Name || '').trim() || v.name;
-      v.imo = s.ImoNumber || v.imo;
-      v.typeCode = s.Type != null ? s.Type : v.typeCode;
-      v.destination = (s.Destination || '').trim() || v.destination;
-      if (s.Eta && s.Eta.Month) v.eta = `${s.Eta.Month}/${s.Eta.Day} ${String(s.Eta.Hour).padStart(2,'0')}:${String(s.Eta.Minute).padStart(2,'0')}`;
-    }
-    // Name sometimes only present in MetaData
-    if (!v.name && meta.ShipName) v.name = String(meta.ShipName).trim();
-    v.lastUpdate = Date.now();
-    this.vessels[mmsi] = v;
-  },
-
-  scheduleRender() {
-    if (this.renderTimer) return;
-    this.renderTimer = setTimeout(() => {
-      this.renderTimer = null;
-      this.pushToShips();
-      const n = ships.length;
-      this.setStatus(`● Live — ${n} vessel${n===1?'':'s'} near your terminals (${this.msgCount} msgs received)`);
-      if (document.getElementById('tracking-panel')?.classList.contains('active')) renderShips();
-    }, 1500);
-  },
-
-  // Convert live vessels into the app's `ships` array (tankers first, freshest first).
-  pushToShips() {
-    const now = Date.now();
-    const list = Object.values(this.vessels)
-      .filter(v => v.lat != null && (now - v.lastUpdate) < 15*60*1000) // drop stale >15min
-      .sort((a,b) => {
-        const at = (a.typeCode>=80&&a.typeCode<=89)?0:1, bt = (b.typeCode>=80&&b.typeCode<=89)?0:1;
-        if (at !== bt) return at - bt;             // tankers first
-        return b.lastUpdate - a.lastUpdate;        // then freshest
-      })
-      .slice(0, 100);
-    ships.length = 0;
-    list.forEach(v => ships.push({
-      name: v.name || ('MMSI ' + v.mmsi),
-      imo: v.imo || '—',
-      type: this.shipTypeLabel(v.typeCode),
-      flag: this.flagFromMmsi(v.mmsi),
-      dwt: '—',  // DWT is not broadcast over AIS
-      status: (v.sog != null && v.sog > 0.5) ? 'moving' : 'berthed',
-      last: v.destination || '—',
-      eta: v.eta || '—',
-      cargo: '—',  // cargo is not broadcast over AIS
-    }));
-  },
-
-  setStatus(text, isErr) {
-    const el = document.getElementById('aisStatusLine');
-    if (!el) return;
-    el.style.display = 'block';
-    el.style.color = isErr ? 'var(--danger)' : 'var(--accent2)';
-    el.textContent = text;
-  },
-  updateBtn() {
-    const b = document.getElementById('aisConnectBtn');
-    if (!b) return;
-    b.textContent = this.connected ? '🛰 Disconnect Live AIS' : '🛰 Connect Live AIS';
-    b.classList.toggle('primary', this.connected);
-  },
-};
-
-function toggleAisStream() {
-  if (AisStream.connected || AisStream.ws) AisStream.disconnect();
-  else AisStream.connect();
-}
+// (AISStream.io live-AIS adapter removed — vessel data now comes solely from
+// VesselAPI via the /.netlify/functions/vessels proxy.)
 
 function exportShipsCsv() {
   const rows = [['Vessel','IMO','Type','Flag','DWT','Status','Nav Status','Position','Destination','ETA','Cargo']]
@@ -3247,7 +3005,7 @@ function renderShips() {
   const set = (id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   const berthed = ships.filter(s => s.status === 'berthed' || s.status === 'at berth').length;
   const moving = ships.filter(s => s.status === 'moving' || s.status === 'at sea').length;
-  const aisLive = typeof AisStream !== 'undefined' && AisStream.connected;
+  const aisLive = false; // AISStream removed
   const vesselApiLive = DataService.isLive.ships && !aisLive;
   set('shipTotalKpi', ships.length.toLocaleString());
   set('shipBerthKpi', berthed.toLocaleString());
@@ -3256,7 +3014,7 @@ function renderShips() {
   const srcCard = document.getElementById('shipSourceKpi');
   if (aisLive) {
     set('shipSourceKpi', 'Live AIS');
-    if (srcSub) srcSub.textContent = 'AISStream.io (WebSocket) · live';
+    if (srcSub) srcSub.textContent = 'VesselAPI · live';
     if (srcCard) srcCard.style.color = 'var(--accent3)';
   } else if (vesselApiLive) {
     set('shipSourceKpi', 'Live (VesselAPI)');
@@ -4032,7 +3790,7 @@ function renderCommodityCards() {
   if (!grid) return;
   const series = pricesData.commodities && pricesData.commodities.series;
   if (!series || !Object.keys(series).length) {
-    grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:16px;">Commodity data unavailable — set FRED_API_KEY in Admin → Data & API.</div>';
+    grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:16px;">Commodity data unavailable — set OILPRICEAPI_KEY in Admin → Data & API.</div>';
     return;
   }
   grid.innerHTML = Object.entries(series).map(([key, s]) => {
@@ -5361,28 +5119,18 @@ loadScript(
             <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">⚙ Quota-safe by design: the free plan allows ~150 calls/month. The function keeps a shared cache (Firestore) and refreshes once a day: 4 terminals for positions (rotating through your top 20, full cycle every 5 days) + every other day, 1 vessel gets enriched with its type, flag, DWT, destination & ETA (2 calls each). Capped hard at 145 calls/month regardless of traffic. Enrichment (type/flag/DWT/destination) starts blank and fills in gradually — each vessel is looked up once and cached ~2 weeks, since a ship's identity and destination rarely change mid-voyage. Live GPS position, speed, course & nav-status come with every position refresh; cargo isn't published via AIS so it stays "—".</div>
           </div>
           <div class="admin-card">
-            <div class="admin-card-title">🛰 Live AIS — AISStream.io (WebSocket, experimental)</div>
-            <div style="font-size:10px;color:#e05c4f;margin-bottom:10px;line-height:1.5;">⚠ AISStream has a confirmed, currently-open bug where connections succeed and subscribe correctly but deliver zero messages (<span style="color:var(--accent2);">github.com/aisstream/aisstream, issue #15</span>). We've verified our integration is correct against their own docs and a working reference implementation — this is on their end. Kept here in case it's fixed upstream; VesselAPI above is the reliable option for now.</div>
-            <div class="admin-field" style="margin-bottom:10px;"><label>AISStream.io API Key</label><input type="text" id="aisStreamKey" placeholder="your_aisstream_api_key"></div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button class="btn-admin" onclick="saveAndConnectAis()">Save & Connect Live</button>
-              <button class="btn-admin" onclick="AisStream.disconnect()">Disconnect</button>
-              <span id="aisAdminStatus" style="font-size:10px;color:var(--text-dim);"></span>
-            </div>
-          </div>
-          <div class="admin-card">
-            <div class="admin-card-title">💹 Market Prices — FRED (commodities) + Frankfurter (FX/metals)</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Powers the <b>Prices</b> tab: WTI, Brent, Gasoline, Henry Hub Natural Gas (via FRED — U.S. Federal Reserve), plus currencies and precious metals (via Frankfurter — free, keyless, no setup needed for that part).</div>
+            <div class="admin-card-title">💹 Market Prices — OilPriceAPI (commodities) + Frankfurter (FX/metals)</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Powers the <b>Prices</b> tab: WTI, Brent, Gasoline, Natural Gas (via OilPriceAPI — real-time spot prices), plus currencies and precious metals (via Frankfurter — free, keyless, no setup needed for that part).</div>
             <ol style="font-size:10.5px;color:var(--text-muted);line-height:1.9;margin:0 0 12px 18px;padding:0;">
-              <li>Register free (no card) at <span style="color:var(--accent2);">fred.stlouisfed.org/docs/api/api_key.html</span> → copy your key.</li>
-              <li>In <b>Netlify</b> → Site configuration → Environment variables, add:<br><code style="background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--gold);">FRED_API_KEY</code> = your key, then trigger a redeploy.</li>
+              <li>Register free (no card) at <span style="color:var(--accent2);">oilpriceapi.com</span> → copy your API token.</li>
+              <li>In <b>Netlify</b> → Site configuration → Environment variables, add:<br><code style="background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--gold);">OILPRICEAPI_KEY</code> = your token, then trigger a redeploy.</li>
               <li>Come back here and click Test, or open the Prices tab directly.</li>
             </ol>
             <div style="display:flex;gap:8px;align-items:center;">
               <button class="btn-admin primary" onclick="testCommoditiesApi()">Test Commodities Proxy</button>
               <span id="commoditiesApiStatus" style="font-size:10px;color:var(--text-dim);"></span>
             </div>
-            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">All prices are daily reference values (FRED publishes the next business day; Frankfurter uses ECB's ~16:00 CET close), not real-time ticks. Currencies/metals need no key and work immediately; only the commodities half needs FRED_API_KEY.</div>
+            <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">⚙ Quota-safe: OilPriceAPI's free tier is 200 requests/month. All 4 commodities are fetched in ONE call, cached in Firestore, and refreshed at most twice a day (~60 calls/month, hard-capped at 180). The free tier returns current prices only, so <b>trend charts build up over time</b> — each daily refresh appends one real data point. Currencies/metals via Frankfurter need no key and work immediately.</div>
           </div>
         </div>
       </div>
@@ -6660,18 +6408,6 @@ function populateDataConfigFields() {
   set('gmapsApiKey', getGmapsKey());
   const useMainEl = document.getElementById('useGmapsMain');
   if (useMainEl) useMainEl.checked = useGmapsForMainMap();
-  set('aisStreamKey', AisStream.key);
-  const st = document.getElementById('aisAdminStatus');
-  if (st) st.textContent = AisStream.connected ? '● Live' : '';
-}
-
-function saveAndConnectAis() {
-  const key = document.getElementById('aisStreamKey').value.trim();
-  if (!key) { toast('Enter your AISStream.io API key.', 'error'); return; }
-  AisStream.connect(key);
-  const st = document.getElementById('aisAdminStatus');
-  if (st) st.textContent = 'Connecting…';
-  logActivity('Connected live AIS (AISStream.io)', 'success');
 }
 
 async function testVesselApi() {
@@ -6697,22 +6433,22 @@ async function testVesselApi() {
 
 async function testCommoditiesApi() {
   const st = document.getElementById('commoditiesApiStatus');
-  if (st) st.textContent = 'Testing (forcing a fresh pull from FRED)…';
+  if (st) st.textContent = 'Testing (forcing a fresh pull from OilPriceAPI)…';
   try {
     const data = await fetchCommodities(true); // force=1: bypass cache to rule out stale data
     pricesData.commodities = data;
     const keys = Object.keys(data.series || {});
     if (!keys.length) {
-      if (st) { st.style.color = 'var(--danger)'; st.textContent = '✗ No series returned — check FRED_API_KEY is set in Netlify env vars, then redeploy.'; }
+      if (st) { st.style.color = 'var(--danger)'; st.textContent = '✗ No series returned — check OILPRICEAPI_KEY is set in Netlify env vars, then redeploy.'; }
       toast('Commodities test returned no data.', 'error');
       return;
     }
     const summary = keys.map(k => `${data.series[k].label}: ${data.series[k].latest} (${data.series[k].observations?.length||0} pts)`).join(' · ');
     if (st) { st.style.color = 'var(--accent2)'; st.textContent = `✓ Fresh pull: ${summary}`; }
-    toast('FRED commodities working — cache force-refreshed.');
+    toast('OilPriceAPI commodities working — cache force-refreshed.');
     if (document.getElementById('prices-panel')?.classList.contains('active')) renderMarketPrices();
   } catch (e) {
-    if (st) { st.style.color = 'var(--danger)'; st.textContent = `✗ ${e.message} — check FRED_API_KEY is set in Netlify env vars, then redeploy.`; }
+    if (st) { st.style.color = 'var(--danger)'; st.textContent = `✗ ${e.message} — check OILPRICEAPI_KEY is set in Netlify env vars, then redeploy.`; }
     toast('Commodities test failed — see status message below the button.', 'error');
   }
 }
