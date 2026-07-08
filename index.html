@@ -2617,26 +2617,29 @@ function factSheetLocate() {
 // Clicking a terminal in the sidebar list: ensure the Map view is active
 // (the popup lives in the map panel), then show its details.
 function selectTerminalFromList(id) {
+  console.log('[sidebar] click terminal id=', id);
   const t = terminals.find(x => x.id === id);
-  if (!t) return;
+  if (!t) { console.warn('[sidebar] terminal not found for id', id); return; }
   const onGlobe = document.getElementById('globe-panel')?.classList.contains('active');
   const onMap = document.getElementById('map-panel')?.classList.contains('active');
+  console.log('[sidebar] onGlobe=', onGlobe, 'onMap=', onMap, 'globeBuilt=', typeof globeBuilt !== 'undefined' ? globeBuilt : 'undef');
 
-  if (onGlobe && typeof globeFlyTo === 'function' && globeBuilt) {
-    // Fly the globe to the terminal, drop a pulsing beacon, then show details.
-    const color = (TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port).color;
-    globeFlyTo(t.lat, t.lng, color);
-    showPopup(t);
-  } else if (onMap) {
-    showPopup(t);
-    // Zoom in on the terminal so the sidebar click clearly "points to" it.
-    if (map) map.setView([t.lat, t.lng], 6, { animate: true });
-    else if (usingGoogle && gMap) { gMap.panTo({ lat: t.lat, lng: t.lng }); gMap.setZoom(6); }
-  } else {
-    // On any other view (Benchmark, Prices, Tracking, etc.) just open the
-    // popup in place — it floats over the current view (position:fixed), so
-    // there's no need to jump away to the map.
-    showPopup(t);
+  try {
+    if (onGlobe && typeof globeFlyTo === 'function' && globeBuilt) {
+      const color = (TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port).color;
+      globeFlyTo(t.lat, t.lng, color);
+      showPopup(t);
+    } else if (onMap) {
+      showPopup(t);
+      if (map) map.setView([t.lat, t.lng], 6, { animate: true });
+      else if (usingGoogle && gMap) { gMap.panTo({ lat: t.lat, lng: t.lng }); gMap.setZoom(6); }
+    } else {
+      // On any other view just open the popup in place (it floats, position:fixed).
+      showPopup(t);
+    }
+    console.log('[sidebar] showPopup done; popup display=', document.getElementById('terminal-popup')?.style.display);
+  } catch (err) {
+    console.error('[sidebar] error opening terminal popup:', err);
   }
 }
 
