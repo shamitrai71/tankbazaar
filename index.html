@@ -2069,7 +2069,7 @@ function addMarker(t) {
 }
 
 function removeMarkerById(id) {
-  const mi = markers.findIndex(m => m.terminal.id === id);
+  const mi = markers.findIndex(m => String(m.terminal.id) === String(id));
   if (mi > -1) {
     if (markers[mi].engine === 'google') markers[mi].marker.setMap(null);
     else markers[mi].marker.remove();
@@ -2244,7 +2244,7 @@ async function submitClaim() {
   try {
     await FS_REST.setMerge('terminalClaims', claimId, claim);
     // Mark the terminal as pending (best-effort; admin approval finalizes).
-    const t = terminals.find(x => x.id === selectedTerminal.id);
+    const t = findTerminalById(selectedTerminal.id);
     if (t) { t.claimStatus = 'pending'; }
     closeClaimForm();
     closePopup();
@@ -2446,7 +2446,7 @@ function closeListingForm() { document.getElementById('listingModal').classList.
 async function submitListing() {
   if (!currentUser) return;
   const tid = parseInt(document.getElementById('lst-terminal').value);
-  const t = terminals.find(x => x.id === tid);
+  const t = findTerminalById(tid);
   if (!t) { toast('Select a terminal.', 'error'); return; }
   // Guard: must own it (or admin)
   const isAdminUser = currentUser.role === 'admin' || currentUser.role === 'superadmin';
@@ -2616,13 +2616,20 @@ function factSheetLocate() {
 
 // Clicking a terminal in the sidebar list: ensure the Map view is active
 // (the popup lives in the map panel), then show its details.
+// Loose-match a terminal by id. Firestore stores ids as strings while code
+// paths often use numbers; comparing as strings makes both work everywhere.
+function findTerminalById(id) {
+  return terminals.find(x => String(x.id) === String(id));
+}
+
 function selectTerminalFromList(id) {
-  console.log('[sidebar] click terminal id=', id);
-  const t = terminals.find(x => x.id === id);
+  // Firestore stores terminal ids as strings, but the sidebar onclick passes a
+  // number — so a strict === match fails once terminals load from the DB.
+  // findTerminalById compares loosely so it works for both.
+  const t = findTerminalById(id);
   if (!t) { console.warn('[sidebar] terminal not found for id', id); return; }
   const onGlobe = document.getElementById('globe-panel')?.classList.contains('active');
   const onMap = document.getElementById('map-panel')?.classList.contains('active');
-  console.log('[sidebar] onGlobe=', onGlobe, 'onMap=', onMap, 'globeBuilt=', typeof globeBuilt !== 'undefined' ? globeBuilt : 'undef');
 
   try {
     if (onGlobe && typeof globeFlyTo === 'function' && globeBuilt) {
@@ -2637,7 +2644,6 @@ function selectTerminalFromList(id) {
       // On any other view just open the popup in place (it floats, position:fixed).
       showPopup(t);
     }
-    console.log('[sidebar] showPopup done; popup display=', document.getElementById('terminal-popup')?.style.display);
   } catch (err) {
     console.error('[sidebar] error opening terminal popup:', err);
   }
@@ -5972,7 +5978,7 @@ async function approveClaim(claimId) {
       // 1) Mark the claim approved.
       await FS_REST.setMerge('terminalClaims', claimId, { status: 'approved', reviewedAt: new Date(), reviewedBy: currentUser.email });
       // 2) Assign ownership on the terminal.
-      const t = terminals.find(x => x.id === c.terminalId);
+      const t = findTerminalById(c.terminalId);
       if (t) {
         t.ownerId = c.uid; t.ownerCompany = c.company; t.claimStatus = 'owned';
         await TerminalStore.save(t);
@@ -5994,7 +6000,7 @@ async function rejectClaim(claimId) {
     try {
       await FS_REST.setMerge('terminalClaims', claimId, { status: 'rejected', reviewedAt: new Date(), reviewedBy: currentUser.email });
       // Reset the terminal's status back to unclaimed (if it was pending and not owned).
-      const t = terminals.find(x => x.id === c.terminalId);
+      const t = findTerminalById(c.terminalId);
       if (t && t.claimStatus === 'pending') { t.claimStatus = 'unclaimed'; await TerminalStore.save(t); }
       toast('Claim rejected.');
       logActivity(`Rejected terminal claim: ${c.terminalName} by ${c.email}`, 'warning');
@@ -6077,7 +6083,7 @@ async function addTerminalFromForm() {
 
   if (editingTerminalId != null) {
     // Update existing terminal (preserves metrics/ownership).
-    const t = terminals.find(x => x.id === editingTerminalId);
+    const t = findTerminalById(editingTerminalId);
     if (t) {
       Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ,
         products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
@@ -6108,7 +6114,7 @@ async function addTerminalFromForm() {
 }
 
 function deleteTerminal(id) {
-  const t = terminals.find(x=>x.id===id);
+  const t = findTerminalById(id);
   showConfirm('Delete Terminal', `Delete "${t?.name}"? This will remove it from the map and database.`, async () => {
     const idx = terminals.indexOf(t);
     if (idx > -1) terminals.splice(idx,1);
@@ -6123,7 +6129,7 @@ function deleteTerminal(id) {
 }
 
 function editTerminalForm(id) {
-  const t = terminals.find(x=>x.id===id);
+  const t = findTerminalById(id);
   if (!t) return;
   editingTerminalId = id;
   adminNav('addterminal', null);
