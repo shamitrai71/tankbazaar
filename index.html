@@ -2633,12 +2633,10 @@ function selectTerminalFromList(id) {
     if (map) map.setView([t.lat, t.lng], 6, { animate: true });
     else if (usingGoogle && gMap) { gMap.panTo({ lat: t.lat, lng: t.lng }); gMap.setZoom(6); }
   } else {
-    // From any other view, go to the map, open the popup, and zoom to it.
-    switchView('map');
-    setTimeout(() => {
-      showPopup(t);
-      if (map) map.setView([t.lat, t.lng], 6, { animate: true });
-    }, 250);
+    // On any other view (Benchmark, Prices, Tracking, etc.) just open the
+    // popup in place — it floats over the current view (position:fixed), so
+    // there's no need to jump away to the map.
+    showPopup(t);
   }
 }
 
