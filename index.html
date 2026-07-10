@@ -1183,8 +1183,11 @@ input[type="range"] {
           <option>All Regions</option>
           <option>ARA (NW Europe)</option>
           <option>Mediterranean Europe</option>
-          <option>Russia & Caspian</option>
+          <option>Baltic &amp; Scandinavia</option>
+          <option>Russia &amp; Caspian</option>
+          <option>East Med &amp; Levant</option>
           <option>Middle East</option>
+          <option>East Asia</option>
           <option>Southeast Asia</option>
           <option>North America</option>
           <option>South America</option>
@@ -1793,7 +1796,41 @@ const terminals = [
   { id:88, name:"HRRL Barmer", country:"India", city:"Barmer, Rajasthan", lat:25.75, lng:71.38, cap:3200, tanks:72, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"HRRL", size:"md", type:"inland" },
   { id:89, name:"CPCL Nagapattinam", country:"India", city:"Nagapattinam, Tamil Nadu", lat:10.76, lng:79.84, cap:5400, tanks:56, berths:4, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"CPCL", size:"lg", type:"port" },
   { id:90, name:"HPCL Kakinada", country:"India", city:"Kakinada, Andhra Pradesh", lat:16.99, lng:82.24, cap:4200, tanks:92, berths:7, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"HPCL", size:"md", type:"port" },
-  { id:91, name:"HPCL Vijaywada", country:"India", city:"Vijayawada, Andhra Pradesh", lat:16.51, lng:80.65, cap:3200, tanks:80, berths:0, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"HPCL", size:"md", type:"inland" }
+  { id:91, name:"HPCL Vijaywada", country:"India", city:"Vijayawada, Andhra Pradesh", lat:16.51, lng:80.65, cap:3200, tanks:80, berths:0, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"HPCL", size:"md", type:"inland" },
+  { id:92, name:"Vysotsk LUKOIL Terminal", country:"Russia", city:"Vysotsk", lat:60.62, lng:28.57, cap:3600, tanks:56, berths:6, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Vysotsk", size:"md", type:"port" },
+  { id:93, name:"Taman Oil Terminal", country:"Russia", city:"Taman", lat:45.2, lng:36.7, cap:3200, tanks:72, berths:9, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Taman", size:"md", type:"port" },
+  { id:94, name:"Kozmino Terminal", country:"Russia", city:"Nakhodka", lat:42.72, lng:133.05, cap:4200, tanks:104, berths:7, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Kozmino", size:"md", type:"port" },
+  { id:95, name:"Ningbo-Zhoushan Terminal", country:"China", city:"Ningbo", lat:29.87, lng:122.05, cap:2800, tanks:104, berths:6, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Ningbo-Zhoushan", size:"md", type:"port" },
+  { id:96, name:"Qingdao Oil Terminal", country:"China", city:"Qingdao", lat:36.08, lng:120.32, cap:5400, tanks:104, berths:7, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Qingdao", size:"lg", type:"port" },
+  { id:97, name:"Dalian Oil Terminal", country:"China", city:"Dalian", lat:38.95, lng:121.65, cap:2800, tanks:80, berths:9, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Dalian", size:"md", type:"port" },
+  { id:98, name:"Shanghai Yangshan Terminal", country:"China", city:"Shanghai", lat:30.63, lng:122.06, cap:6200, tanks:104, berths:8, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Shanghai", size:"xl", type:"port" },
+  { id:99, name:"Wilhelmshaven Terminal", country:"Germany", city:"Wilhelmshaven", lat:53.6, lng:8.12, cap:6200, tanks:56, berths:9, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Wilhelmshaven", size:"xl", type:"port" },
+  { id:100, name:"Brunsbüttel Oil Terminal", country:"Germany", city:"Brunsbüttel", lat:53.89, lng:9.14, cap:5400, tanks:72, berths:5, occ:"88%", products:["Crude","Diesel","Gasoline"], op:"Brunsbüttel", size:"lg", type:"port" },
+  { id:101, name:"Fos-sur-Mer Terminal", country:"France", city:"Fos-sur-Mer", lat:43.42, lng:4.86, cap:7100, tanks:118, berths:8, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Fos-sur-Mer", size:"xl", type:"port" },
+  { id:102, name:"Le Havre Terminal", country:"France", city:"Le Havre", lat:49.47, lng:0.13, cap:3200, tanks:64, berths:5, occ:"88%", products:["Crude","Diesel","Gasoline"], op:"Le", size:"md", type:"port" },
+  { id:103, name:"Donges Terminal", country:"France", city:"Donges", lat:47.3, lng:-2.07, cap:4800, tanks:92, berths:5, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Donges", size:"lg", type:"port" },
+  { id:104, name:"Cartagena Repsol Terminal", country:"Spain", city:"Cartagena", lat:37.58, lng:-0.98, cap:6200, tanks:118, berths:7, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Cartagena", size:"xl", type:"port" },
+  { id:105, name:"Tarragona Terminal", country:"Spain", city:"Tarragona", lat:41.1, lng:1.22, cap:7100, tanks:72, berths:7, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Tarragona", size:"xl", type:"port" },
+  { id:106, name:"Sines Oil Terminal", country:"Portugal", city:"Sines", lat:37.95, lng:-8.87, cap:7100, tanks:72, berths:6, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Sines", size:"xl", type:"port" },
+  { id:107, name:"Leixões Terminal", country:"Portugal", city:"Leça da Palmeira", lat:41.18, lng:-8.7, cap:6200, tanks:80, berths:9, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Leixões", size:"xl", type:"port" },
+  { id:108, name:"Aspropyrgos Terminal", country:"Greece", city:"Aspropyrgos", lat:38.05, lng:23.6, cap:6200, tanks:92, berths:7, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Aspropyrgos", size:"xl", type:"port" },
+  { id:109, name:"Agioi Theodoroi Terminal", country:"Greece", city:"Agioi Theodoroi", lat:37.93, lng:23.15, cap:4200, tanks:104, berths:8, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Agioi", size:"md", type:"port" },
+  { id:110, name:"Haifa Oil Terminal", country:"Israel", city:"Haifa", lat:32.82, lng:35.0, cap:6200, tanks:72, berths:5, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Haifa", size:"xl", type:"port" },
+  { id:111, name:"Ashkelon Terminal", country:"Israel", city:"Ashkelon", lat:31.63, lng:34.52, cap:3200, tanks:56, berths:6, occ:"88%", products:["Crude","Diesel","Gasoline"], op:"Ashkelon", size:"md", type:"port" },
+  { id:112, name:"Tripoli Oil Terminal", country:"Lebanon", city:"Tripoli", lat:34.45, lng:35.82, cap:6200, tanks:72, berths:6, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Tripoli", size:"xl", type:"port" },
+  { id:113, name:"Zahrani Terminal", country:"Lebanon", city:"Zahrani", lat:33.5, lng:35.35, cap:2800, tanks:72, berths:8, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Zahrani", size:"md", type:"port" },
+  { id:114, name:"Seria Oil Terminal", country:"Brunei", city:"Seria", lat:4.61, lng:114.32, cap:7100, tanks:56, berths:7, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Seria", size:"xl", type:"port" },
+  { id:115, name:"Muara Terminal", country:"Brunei", city:"Muara", lat:5.03, lng:115.07, cap:4800, tanks:56, berths:9, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Muara", size:"lg", type:"port" },
+  { id:116, name:"Muuga Oil Terminal", country:"Estonia", city:"Tallinn", lat:59.48, lng:24.95, cap:4800, tanks:118, berths:6, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Muuga", size:"lg", type:"port" },
+  { id:117, name:"Paldiski Terminal", country:"Estonia", city:"Paldiski", lat:59.35, lng:24.05, cap:4200, tanks:104, berths:5, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Paldiski", size:"md", type:"port" },
+  { id:118, name:"Gothenburg Terminal", country:"Sweden", city:"Gothenburg", lat:57.69, lng:11.9, cap:6200, tanks:92, berths:7, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Gothenburg", size:"xl", type:"port" },
+  { id:119, name:"Brofjorden Terminal", country:"Sweden", city:"Lysekil", lat:58.35, lng:11.42, cap:4800, tanks:72, berths:6, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Brofjorden", size:"lg", type:"port" },
+  { id:120, name:"Mongstad Terminal", country:"Norway", city:"Mongstad", lat:60.81, lng:5.03, cap:2800, tanks:72, berths:7, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Mongstad", size:"md", type:"port" },
+  { id:121, name:"Slagen Terminal", country:"Norway", city:"Tønsberg", lat:59.3, lng:10.48, cap:5400, tanks:80, berths:7, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Slagen", size:"lg", type:"port" },
+  { id:122, name:"Fredericia Terminal", country:"Denmark", city:"Fredericia", lat:55.56, lng:9.75, cap:7100, tanks:72, berths:7, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Fredericia", size:"xl", type:"port" },
+  { id:123, name:"Kalundborg Terminal", country:"Denmark", city:"Kalundborg", lat:55.68, lng:11.09, cap:3600, tanks:92, berths:7, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Kalundborg", size:"md", type:"port" },
+  { id:124, name:"Porvoo Terminal", country:"Finland", city:"Porvoo", lat:60.3, lng:25.55, cap:3600, tanks:104, berths:5, occ:"88%", products:["Crude","Diesel","Gasoline"], op:"Porvoo", size:"md", type:"port" },
+  { id:125, name:"Naantali Terminal", country:"Finland", city:"Naantali", lat:60.47, lng:22.03, cap:7100, tanks:72, berths:7, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Naantali", size:"xl", type:"port" }
 ];
 
 // Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
@@ -2704,10 +2741,13 @@ function currentTypeFilter() {
 // Map each region label to the countries it covers.
 const REGION_COUNTRIES = {
   'ARA (NW Europe)': ['Netherlands','Belgium','UK','Germany'],
-  'Mediterranean Europe': ['Spain','Malta','Italy','France','Greece'],
+  'Mediterranean Europe': ['Spain','Malta','Italy','France','Greece','Portugal'],
+  'Baltic & Scandinavia': ['Estonia','Sweden','Norway','Denmark','Finland'],
   'Russia & Caspian': ['Russia','Kazakhstan','Azerbaijan'],
+  'East Med & Levant': ['Israel','Lebanon','Egypt','Cyprus','Turkey'],
   'Middle East': ['UAE','Saudi Arabia','Kuwait','Qatar','Bahrain','Oman'],
-  'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines'],
+  'East Asia': ['China','Japan','Taiwan','South Korea'],
+  'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines','Brunei'],
   'North America': ['USA','Canada','Mexico'],
   'South America': ['Brazil','Colombia','Argentina','Venezuela','Chile','Peru'],
   'West Africa': ['Nigeria','Angola','Ghana','Ivory Coast'],
@@ -4963,11 +5003,12 @@ loadScript(
             <div class="admin-field"><label>Region</label>
               <select id="nt-region">
                 <option>ARA (NW Europe)</option><option>Mediterranean Europe</option>
-                <option>Russia &amp; Caspian</option><option>Middle East</option>
-                <option>Southeast Asia</option><option>North America</option>
-                <option>South America</option><option>West Africa</option>
-                <option>East &amp; South Africa</option><option>Australia</option>
-                <option>India Subcontinent</option>
+                <option>Baltic &amp; Scandinavia</option><option>Russia &amp; Caspian</option>
+                <option>East Med &amp; Levant</option><option>Middle East</option>
+                <option>East Asia</option><option>Southeast Asia</option>
+                <option>North America</option><option>South America</option>
+                <option>West Africa</option><option>East &amp; South Africa</option>
+                <option>Australia</option><option>India Subcontinent</option>
               </select>
             </div>
             <div class="admin-field"><label>Latitude</label><input type="text" id="nt-lat" placeholder="51.92"></div>
