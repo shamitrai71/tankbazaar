@@ -405,6 +405,15 @@ input[type="range"] {
   }
   .legend-filter { padding: 7px 8px; margin-bottom: 2px; }  /* bigger tap targets */
   .map-legend h4 { font-size: 10px; }
+
+  /* Commodities + Metals: fit all 4 tiles in one row on mobile (FX grid is
+     left as auto-fill since it has many more items and works fine as-is). */
+  .price-kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+  .price-kpi-grid .price-card { padding: 8px 5px; border-radius: 8px; }
+  .price-kpi-grid .price-card-label { font-size: 7.5px; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .price-kpi-grid .price-card-val { font-size: 13px; margin-top: 3px; }
+  .price-kpi-grid .price-card-val span { display: block; font-size: 8px; margin-left: 0; }
+  .price-kpi-grid .price-card-chg { font-size: 8px; margin-top: 3px; white-space: nowrap; }
 }
 
 /* TERMINAL DETAIL POPUP */
@@ -3676,7 +3685,7 @@ const METAL_SYMBOLS = ['XAU','XAG','XPT','XPD'];
 const METAL_LABELS = { XAU:'Gold', XAG:'Silver', XPT:'Platinum', XPD:'Palladium' };
 const CURRENCY_NAMES = { INR:'Indian Rupee', EUR:'Euro', GBP:'British Pound', JPY:'Japanese Yen', AED:'UAE Dirham', RUB:'Russian Ruble', SGD:'Singapore Dollar', THB:'Thai Baht', IDR:'Indonesian Rupiah', ZAR:'South African Rand', CNY:'Chinese Yuan', CHF:'Swiss Franc', SAR:'Saudi Riyal', KWD:'Kuwaiti Dinar' };
 
-let pricesData = { commodities: null, fx: null, period: 30, selected: null, chart: null, loaded: false };
+let pricesData = { commodities: null, fx: null, period: 30, selected: null, chartInstances: { inline: null, modal: null }, loaded: false };
 
 function periodLabel(days) { return days===7?'7D':days===30?'1M':days===90?'3M':'1Y'; }
 
@@ -3923,29 +3932,27 @@ function priceItemLabel(type, key) {
 function selectPriceItem(type, key) {
   pricesData.selected = { type, key, label: priceItemLabel(type, key) };
   renderMarketPrices();
+  // On mobile, open a chart modal so the trend is visible immediately without
+  // scrolling down past the KPI grids — regardless of which tile was tapped.
+  if (window.innerWidth <= 860) openPriceChartModal();
 }
 
-function renderTrendChart(sel) {
-  const titleEl = document.getElementById('priceChartTitle');
-  if (titleEl) titleEl.textContent = sel.label + ' — ' + periodLabel(pricesData.period);
-  const canvas = document.getElementById('priceTrendChart');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
+// Compute the {labels, values} series for the currently-selected item and
+// period. Shared by both the inline (desktop) chart and the mobile modal.
+function computeTrendSeries(sel) {
   const cutoffStr = (() => { const d=new Date(); d.setDate(d.getDate()-pricesData.period); return d.toISOString().slice(0,10); })();
   let labels = [], values = [];
 
   if (sel.type === 'commodity') {
     const obs = (pricesData.commodities?.series?.[sel.key]?.observations) || [];
     let windowed = obs.filter(o => o.date >= cutoffStr);
-    // FRED has data gaps (weekends/holidays/reporting lag). For short periods
-    // like 7D, a strict date cutoff can leave just 1 point — which can't draw a
-    // line. Fall back to the last few available observations so a trend always
-    // renders. Roughly map each period to a minimum sensible point count.
+    // FRED/OilPriceAPI has data gaps (weekends/holidays/reporting lag). For
+    // short periods like 7D, a strict date cutoff can leave just 1 point —
+    // which can't draw a line. Fall back to the last few available
+    // observations so a trend always renders.
     const minPts = pricesData.period <= 7 ? 5 : (pricesData.period <= 30 ? 12 : 20);
     if (windowed.length < minPts) windowed = obs.slice(-minPts);
     windowed.forEach(o => { labels.push(o.date); values.push(o.value); });
-    console.log(`[Prices] chart(${sel.key}) period=${pricesData.period}d cutoff=${cutoffStr} → ${labels.length} pts, range ${labels[0]}..${labels[labels.length-1]}`);
   } else {
     let dates = fxDatesSorted().filter(d => d >= cutoffStr);
     const minPts = pricesData.period <= 7 ? 5 : (pricesData.period <= 30 ? 12 : 20);
@@ -3955,9 +3962,18 @@ function renderTrendChart(sel) {
       values.push(fxDisplayValue(sel.key, pricesData.fx.rates[d]?.[sel.key]));
     });
   }
+  return { labels, values };
+}
 
-  if (pricesData.chart) { pricesData.chart.destroy(); pricesData.chart = null; }
-  pricesData.chart = new Chart(ctx, {
+// Draw (or redraw) a chart into a specific canvas, tracking its Chart.js
+// instance separately so the inline chart and the modal chart don't clobber
+// each other.
+function drawTrendChartInto(canvasId, instKey, sel, labels, values) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (pricesData.chartInstances[instKey]) { pricesData.chartInstances[instKey].destroy(); pricesData.chartInstances[instKey] = null; }
+  pricesData.chartInstances[instKey] = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets: [{ label: sel.label, data: values, borderColor:'#d9a441', backgroundColor:'rgba(217,164,65,0.08)', tension:0.3, fill:true, pointRadius:0, borderWidth:2 }] },
     options: {
@@ -3969,6 +3985,44 @@ function renderTrendChart(sel) {
       },
     },
   });
+}
+
+function renderTrendChart(sel) {
+  const titleTxt = sel.label + ' — ' + periodLabel(pricesData.period);
+  const titleEl = document.getElementById('priceChartTitle');
+  if (titleEl) titleEl.textContent = titleTxt;
+
+  const { labels, values } = computeTrendSeries(sel);
+  console.log(`[Prices] chart(${sel.type}:${sel.key}) period=${pricesData.period}d → ${labels.length} pts, range ${labels[0]}..${labels[labels.length-1]}`);
+
+  drawTrendChartInto('priceTrendChart', 'inline', sel, labels, values);
+
+  // Keep the mobile modal's chart in sync too, in case it's open (e.g. the
+  // user changes the period while the modal is showing).
+  const modal = document.getElementById('priceChartModal');
+  if (modal && !modal.classList.contains('hidden')) {
+    const mTitle = document.getElementById('priceChartTitleModal');
+    if (mTitle) mTitle.textContent = titleTxt;
+    drawTrendChartInto('priceTrendChartModal', 'modal', sel, labels, values);
+  }
+}
+
+function openPriceChartModal() {
+  const modal = document.getElementById('priceChartModal');
+  if (!modal || !pricesData.selected) return;
+  modal.classList.remove('hidden');
+  const sel = pricesData.selected;
+  const titleTxt = sel.label + ' — ' + periodLabel(pricesData.period);
+  const mTitle = document.getElementById('priceChartTitleModal');
+  if (mTitle) mTitle.textContent = titleTxt;
+  whenChartReady(() => {
+    const { labels, values } = computeTrendSeries(sel);
+    drawTrendChartInto('priceTrendChartModal', 'modal', sel, labels, values);
+  });
+}
+
+function closePriceChartModal() {
+  document.getElementById('priceChartModal')?.classList.add('hidden');
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
@@ -4594,6 +4648,23 @@ loadScript(
       <button class="popup-btn" style="flex:1;min-width:140px;" onclick="factSheetLocate()" id="fs-locate-btn">📍 Show on Map</button>
       <button class="popup-btn" style="flex:1;min-width:140px;background:none;border:1px solid var(--border);color:var(--text-muted);" onclick="closeFactSheet()">Close</button>
     </div>
+  </div>
+</div>
+
+<!-- Mobile price-trend chart modal: opened when a commodity/metal/currency
+     tile is tapped on a narrow screen, so the trend is visible immediately
+     without scrolling past the KPI grids. Desktop keeps the inline chart. -->
+<div class="modal-overlay hidden" id="priceChartModal">
+  <div class="login-box" style="max-width:520px;text-align:left;">
+    <button class="modal-close-x" onclick="closePriceChartModal()">×</button>
+    <h3 style="font-family:var(--font-display);margin:0 0 14px;font-size:16px;" id="priceChartTitleModal">—</h3>
+    <div class="price-period-toggle" style="margin-bottom:14px;">
+      <button class="price-period-btn" data-period="7" onclick="setPricePeriod(7)">7D</button>
+      <button class="price-period-btn active" data-period="30" onclick="setPricePeriod(30)">1M</button>
+      <button class="price-period-btn" data-period="90" onclick="setPricePeriod(90)">3M</button>
+      <button class="price-period-btn" data-period="365" onclick="setPricePeriod(365)">1Y</button>
+    </div>
+    <div class="chart-wrap" style="height:260px;"><canvas id="priceTrendChartModal"></canvas></div>
   </div>
 </div>
 
