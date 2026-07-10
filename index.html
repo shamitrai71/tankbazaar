@@ -407,13 +407,22 @@ input[type="range"] {
   .map-legend h4 { font-size: 10px; }
 
   /* Commodities + Metals: fit all 4 tiles in one row on mobile (FX grid is
-     left as auto-fill since it has many more items and works fine as-is). */
-  .price-kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 5px; }
-  .price-kpi-grid .price-card { padding: 8px 5px; border-radius: 8px; }
-  .price-kpi-grid .price-card-label { font-size: 7.5px; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .price-kpi-grid .price-card-val { font-size: 13px; margin-top: 3px; }
-  .price-kpi-grid .price-card-val span { display: block; font-size: 8px; margin-left: 0; }
-  .price-kpi-grid .price-card-chg { font-size: 8px; margin-top: 3px; white-space: nowrap; }
+     left as auto-fill since it has many more items and works fine as-is).
+     !important is needed because the unconditional base .price-kpi-grid rule
+     appears LATER in this file than this media query — with equal
+     specificity, source order wins regardless of the media condition, so
+     without !important the base rule was silently overriding this one. */
+  .price-kpi-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 5px !important; }
+  .price-kpi-grid .price-card { padding: 8px 5px !important; border-radius: 8px !important; }
+  .price-kpi-grid .price-card-label { font-size: 7.5px !important; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .price-kpi-grid .price-card-val { font-size: 13px !important; margin-top: 3px; }
+  .price-kpi-grid .price-card-val span { display: block; font-size: 8px !important; margin-left: 0; }
+  .price-kpi-grid .price-card-chg { font-size: 8px !important; margin-top: 3px; white-space: nowrap; }
+
+  /* The inline trend chart is only useful on desktop — on mobile, tapping a
+     tile opens the chart modal instead, so the inline "select an item above"
+     placeholder sitting at the bottom of the page is dead space. Hide it. */
+  #prices-panel .chart-card { display: none !important; }
 }
 
 /* TERMINAL DETAIL POPUP */
@@ -1124,6 +1133,21 @@ input[type="range"] {
 </style>
 </head>
 <body>
+
+<!-- Boot loader: covers the blank moment while terminals/Firestore/scripts
+     load. Hidden once startApp() reaches its render point; also has a hard
+     safety timeout so a future error can never leave it stuck on screen. -->
+<div id="bootLoader" style="position:fixed;inset:0;z-index:99999;background:#07120d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 0.35s ease;">
+  <div style="width:52px;height:52px;background:linear-gradient(135deg,#2fa37c,#14533e);clip-path:polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);display:flex;align-items:center;justify-content:center;font-size:24px;color:#eef4ef;animation:bootPulse 1.4s ease-in-out infinite;">⬢</div>
+  <div style="font-family:Georgia,serif;color:#eef4ef;font-size:15px;letter-spacing:1px;">TANK <span style="color:#d9a441;">BAZAAR</span></div>
+  <div style="font-size:11px;color:#7d9388;font-family:ui-monospace,monospace;">Loading terminal network…</div>
+</div>
+<style>@keyframes bootPulse { 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.08); opacity:0.85; } }</style>
+<script>
+  // Safety net: never let the loader block the app for more than 8s, even if
+  // startApp() throws before reaching its normal hide call.
+  setTimeout(function(){ var el = document.getElementById('bootLoader'); if (el) { el.style.opacity='0'; setTimeout(function(){ el.remove(); }, 400); } }, 8000);
+</script>
 
 <!-- HEADER -->
 <header>
@@ -4045,6 +4069,14 @@ async function startApp() {
   DataService.startAutoRefresh();
   // Globe is the default landing view; build it (or queue until Three.js loads).
   onGlobeShown();
+  hideBootLoader();
+}
+
+function hideBootLoader() {
+  const el = document.getElementById('bootLoader');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(() => el.remove(), 400);
 }
 
 // Load both libraries in parallel with CDN fallbacks.
