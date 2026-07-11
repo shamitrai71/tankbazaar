@@ -1095,15 +1095,18 @@ input[type="range"] {
   .logo { font-size: 15px; flex-shrink: 0; }
   .logo .logo-icon { flex-shrink: 0; }
 
-  /* Compact the signed-in pill so it never pushes past the screen edge.
-     Icon-only buttons on mobile — this is what actually fixes the overflow,
-     since "Profile"/"Admin"/"Logout" text was wider than the available space. */
-  .admin-user-pill { padding: 3px 7px; gap: 4px; max-width: 40vw; overflow: hidden; }
+  /* Replace the three inline buttons with a single ⋮ overflow button that
+     opens a dropdown menu — cleaner than squeezing icons into a narrow pill,
+     and avoids needing the text/icon to fight for space at all.
+     !important guards against the same cascade-order issue we hit with the
+     price-kpi-grid: the unconditional desktop rule for .pill-label sits
+     LATER in this file than this media query, so without !important it
+     would silently win and show text again even here. */
+  .admin-user-pill { padding: 3px 6px 3px 7px; gap: 5px; max-width: none; overflow: visible; }
   .admin-user-pill #pillName { display: none; }
-  .admin-user-pill button { font-size: 13px; padding: 3px 5px; min-width: 24px; }
-  .admin-user-pill .pill-icon { display: inline; }
-  .admin-user-pill .pill-label { display: none; }
   .admin-user-pill #pillAvatar { width: 18px !important; height: 18px !important; font-size: 8px !important; }
+  .admin-user-pill .pill-desktop-btn { display: none !important; }
+  .admin-user-pill .pill-overflow-btn { display: inline-block !important; }
 
   /* Sidebar becomes a slide-out drawer */
   .sidebar {
@@ -1191,9 +1194,19 @@ input[type="range"] {
     <div class="admin-user-pill" id="userPill" style="display:none;">
       <div class="user-avatar" id="pillAvatar" style="width:22px;height:22px;font-size:9px;">U</div>
       <span id="pillName"></span>
-      <button onclick="openProfilePage()"><span class="pill-icon">👤</span><span class="pill-label">Profile</span></button>
-      <button onclick="openAdminPanel()" id="pillAdminBtn" style="display:none;"><span class="pill-icon">⚙️</span><span class="pill-label">Admin</span></button>
-      <button onclick="userLogout()"><span class="pill-icon">⏻</span><span class="pill-label">Logout</span></button>
+      <button onclick="openProfilePage()" class="pill-desktop-btn"><span class="pill-icon">👤</span><span class="pill-label">Profile</span></button>
+      <button onclick="openAdminPanel()" id="pillAdminBtn" class="pill-desktop-btn" style="display:none;"><span class="pill-icon">⚙️</span><span class="pill-label">Admin</span></button>
+      <button onclick="userLogout()" class="pill-desktop-btn"><span class="pill-icon">⏻</span><span class="pill-label">Logout</span></button>
+
+      <!-- Mobile-only: a single overflow (⋮) button replaces the three inline
+           buttons, opening a proper dropdown menu instead of squeezing icons
+           into a too-narrow pill. -->
+      <button class="pill-overflow-btn" id="pillOverflowBtn" onclick="togglePillMenu(event)" aria-label="Account menu">⋮</button>
+      <div class="pill-dropdown hidden" id="pillDropdown">
+        <button onclick="closePillMenu(); openProfilePage()">👤 Profile</button>
+        <button onclick="closePillMenu(); openAdminPanel()" id="pillAdminBtnMobile" style="display:none;">⚙️ Admin</button>
+        <button onclick="closePillMenu(); userLogout()">⏻ Logout</button>
+      </div>
     </div>
   </div>
 </header>
@@ -3255,6 +3268,27 @@ function switchView(view) {
 }
 
 // ─── MOBILE DRAWER ───────────────────────────────────────────────
+// Mobile account overflow menu (⋮) — shows/hides the Profile/Admin/Logout
+// dropdown, and closes on an outside click/tap like a standard menu.
+function togglePillMenu(evt) {
+  if (evt) evt.stopPropagation();
+  const dd = document.getElementById('pillDropdown');
+  if (!dd) return;
+  const opening = dd.classList.contains('hidden');
+  dd.classList.toggle('hidden');
+  if (opening) {
+    setTimeout(() => document.addEventListener('click', closePillMenuOnOutsideClick), 0);
+  }
+}
+function closePillMenu() {
+  document.getElementById('pillDropdown')?.classList.add('hidden');
+  document.removeEventListener('click', closePillMenuOnOutsideClick);
+}
+function closePillMenuOnOutsideClick(e) {
+  const dd = document.getElementById('pillDropdown');
+  if (dd && !dd.contains(e.target) && e.target.id !== 'pillOverflowBtn') closePillMenu();
+}
+
 function toggleDrawer() {
   const open = document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('drawerBackdrop').classList.toggle('open', open);
@@ -4185,6 +4219,7 @@ loadScript(
   padding: 4px 12px;
   font-size: 10px;
   color: var(--accent2);
+  position: relative;
 }
 .admin-user-pill span { font-size: 9px; letter-spacing: 0.5px; }
 .admin-user-pill button {
@@ -4196,6 +4231,27 @@ loadScript(
 .admin-user-pill button:hover { color: var(--accent2); background: rgba(47,163,124,0.1); }
 .admin-user-pill .pill-icon { display: none; }
 .admin-user-pill .pill-label { display: inline; }
+
+/* Overflow (⋮) menu — desktop hides it and shows the inline buttons instead;
+   the mobile media query below flips this. */
+.pill-overflow-btn {
+  display: none;
+  background: none; border: 0; color: var(--text-muted);
+  font-size: 18px; line-height: 1; padding: 4px 8px; cursor: pointer; border-radius: 6px;
+}
+.pill-overflow-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.pill-dropdown {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4); padding: 6px; z-index: 2000;
+  display: flex; flex-direction: column; gap: 2px; min-width: 140px;
+}
+.pill-dropdown.hidden { display: none; }
+.pill-dropdown button {
+  background: none; border: 0; color: var(--text-muted); text-align: left;
+  font-family: var(--font-mono); font-size: 13px; padding: 9px 12px; border-radius: 7px; cursor: pointer;
+}
+.pill-dropdown button:hover { background: rgba(47,163,124,0.12); color: var(--text); }
 
 /* ── LOGIN MODAL ── */
 .modal-overlay {
@@ -5720,9 +5776,12 @@ function applyLoggedInUI() {
   document.getElementById('pillName').textContent = currentUser.name;
   const av = document.getElementById('pillAvatar');
   av.textContent = (currentUser.name[0] || 'U').toUpperCase();
-  // Admin button only for admins/superadmins
-  document.getElementById('pillAdminBtn').style.display =
-    (currentUser.role === 'admin' || currentUser.role === 'superadmin') ? '' : 'none';
+  // Admin button only for admins/superadmins — kept in sync on both the
+  // desktop inline button and the mobile overflow-menu's copy.
+  const isAdminUser = (currentUser.role === 'admin' || currentUser.role === 'superadmin');
+  document.getElementById('pillAdminBtn').style.display = isAdminUser ? '' : 'none';
+  const mobileAdminBtn = document.getElementById('pillAdminBtnMobile');
+  if (mobileAdminBtn) mobileAdminBtn.style.display = isAdminUser ? '' : 'none';
 }
 
 function applyLoggedOutUI() {
