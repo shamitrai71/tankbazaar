@@ -569,6 +569,21 @@ input[type="range"] {
 .fx-card-val { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--accent2); margin-top: 3px; }
 .fx-card-chg { font-size: 9.5px; margin-top: 2px; }
 
+/* Skeleton loading placeholders for Prices — shown immediately while
+   OilPriceAPI/Frankfurter fetches are in flight, so the section never sits
+   on plain "Loading…" text. Mimics the real card shapes so there's no
+   layout jump when data arrives, with a gentle staggered pulse. */
+@keyframes priceSkelPulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.75; } }
+.price-skel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.price-skel .sk-bar { background: var(--surface2); border-radius: 4px; animation: priceSkelPulse 1.5s ease-in-out infinite; }
+.price-skel .sk-label { width: 55%; height: 8px; margin-bottom: 12px; }
+.price-skel .sk-val { width: 70%; height: 19px; margin-bottom: 9px; }
+.price-skel .sk-chg { width: 42%; height: 8px; }
+.fx-skel { padding: 10px 12px; border-radius: 10px; }
+.fx-skel .sk-label { height: 7px; margin-bottom: 9px; }
+.fx-skel .sk-val { height: 15px; margin-bottom: 6px; }
+.fx-skel .sk-chg { height: 7px; width: 35%; }
+
 .kpi-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1552,7 +1567,10 @@ input[type="range"] {
 
       <div class="price-section-label">🛢 Energy Commodities <span style="color:var(--text-dim);font-weight:400;">· source: OilPriceAPI (spot prices)</span></div>
       <div class="price-kpi-grid" id="commodityKpiGrid">
-        <div style="color:var(--text-dim);font-size:12px;padding:16px;">Loading…</div>
+        <div class="price-skel"><div class="sk-bar sk-label"></div><div class="sk-bar sk-val"></div><div class="sk-bar sk-chg"></div></div>
+        <div class="price-skel"><div class="sk-bar sk-label" style="animation-delay:0.09s"></div><div class="sk-bar sk-val" style="animation-delay:0.09s"></div><div class="sk-bar sk-chg" style="animation-delay:0.09s"></div></div>
+        <div class="price-skel"><div class="sk-bar sk-label" style="animation-delay:0.18s"></div><div class="sk-bar sk-val" style="animation-delay:0.18s"></div><div class="sk-bar sk-chg" style="animation-delay:0.18s"></div></div>
+        <div class="price-skel"><div class="sk-bar sk-label" style="animation-delay:0.27s"></div><div class="sk-bar sk-val" style="animation-delay:0.27s"></div><div class="sk-bar sk-chg" style="animation-delay:0.27s"></div></div>
       </div>
 
       <div class="price-section-label">💰 Precious Metals <span style="color:var(--text-dim);font-weight:400;">· source: Frankfurter (84 central banks)</span></div>
@@ -3719,8 +3737,32 @@ function setPricePeriod(days) {
   renderMarketPrices();
 }
 
+// Generate n pulsing skeleton placeholder cards (matching the real card
+// shapes) with a slight per-card stagger for a gentle "wave" effect.
+function skeletonCards(n, variant) {
+  const cardCls = variant === 'fx' ? 'price-skel fx-skel' : 'price-skel';
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const delay = (i * 0.09).toFixed(2) + 's';
+    html += `<div class="${cardCls}">
+      <div class="sk-bar sk-label" style="animation-delay:${delay}"></div>
+      <div class="sk-bar sk-val" style="animation-delay:${delay}"></div>
+      <div class="sk-bar sk-chg" style="animation-delay:${delay}"></div>
+    </div>`;
+  }
+  return html;
+}
+
 async function loadMarketPrices() {
   if (pricesData.loaded) { renderMarketPrices(); return; }
+  // Show skeletons immediately — don't wait for the fetch to resolve before
+  // giving the user something better than plain "Loading…" text.
+  const commodGrid = document.getElementById('commodityKpiGrid');
+  const metalsGrid = document.getElementById('metalsKpiGrid');
+  const fxGrid = document.getElementById('fxGrid');
+  if (commodGrid) commodGrid.innerHTML = skeletonCards(4);
+  if (metalsGrid) metalsGrid.innerHTML = skeletonCards(4);
+  if (fxGrid) fxGrid.innerHTML = skeletonCards(14, 'fx');
   try {
     const [commodRes, fxRes] = await Promise.allSettled([fetchCommodities(), fetchFxMetals()]);
     if (commodRes.status === 'fulfilled') pricesData.commodities = commodRes.value;
@@ -3913,7 +3955,7 @@ function renderMetalCards() {
   const grid = document.getElementById('metalsKpiGrid');
   if (!grid) return;
   const dates = fxDatesSorted();
-  if (!dates.length) { grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:16px;">Loading…</div>'; return; }
+  if (!dates.length) { grid.innerHTML = skeletonCards(4); return; }
   const latestDate = dates[dates.length-1];
   grid.innerHTML = METAL_SYMBOLS.map(sym => {
     const val = fxDisplayValue(sym, pricesData.fx.rates[latestDate]?.[sym]);
@@ -3932,7 +3974,7 @@ function renderFxCards() {
   const grid = document.getElementById('fxGrid');
   if (!grid) return;
   const dates = fxDatesSorted();
-  if (!dates.length) { grid.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:16px;">Loading…</div>'; return; }
+  if (!dates.length) { grid.innerHTML = skeletonCards(14, 'fx'); return; }
   const latestDate = dates[dates.length-1];
   grid.innerHTML = FX_SYMBOLS.map(sym => {
     const val = fxDisplayValue(sym, pricesData.fx.rates[latestDate]?.[sym]);
