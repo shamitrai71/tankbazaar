@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TANK BAZAAR — Global Tank Storage Intelligence</title>
+<link rel="icon" type="image/png" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 
@@ -138,11 +139,9 @@ header {
 
 .logo-icon {
   width: 32px; height: 32px;
-  background: linear-gradient(135deg, var(--accent2), #14533e); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-  border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
 }
+.logo-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
 .logo span { color: var(--accent); }
 
@@ -1173,7 +1172,7 @@ input[type="range"] {
     <span></span><span></span><span></span>
   </button>
   <div class="logo">
-    <div class="logo-icon">⬢</div>
+    <div class="logo-icon"><img src="logo.png" alt="Tank Bazaar"></div>
     TANK <span>BAZAAR</span>
   </div>
   <nav>
@@ -4802,7 +4801,7 @@ loadScript(
   <div class="login-box">
     <button class="modal-close-x" onclick="hideLoginGate()" id="loginCloseX">×</button>
     <div style="text-align:center;margin-bottom:20px;">
-      <div class="logo-icon" style="width:46px;height:46px;font-size:22px;margin:0 auto 12px;background:linear-gradient(135deg,var(--accent2),#14533e);clip-path:polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);display:flex;align-items:center;justify-content:center;">⬢</div>
+      <div class="logo-icon" style="width:46px;height:46px;margin:0 auto 12px;"><img src="logo.png" alt="Tank Bazaar"></div>
       <h2 style="font-family:var(--font-display);">TANK BAZAAR</h2>
       <p>Sign in to access global storage intelligence</p>
     </div>
@@ -4850,7 +4849,7 @@ loadScript(
 ════════════════════════════════════════════════════════════════ -->
 <div class="profile-overlay" id="profileOverlay">
   <div class="profile-header">
-    <div class="logo"><div class="logo-icon">⬢</div>TANK <span>BAZAAR</span></div>
+    <div class="logo"><div class="logo-icon"><img src="logo.png" alt="Tank Bazaar"></div>TANK <span>BAZAAR</span></div>
     <div class="admin-badge">My Profile</div>
     <div class="admin-header-right">
       <button class="admin-close-btn" onclick="closeProfilePage()">✕ Close</button>
@@ -4948,7 +4947,7 @@ loadScript(
   <!-- Admin Header -->
   <div class="admin-header">
     <div class="logo">
-      <div class="logo-icon" style="background:linear-gradient(135deg,var(--accent2),#1d6f54);">⚙</div>
+      <div class="logo-icon"><img src="logo.png" alt="Tank Bazaar"></div>
       TANK <span style="color:var(--accent2);">BAZAAR</span>
     </div>
     <div class="admin-badge">Admin Panel</div>
