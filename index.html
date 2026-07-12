@@ -3273,14 +3273,24 @@ function togglePillMenu(evt) {
   if (evt) evt.stopPropagation();
   const btn = document.getElementById('pillOverflowBtn');
   const dd = document.getElementById('pillDropdown');
-  console.log('[pillMenu] tapped. button found=', !!btn, '| dropdown found=', !!dd);
-  if (btn) console.log('[pillMenu] button computed display=', getComputedStyle(btn).display);
-  if (!dd) { console.warn('[pillMenu] no #pillDropdown in DOM — cannot open menu'); return; }
+  if (!dd || !btn) return;
+
   const opening = dd.classList.contains('hidden');
-  dd.classList.toggle('hidden');
-  console.log('[pillMenu]', opening ? 'opening' : 'closing', '→ dropdown computed display=', getComputedStyle(dd).display, '| z-index=', getComputedStyle(dd).zIndex, '| position=', getComputedStyle(dd).position);
   if (opening) {
+    // The menu is position:fixed (to escape the header's stacking context), so
+    // place it in viewport coordinates just below the ⋮ button, right-aligned
+    // to it, and nudged inward if it would run past the screen edge.
+    dd.classList.remove('hidden');
+    const r = btn.getBoundingClientRect();
+    const w = dd.offsetWidth || 150;
+    let left = r.right - w;
+    if (left < 8) left = 8;
+    if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
+    dd.style.top = (r.bottom + 8) + 'px';
+    dd.style.left = left + 'px';
     setTimeout(() => document.addEventListener('click', closePillMenuOnOutsideClick), 0);
+  } else {
+    closePillMenu();
   }
 }
 function closePillMenu() {
@@ -3291,6 +3301,10 @@ function closePillMenuOnOutsideClick(e) {
   const dd = document.getElementById('pillDropdown');
   if (dd && !dd.contains(e.target) && e.target.id !== 'pillOverflowBtn') closePillMenu();
 }
+// Since the menu is position:fixed, it won't track the button on scroll/resize
+// — just close it rather than leave it floating detached.
+window.addEventListener('resize', closePillMenu);
+window.addEventListener('scroll', closePillMenu, true);
 
 function toggleDrawer() {
   const open = document.getElementById('sidebar').classList.toggle('open');
@@ -4244,10 +4258,14 @@ loadScript(
 }
 .pill-overflow-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
 .pill-dropdown {
-  position: absolute; top: calc(100% + 6px); right: 0;
+  position: fixed;              /* fixed, NOT absolute — escapes the header's
+                                   stacking context (header is position:relative
+                                   + z-index:1000, which trapped the menu and
+                                   clipped it below the header's edge). */
+  top: 0; left: 0;              /* real coords set by JS from the button's rect */
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4); padding: 6px; z-index: 2000;
-  display: flex; flex-direction: column; gap: 2px; min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5); padding: 6px; z-index: 9600;
+  display: flex; flex-direction: column; gap: 2px; min-width: 150px;
 }
 .pill-dropdown.hidden { display: none; }
 .pill-dropdown button {
