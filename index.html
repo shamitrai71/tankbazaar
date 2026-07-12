@@ -3271,10 +3271,14 @@ function switchView(view) {
 // dropdown, and closes on an outside click/tap like a standard menu.
 function togglePillMenu(evt) {
   if (evt) evt.stopPropagation();
+  const btn = document.getElementById('pillOverflowBtn');
   const dd = document.getElementById('pillDropdown');
-  if (!dd) return;
+  console.log('[pillMenu] tapped. button found=', !!btn, '| dropdown found=', !!dd);
+  if (btn) console.log('[pillMenu] button computed display=', getComputedStyle(btn).display);
+  if (!dd) { console.warn('[pillMenu] no #pillDropdown in DOM — cannot open menu'); return; }
   const opening = dd.classList.contains('hidden');
   dd.classList.toggle('hidden');
+  console.log('[pillMenu]', opening ? 'opening' : 'closing', '→ dropdown computed display=', getComputedStyle(dd).display, '| z-index=', getComputedStyle(dd).zIndex, '| position=', getComputedStyle(dd).position);
   if (opening) {
     setTimeout(() => document.addEventListener('click', closePillMenuOnOutsideClick), 0);
   }
