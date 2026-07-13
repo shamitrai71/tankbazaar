@@ -1105,7 +1105,7 @@ input[type="range"] {
   .admin-user-pill #pillName { display: none; }
   .admin-user-pill #pillAvatar { width: 18px !important; height: 18px !important; font-size: 8px !important; }
   .admin-user-pill .pill-desktop-btn { display: none !important; }
-  .admin-user-pill .pill-overflow-btn { display: inline-block !important; }
+  .admin-user-pill .pill-overflow-btn { display: inline-flex !important; }
 
   /* Sidebar becomes a slide-out drawer */
   .sidebar {
@@ -1195,16 +1195,16 @@ input[type="range"] {
       <span id="pillName"></span>
       <button onclick="openProfilePage()" class="pill-desktop-btn"><span class="pill-icon">👤</span><span class="pill-label">Profile</span></button>
       <button onclick="openAdminPanel()" id="pillAdminBtn" class="pill-desktop-btn" style="display:none;"><span class="pill-icon">⚙️</span><span class="pill-label">Admin</span></button>
-      <button onclick="userLogout()" class="pill-desktop-btn"><span class="pill-icon">⏻</span><span class="pill-label">Logout</span></button>
+      <button onclick="userLogout()" class="pill-desktop-btn"><span class="pill-icon">🚪</span><span class="pill-label">Logout</span></button>
 
       <!-- Mobile-only: a single overflow (⋮) button replaces the three inline
            buttons, opening a proper dropdown menu instead of squeezing icons
            into a too-narrow pill. -->
       <button class="pill-overflow-btn" id="pillOverflowBtn" onclick="togglePillMenu(event)" aria-label="Account menu">⋮</button>
       <div class="pill-dropdown hidden" id="pillDropdown">
-        <button onclick="closePillMenu(); openProfilePage()">👤 Profile</button>
-        <button onclick="closePillMenu(); openAdminPanel()" id="pillAdminBtnMobile" style="display:none;">⚙️ Admin</button>
-        <button onclick="closePillMenu(); userLogout()">⏻ Logout</button>
+        <button onclick="closePillMenu(); openProfilePage()"><span>👤</span> Profile</button>
+        <button onclick="closePillMenu(); openAdminPanel()" id="pillAdminBtnMobile" style="display:none;"><span>⚙️</span> Admin</button>
+        <button onclick="closePillMenu(); userLogout()"><span>🚪</span> Logout</button>
       </div>
     </div>
   </div>
@@ -3282,7 +3282,7 @@ function togglePillMenu(evt) {
     // to it, and nudged inward if it would run past the screen edge.
     dd.classList.remove('hidden');
     const r = btn.getBoundingClientRect();
-    const w = dd.offsetWidth || 150;
+    const w = dd.offsetWidth || 175;
     let left = r.right - w;
     if (left < 8) left = 8;
     if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
@@ -4254,7 +4254,10 @@ loadScript(
 .pill-overflow-btn {
   display: none;
   background: none; border: 0; color: var(--text-muted);
-  font-size: 18px; line-height: 1; padding: 4px 8px; cursor: pointer; border-radius: 6px;
+  font-size: 22px; line-height: 1; cursor: pointer; border-radius: 8px;
+  /* Comfortable touch target — small icons are hard to hit accurately. */
+  min-width: 40px; height: 36px; padding: 0;
+  align-items: center; justify-content: center;
 }
 .pill-overflow-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
 .pill-dropdown {
@@ -4265,12 +4268,13 @@ loadScript(
   top: 0; left: 0;              /* real coords set by JS from the button's rect */
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5); padding: 6px; z-index: 9600;
-  display: flex; flex-direction: column; gap: 2px; min-width: 150px;
+  display: flex; flex-direction: column; gap: 2px; min-width: 175px;
 }
 .pill-dropdown.hidden { display: none; }
 .pill-dropdown button {
-  background: none; border: 0; color: var(--text-muted); text-align: left;
-  font-family: var(--font-mono); font-size: 13px; padding: 9px 12px; border-radius: 7px; cursor: pointer;
+  background: none; border: 0; color: var(--text); text-align: left;
+  font-family: var(--font-mono); font-size: 15px; padding: 13px 16px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; white-space: nowrap;
 }
 .pill-dropdown button:hover { background: rgba(47,163,124,0.12); color: var(--text); }
 
