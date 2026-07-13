@@ -1101,9 +1101,9 @@ input[type="range"] {
      price-kpi-grid: the unconditional desktop rule for .pill-label sits
      LATER in this file than this media query, so without !important it
      would silently win and show text again even here. */
-  .admin-user-pill { padding: 3px 6px 3px 7px; gap: 5px; max-width: none; overflow: visible; }
+  .admin-user-pill { padding: 2px 2px 2px 6px; gap: 4px; max-width: none; overflow: visible; }
   .admin-user-pill #pillName { display: none; }
-  .admin-user-pill #pillAvatar { width: 18px !important; height: 18px !important; font-size: 8px !important; }
+  .admin-user-pill #pillAvatar { width: 30px !important; height: 30px !important; font-size: 13px !important; }
   .admin-user-pill .pill-desktop-btn { display: none !important; }
   .admin-user-pill .pill-overflow-btn { display: inline-flex !important; }
 
@@ -4253,13 +4253,18 @@ loadScript(
    the mobile media query below flips this. */
 .pill-overflow-btn {
   display: none;
-  background: none; border: 0; color: var(--text-muted);
-  font-size: 22px; line-height: 1; cursor: pointer; border-radius: 8px;
-  /* Comfortable touch target — small icons are hard to hit accurately. */
-  min-width: 40px; height: 36px; padding: 0;
+  background: none; border: 0; color: var(--text); cursor: pointer; border-radius: 50%;
+  /* !important throughout: the base `.admin-user-pill button` rule has HIGHER
+     specificity (class+element) than this single-class selector, so without it
+     that rule's font-size:10px/padding:2px silently shrinks the glyph back down
+     — which is exactly what kept the ⋮ tiny even after the pill grew. */
+  font-size: 26px !important;
+  line-height: 1 !important;
+  width: 44px !important; height: 44px !important;   /* Chrome-like touch target */
+  padding: 0 !important;
   align-items: center; justify-content: center;
 }
-.pill-overflow-btn:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.pill-overflow-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 .pill-dropdown {
   position: fixed;              /* fixed, NOT absolute — escapes the header's
                                    stacking context (header is position:relative
