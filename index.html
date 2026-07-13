@@ -946,6 +946,12 @@ input[type="range"] {
 .profile-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); }
 .profile-stat-val { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--accent); margin-top: 5px; }
 
+/* Read-only profile view (default mode) */
+.profile-view-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px 20px; }
+.pv-label { font-size: 9px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+.pv-value { font-size: 14px; color: var(--text); word-break: break-word; }
+.pv-value.empty { color: var(--text-dim); font-style: italic; }
+
 /* ── HAMBURGER / MOBILE NAV ── */
 .hamburger {
   display: none;
@@ -1085,14 +1091,21 @@ input[type="range"] {
 .listing-manage { margin-top: 10px; text-align: right; }
 
 @media (max-width: 860px) {
-  header { padding: 0 12px; gap: 8px; overflow: hidden; }
-  .hamburger { display: flex; }
+  header { padding: 0 12px; gap: 10px; overflow: hidden; }
+  /* Scale the hamburger and logo up to sit in proportion with the 44px kebab
+     button on the right — previously they looked undersized next to it. */
+  .hamburger { display: flex; width: 44px !important; height: 44px !important; gap: 5px !important; }
+  .hamburger span { width: 26px !important; height: 2.5px !important; }
   header > nav { display: none; }
   .header-right .live-badge,
   .header-right .stat-pill { display: none; }
   .header-right { gap: 6px; min-width: 0; }
-  .logo { font-size: 15px; flex-shrink: 0; }
-  .logo .logo-icon { flex-shrink: 0; }
+  .logo { font-size: 19px !important; flex-shrink: 0; gap: 10px; }
+  .logo .logo-icon { flex-shrink: 0; width: 42px !important; height: 42px !important; }
+  /* The open-state X must match the new bar spacing (2.5px bar + 5px gap =
+     7.5px centre-to-centre), otherwise the arms don't meet cleanly. */
+  .hamburger.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg) !important; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg) !important; }
 
   /* Replace the three inline buttons with a single ⋮ overflow button that
      opens a dropdown menu — cleaner than squeezing icons into a narrow pill,
@@ -4381,6 +4394,56 @@ loadScript(
   display: none;
 }
 .admin-header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+/* ── ADMIN MOBILE GATE ──
+   Hidden on desktop; on narrow screens it replaces the admin workspace. */
+.admin-mobile-gate { display: none; }
+@media (max-width: 860px) {
+  /* Swap the cramped workspace for the gate, and simplify the header so the
+     Close button can't be pushed off-screen (which is what stranded users). */
+  .admin-overlay .admin-body { display: none !important; }
+  .admin-overlay .admin-badge,
+  .admin-overlay .admin-super-badge,
+  .admin-overlay #adminSessionLabel { display: none !important; }
+
+  .admin-mobile-gate {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; flex: 1; padding: 32px 26px; gap: 0;
+    overflow-y: auto;
+  }
+  .amg-icon {
+    font-size: 44px; line-height: 1; margin-bottom: 22px;
+    filter: grayscale(0.15);
+  }
+  .amg-title {
+    font-family: var(--font-display); font-size: 21px; font-weight: 800;
+    color: var(--text); margin: 0 0 12px;
+  }
+  .amg-body {
+    font-size: 13px; line-height: 1.65; color: var(--text-muted);
+    margin: 0 0 24px; max-width: 340px;
+  }
+  .amg-hint {
+    display: flex; flex-direction: column; gap: 5px; align-items: center;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 22px; margin-bottom: 26px;
+  }
+  .amg-hint-label {
+    font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim);
+  }
+  .amg-hint-url {
+    font-family: var(--font-mono); font-size: 15px; color: var(--accent); font-weight: 600;
+  }
+  .amg-back-btn {
+    background: var(--accent); color: #06110d; border: 0; border-radius: 10px;
+    font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+    padding: 14px 26px; cursor: pointer; width: 100%; max-width: 320px;
+  }
+  .amg-back-btn:active { opacity: 0.85; }
+  .amg-foot {
+    font-size: 11px; color: var(--text-dim); margin: 20px 0 0; max-width: 320px; line-height: 1.6;
+  }
+}
 .admin-close-btn {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 8px; color: var(--text-muted);
@@ -4904,7 +4967,29 @@ loadScript(
     </div>
 
     <div class="admin-card">
-      <div class="admin-card-title">Profile Information</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+        <div class="admin-card-title" style="margin-bottom:0;">Profile Information</div>
+        <button class="btn-admin" id="profEditBtn" onclick="setProfileMode('edit')" style="flex-shrink:0;">✎ Edit Profile</button>
+      </div>
+
+      <!-- VIEW MODE (default): read-only summary of what's saved. -->
+      <div id="profileViewMode">
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:16px;">Your saved profile. These details help us tailor intelligence to your needs.</div>
+        <div class="profile-view-grid">
+          <div class="pv-field"><div class="pv-label">Full Name</div><div class="pv-value" id="pv-name">—</div></div>
+          <div class="pv-field"><div class="pv-label">Company / Organization</div><div class="pv-value" id="pv-company">—</div></div>
+          <div class="pv-field"><div class="pv-label">Job Title</div><div class="pv-value" id="pv-title">—</div></div>
+          <div class="pv-field"><div class="pv-label">Phone</div><div class="pv-value" id="pv-phone">—</div></div>
+          <div class="pv-field"><div class="pv-label">Country</div><div class="pv-value" id="pv-country">—</div></div>
+          <div class="pv-field"><div class="pv-label">User Segment</div><div class="pv-value" id="pv-segment">—</div></div>
+          <div class="pv-field"><div class="pv-label">Company Size</div><div class="pv-value" id="pv-size">—</div></div>
+        </div>
+        <div class="pv-field" style="margin-top:14px;"><div class="pv-label">Products / Commodities of Interest</div><div class="pv-value" id="pv-interests">—</div></div>
+        <div class="pv-field" style="margin-top:14px;"><div class="pv-label">Regions of Interest</div><div class="pv-value" id="pv-regions">—</div></div>
+      </div>
+
+      <!-- EDIT MODE: the form, hidden until "Edit Profile" is pressed. -->
+      <div id="profileEditMode" style="display:none;">
       <div style="font-size:10px;color:var(--text-muted);margin-bottom:14px;">Complete your profile to help us tailor intelligence to your needs. These fields power user analytics and segmentation.</div>
       <div class="admin-form-grid">
         <div class="admin-field"><label>Full Name</label><input type="text" id="pf-name" placeholder="Your name"></div>
@@ -4942,7 +5027,11 @@ loadScript(
       <div class="admin-form-grid one">
         <div class="admin-field"><label>Regions of Interest (comma-separated)</label><input type="text" id="pf-regions" placeholder="ARA, Middle East, SE Asia"></div>
       </div>
-      <button class="btn-admin primary" onclick="saveProfile()">💾 Save Profile</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-admin primary" onclick="saveProfile()">💾 Save Profile</button>
+        <button class="btn-admin" onclick="setProfileMode('view')">Cancel</button>
+      </div>
+      </div>
     </div>
 
     <div class="admin-card">
@@ -4987,6 +5076,26 @@ loadScript(
       <span style="font-size:10px;color:var(--text-muted);" id="adminSessionLabel"></span>
       <button class="admin-close-btn" onclick="closeAdminPanel()">✕ Close Panel</button>
     </div>
+  </div>
+
+  <!-- MOBILE GATE: the admin workspace (dense tables, bulk tools, multi-column
+       analytics) genuinely doesn't work on a phone. Rather than ship a broken
+       cramped experience, we show this instead — and, crucially, always give a
+       clear way back to the site, which the overflowing header did not. -->
+  <div class="admin-mobile-gate" id="adminMobileGate">
+    <div class="amg-icon">🖥️</div>
+    <h2 class="amg-title">Admin works best on desktop</h2>
+    <p class="amg-body">
+      The admin workspace handles dense tables, bulk terminal edits, and multi-column analytics —
+      tools that need room to breathe. Rather than cram them into a phone screen, we've kept them
+      where they work properly.
+    </p>
+    <div class="amg-hint">
+      <span class="amg-hint-label">Open on a desktop or laptop</span>
+      <span class="amg-hint-url">tankbazaar.com</span>
+    </div>
+    <button class="amg-back-btn" onclick="closeAdminPanel()">← Back to Tank Bazaar</button>
+    <p class="amg-foot">Everything else — the globe, map, terminals, tracking and prices — works fully on mobile.</p>
   </div>
 
   <div class="admin-body">
@@ -5861,7 +5970,43 @@ function openProfilePage() {
   set('pf-regions', (p.regions||[]).join(', '));
   const nl = document.getElementById('pf-newsletter'); if (nl) nl.checked = p.newsletter !== false;
   const an = document.getElementById('pf-analytics'); if (an) an.checked = p.allowAnalytics !== false;
+  renderProfileView();
+  setProfileMode('view');   // always open in read-only view, not straight into the form
   document.getElementById('profileOverlay').classList.add('active');
+}
+
+// Fill the read-only view from the saved profile. Empty fields show a muted
+// "Not set" rather than a blank gap, so it's clear what's missing.
+function renderProfileView() {
+  const p = (currentUser && currentUser.profile) || {};
+  const put = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const has = val != null && String(val).trim() !== '';
+    el.textContent = has ? val : 'Not set';
+    el.classList.toggle('empty', !has);
+  };
+  put('pv-name', p.name || (currentUser && currentUser.name));
+  put('pv-company', p.company);
+  put('pv-title', p.title);
+  put('pv-phone', p.phone);
+  put('pv-country', p.country);
+  put('pv-segment', p.segment);
+  put('pv-size', p.companySize);
+  put('pv-interests', (p.interests || []).join(', '));
+  put('pv-regions', (p.regions || []).join(', '));
+}
+
+// Toggle between the read-only summary and the editable form.
+function setProfileMode(mode) {
+  const view = document.getElementById('profileViewMode');
+  const edit = document.getElementById('profileEditMode');
+  const btn = document.getElementById('profEditBtn');
+  if (!view || !edit) return;
+  const editing = mode === 'edit';
+  view.style.display = editing ? 'none' : '';
+  edit.style.display = editing ? '' : 'none';
+  if (btn) btn.style.display = editing ? 'none' : '';   // hide Edit while editing
 }
 function closeProfilePage() { document.getElementById('profileOverlay').classList.remove('active'); }
 
@@ -5909,6 +6054,9 @@ async function saveProfile() {
   currentUser.name = updated.name || currentUser.name;
   Object.assign(currentUser.profile, updated);
   applyLoggedInUI();
+  // Reflect the new values and drop back to the read-only view.
+  renderProfileView();
+  setProfileMode('view');
 
   if (!firebaseReady) { toast('Profile saved (preview).'); return; }
 
