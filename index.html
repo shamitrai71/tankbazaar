@@ -1264,6 +1264,7 @@ input[type="range"] {
           <option>Southeast Asia</option>
           <option>North America</option>
           <option>South America</option>
+          <option>North Africa</option>
           <option>West Africa</option>
           <option>East &amp; South Africa</option>
           <option>Australia</option>
@@ -1906,7 +1907,35 @@ const terminals = [
   { id:122, name:"Fredericia Terminal", country:"Denmark", city:"Fredericia", lat:55.56, lng:9.75, cap:7100, tanks:72, berths:7, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Fredericia", size:"xl", type:"port" },
   { id:123, name:"Kalundborg Terminal", country:"Denmark", city:"Kalundborg", lat:55.68, lng:11.09, cap:3600, tanks:92, berths:7, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Kalundborg", size:"md", type:"port" },
   { id:124, name:"Porvoo Terminal", country:"Finland", city:"Porvoo", lat:60.3, lng:25.55, cap:3600, tanks:104, berths:5, occ:"88%", products:["Crude","Diesel","Gasoline"], op:"Porvoo", size:"md", type:"port" },
-  { id:125, name:"Naantali Terminal", country:"Finland", city:"Naantali", lat:60.47, lng:22.03, cap:7100, tanks:72, berths:7, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Naantali", size:"xl", type:"port" }
+  { id:125, name:"Naantali Terminal", country:"Finland", city:"Naantali", lat:60.47, lng:22.03, cap:7100, tanks:72, berths:7, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Naantali", size:"xl", type:"port" },
+  { id:126, name:"Aramco Yanbu", country:"Saudi Arabia", city:"Yanbu", lat:24.09, lng:38.06, cap:8600, tanks:148, berths:12, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Aramco", size:"xl", type:"port" },
+  { id:127, name:"Aramco Jeddah", country:"Saudi Arabia", city:"Jeddah", lat:21.48, lng:39.15, cap:5400, tanks:96, berths:8, occ:"79%", products:["Diesel","Gasoline","Jet"], op:"Aramco", size:"lg", type:"port" },
+  { id:128, name:"QatarEnergy Ras Laffan", country:"Qatar", city:"Ras Laffan", lat:25.9, lng:51.6, cap:9800, tanks:172, berths:16, occ:"90%", products:["LNG","Condensate","LPG"], op:"QatarEnergy", size:"xl", type:"port" },
+  { id:129, name:"OQ Duqm", country:"Oman", city:"Duqm", lat:19.67, lng:57.7, cap:6200, tanks:104, berths:9, occ:"73%", products:["Crude","Diesel"], op:"OQ", size:"lg", type:"port" },
+  { id:130, name:"PDO Mina al Fahal", country:"Oman", city:"Muscat", lat:23.63, lng:58.51, cap:4700, tanks:82, berths:7, occ:"81%", products:["Crude","Gasoline"], op:"PDO", size:"lg", type:"port" },
+  { id:131, name:"Aden Oil Terminal", country:"Yemen", city:"Aden", lat:12.79, lng:44.97, cap:2600, tanks:52, berths:5, occ:"64%", products:["Crude","Diesel"], op:"Aden", size:"md", type:"port" },
+  { id:132, name:"APC Aqaba", country:"Jordan", city:"Aqaba", lat:29.52, lng:35.0, cap:3100, tanks:64, berths:6, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"APC", size:"md", type:"port" },
+  { id:133, name:"NIOC Kharg Island", country:"Iran", city:"Kharg Island", lat:29.23, lng:50.32, cap:10400, tanks:188, berths:18, occ:"87%", products:["Crude","Condensate"], op:"NIOC", size:"xl", type:"port" },
+  { id:134, name:"SOMO Khor al-Amaya", country:"Iraq", city:"Al Faw", lat:29.78, lng:48.8, cap:7800, tanks:132, berths:13, occ:"85%", products:["Crude"], op:"SOMO", size:"xl", type:"port" },
+  { id:135, name:"VTTI Fujairah", country:"UAE", city:"Fujairah", lat:25.16, lng:56.37, cap:5900, tanks:110, berths:10, occ:"88%", products:["Gasoline","Diesel","Fuel Oil"], op:"VTTI", size:"lg", type:"port" },
+  { id:136, name:"Aramco Riyadh Depot", country:"Saudi Arabia", city:"Riyadh", lat:24.71, lng:46.72, cap:3400, tanks:88, berths:0, occ:"77%", products:["Diesel","Gasoline","Jet"], op:"Aramco", size:"md", type:"inland" },
+  { id:137, name:"JOPetrol Amman Depot", country:"Jordan", city:"Amman", lat:31.95, lng:35.93, cap:1900, tanks:46, berths:0, occ:"68%", products:["Diesel","Gasoline","LPG"], op:"JOPetrol", size:"md", type:"inland" },
+  { id:138, name:"Waha Es Sider", country:"Libya", city:"Es Sider", lat:30.64, lng:18.34, cap:7200, tanks:124, berths:11, occ:"72%", products:["Crude"], op:"Waha", size:"xl", type:"port" },
+  { id:139, name:"Zawiya Oil Terminal", country:"Libya", city:"Zawiya", lat:32.76, lng:12.71, cap:4300, tanks:78, berths:7, occ:"69%", products:["Crude","Gasoline","Diesel"], op:"Zawiya", size:"lg", type:"port" },
+  { id:140, name:"SAMIR Mohammedia", country:"Morocco", city:"Mohammedia", lat:33.71, lng:-7.38, cap:5100, tanks:92, berths:8, occ:"75%", products:["Crude","Diesel","Gasoline"], op:"SAMIR", size:"lg", type:"port" },
+  { id:141, name:"Horizon Tanger Med", country:"Morocco", city:"Tanger Med", lat:35.88, lng:-5.51, cap:3800, tanks:70, berths:7, occ:"82%", products:["Gasoline","Diesel","Fuel Oil"], op:"Horizon", size:"lg", type:"port" },
+  { id:142, name:"TRAPSA Skhira", country:"Tunisia", city:"Skhira", lat:34.3, lng:10.08, cap:2900, tanks:58, berths:6, occ:"66%", products:["Crude","Diesel"], op:"TRAPSA", size:"md", type:"port" },
+  { id:143, name:"Sonangol Luanda", country:"Angola", city:"Luanda", lat:-8.78, lng:13.24, cap:6600, tanks:118, berths:10, occ:"80%", products:["Crude","Diesel","LPG"], op:"Sonangol", size:"lg", type:"port" },
+  { id:144, name:"GHAPOHA Tema", country:"Ghana", city:"Tema", lat:5.63, lng:0.0, cap:3300, tanks:66, berths:6, occ:"74%", products:["Gasoline","Diesel","LPG"], op:"GHAPOHA", size:"md", type:"port" },
+  { id:145, name:"STSL Lome", country:"Togo", city:"Lome", lat:6.13, lng:1.29, cap:2200, tanks:44, berths:5, occ:"71%", products:["Gasoline","Diesel"], op:"STSL", size:"md", type:"port" },
+  { id:146, name:"SAR Dakar", country:"Senegal", city:"Dakar", lat:14.68, lng:-17.43, cap:2700, tanks:54, berths:5, occ:"73%", products:["Crude","Diesel","Gasoline"], op:"SAR", size:"md", type:"port" },
+  { id:147, name:"NNPC Kaduna Depot", country:"Nigeria", city:"Kaduna", lat:10.52, lng:7.44, cap:2400, tanks:58, berths:0, occ:"67%", products:["Diesel","Gasoline","Kerosene"], op:"NNPC", size:"md", type:"inland" },
+  { id:148, name:"TIPER Dar es Salaam", country:"Tanzania", city:"Dar es Salaam", lat:-6.82, lng:39.29, cap:3600, tanks:72, berths:6, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"TIPER", size:"md", type:"port" },
+  { id:149, name:"Petromoc Maputo", country:"Mozambique", city:"Maputo", lat:-25.97, lng:32.57, cap:2800, tanks:56, berths:5, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"Petromoc", size:"md", type:"port" },
+  { id:150, name:"Sudapet Port Sudan", country:"Sudan", city:"Port Sudan", lat:19.61, lng:37.22, cap:3200, tanks:64, berths:6, occ:"72%", products:["Crude","Diesel"], op:"Sudapet", size:"md", type:"port" },
+  { id:151, name:"Vivo Kampala Depot", country:"Uganda", city:"Kampala", lat:0.31, lng:32.58, cap:1600, tanks:40, berths:0, occ:"65%", products:["Diesel","Gasoline","Jet"], op:"Vivo", size:"md", type:"inland" },
+  { id:152, name:"Indeni Ndola", country:"Zambia", city:"Ndola", lat:-12.97, lng:28.63, cap:1800, tanks:44, berths:0, occ:"69%", products:["Crude","Diesel","Gasoline"], op:"Indeni", size:"md", type:"inland" },
+  { id:153, name:"KPC Nairobi Depot", country:"Kenya", city:"Nairobi", lat:-1.29, lng:36.82, cap:2100, tanks:50, berths:0, occ:"76%", products:["Diesel","Gasoline","Jet"], op:"KPC", size:"md", type:"inland" }
 ];
 
 // Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
@@ -2821,13 +2850,14 @@ const REGION_COUNTRIES = {
   'Baltic & Scandinavia': ['Estonia','Sweden','Norway','Denmark','Finland'],
   'Russia & Caspian': ['Russia','Kazakhstan','Azerbaijan'],
   'East Med & Levant': ['Israel','Lebanon','Egypt','Cyprus','Turkey'],
-  'Middle East': ['UAE','Saudi Arabia','Kuwait','Qatar','Bahrain','Oman'],
+  'Middle East': ['UAE','Saudi Arabia','Kuwait','Qatar','Bahrain','Oman','Iran','Iraq','Yemen','Jordan'],
+  'North Africa': ['Morocco','Tunisia','Libya','Algeria'],
   'East Asia': ['China','Japan','Taiwan','South Korea'],
   'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines','Brunei'],
   'North America': ['USA','Canada','Mexico'],
   'South America': ['Brazil','Colombia','Argentina','Venezuela','Chile','Peru'],
-  'West Africa': ['Nigeria','Angola','Ghana','Ivory Coast'],
-  'East & South Africa': ['South Africa','Kenya','Tanzania','Mozambique','Egypt'],
+  'West Africa': ['Nigeria','Angola','Ghana','Ivory Coast','Togo','Senegal'],
+  'East & South Africa': ['South Africa','Kenya','Tanzania','Mozambique','Egypt','Sudan','Uganda','Zambia'],
   'Australia': ['Australia','New Zealand'],
   'India Subcontinent': ['India','Bangladesh','Pakistan','Sri Lanka'],
 };
@@ -5347,7 +5377,7 @@ loadScript(
                 <option>East Med &amp; Levant</option><option>Middle East</option>
                 <option>East Asia</option><option>Southeast Asia</option>
                 <option>North America</option><option>South America</option>
-                <option>West Africa</option><option>East &amp; South Africa</option>
+                <option>North Africa</option><option>West Africa</option><option>East &amp; South Africa</option>
                 <option>Australia</option><option>India Subcontinent</option>
               </select>
             </div>
