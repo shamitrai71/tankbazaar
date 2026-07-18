@@ -2202,11 +2202,23 @@ function terminalType(t) { return TERMINAL_TYPES[t.type] ? t.type : 'port'; }
 const METRIC_FIELDS = ['throughput','trt','tankTurns','utilization','lastAudit'];
 function blankMetrics() { return { throughput:null, trt:null, tankTurns:null, utilization:null, lastAudit:null }; }
 function normalizeTerminal(t) {
-  return Object.assign({
-    metrics: blankMetrics(),
-    ownerId: null,          // uid of validated owner (null = unclaimed)
-    claimStatus: 'unclaimed', // unclaimed | pending | owned
-  }, t, { metrics: Object.assign(blankMetrics(), t.metrics || {}) });
+  // Defensive: a sparse-array hole or malformed record yields undefined/null
+  // here. Returning null (instead of throwing on t.metrics below) lets every
+  // caller filter it out and keep booting instead of taking the whole app down.
+  if (!t || typeof t !== 'object') {
+    console.warn('normalizeTerminal: skipping invalid terminal record', t);
+    return null;
+  }
+  try {
+    return Object.assign({
+      metrics: blankMetrics(),
+      ownerId: null,          // uid of validated owner (null = unclaimed)
+      claimStatus: 'unclaimed', // unclaimed | pending | owned
+    }, t, { metrics: Object.assign(blankMetrics(), t.metrics || {}) });
+  } catch (e) {
+    console.warn('normalizeTerminal: skipping record that failed to normalize', t, e);
+    return null;
+  }
 }
 
 // ── Terminal persistence via Firestore REST ──
@@ -2220,13 +2232,16 @@ const TerminalStore = {
   async load() {
     if (!firebaseReady) return false;
     // Snapshot the code-defined terminals before we replace the array from Firestore.
-    this._codeSeed = terminals.map(normalizeTerminal);
+    // Filter out any nulls (normalizeTerminal's signal for an invalid record) so
+    // one bad entry can never crash the sort/render that follows.
+    this._codeSeed = terminals.map(normalizeTerminal).filter(Boolean);
     try {
       const docs = await FS_REST.listPublic('terminals');
       if (docs && docs.length) {
         const existingIds = new Set(docs.map(d => parseInt(d.id)));
         terminals.length = 0;
         docs.map(normalizeTerminal)
+            .filter(Boolean)
             .sort((a,b)=>(a.id||0)-(b.id||0))
             .forEach(t => terminals.push(t));
         // If an admin is signed in, push any NEW code terminals not yet in Firestore.
@@ -2256,7 +2271,7 @@ const TerminalStore = {
     }
   },
   async seed() {
-    const seeds = (this._codeSeed || terminals.map(normalizeTerminal));
+    const seeds = (this._codeSeed || terminals.map(normalizeTerminal).filter(Boolean));
     terminals.length = 0; seeds.forEach(t => terminals.push(t));
     await Promise.allSettled(seeds.map(t => FS_REST.setMerge('terminals', String(t.id), t)));
   },
@@ -4437,24 +4452,53 @@ function closePriceChartModal() {
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
 async function startApp() {
-  // Normalize seed terminals so every record has metrics/ownership fields.
-  for (let i = 0; i < terminals.length; i++) terminals[i] = normalizeTerminal(terminals[i]);
+  try {
+    // Normalize seed terminals so every record has metrics/ownership fields.
+    // A single sparse-array hole or malformed entry must never take the whole
+    // boot down: normalize defensively, drop anything that comes back null,
+    // and keep going with whatever validly parsed.
+    const normalized = [];
+    for (let i = 0; i < terminals.length; i++) {
+      try {
+        const n = normalizeTerminal(terminals[i]);
+        if (n) normalized.push(n);
+      } catch (e) {
+        console.warn('startApp: skipping terminal at index ' + i + ' (failed to normalize)', e);
+      }
+    }
+    terminals.length = 0;
+    terminals.push(...normalized);
 
-  // Load terminals from Firestore (seeds the DB from the in-file array on first
-  // run). Falls back to the seed array if Firestore is unreachable.
-  await TerminalStore.load();
+    // Load terminals from Firestore (seeds the DB from the in-file array on first
+    // run). Falls back to the seed array if Firestore is unreachable.
+    try {
+      await TerminalStore.load();
+    } catch (e) {
+      console.warn('startApp: TerminalStore.load() failed, continuing with seed terminals', e);
+    }
 
-  // A configured live endpoint (Admin → Data & API) still overrides if present.
-  await Promise.allSettled([DataService.loadTerminals(), DataService.loadShips(), DataService.loadFlows()]);
-  DataService.lastFetch = DataService.isLive.terminals || DataService.isLive.ships ? new Date() : null;
-  renderTerminalList(terminals);
-  initMap();
-  initAuthListener();
-  updateDataSourceStatus();
-  DataService.startAutoRefresh();
-  // Globe is the default landing view; build it (or queue until Three.js loads).
-  onGlobeShown();
-  hideBootLoader();
+    // A configured live endpoint (Admin → Data & API) still overrides if present.
+    try {
+      await Promise.allSettled([DataService.loadTerminals(), DataService.loadShips(), DataService.loadFlows()]);
+      DataService.lastFetch = DataService.isLive.terminals || DataService.isLive.ships ? new Date() : null;
+    } catch (e) {
+      console.warn('startApp: DataService load step failed, continuing', e);
+    }
+
+    try { renderTerminalList(terminals); } catch (e) { console.warn('startApp: renderTerminalList failed', e); }
+    try { initMap(); } catch (e) { console.warn('startApp: initMap failed', e); }
+    try { initAuthListener(); } catch (e) { console.warn('startApp: initAuthListener failed', e); }
+    try { updateDataSourceStatus(); } catch (e) { console.warn('startApp: updateDataSourceStatus failed', e); }
+    try { DataService.startAutoRefresh(); } catch (e) { console.warn('startApp: startAutoRefresh failed', e); }
+    // Globe is the default landing view; build it (or queue until Three.js loads).
+    try { onGlobeShown(); } catch (e) { console.warn('startApp: onGlobeShown failed', e); }
+  } catch (e) {
+    // Last-resort net: log it, but still fall through to hideBootLoader() below
+    // so the person never gets stuck on the loader even on a wholly unexpected error.
+    console.error('startApp: unexpected error during boot', e);
+  } finally {
+    hideBootLoader();
+  }
 }
 
 function hideBootLoader() {
