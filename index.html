@@ -1285,6 +1285,7 @@ input[type="range"] {
           <span class="product-tag active" onclick="toggleTag(this)">LNG</span>
           <span class="product-tag active" onclick="toggleTag(this)">Diesel</span>
           <span class="product-tag active" onclick="toggleTag(this)">Chemicals</span>
+          <span class="product-tag active" onclick="toggleTag(this)">Jet</span>
         </div>
       </div>
     </div>
@@ -1390,7 +1391,7 @@ input[type="range"] {
           <select id="lf-product" onchange="renderListings()">
             <option value="all">All Products</option>
             <option>Crude</option><option>Gasoline</option><option>Diesel</option>
-            <option>LPG</option><option>LNG</option><option>Chemicals</option>
+            <option>LPG</option><option>LNG</option><option>Chemicals</option><option>Jet</option>
           </select>
         </div>
         <div class="lf-group">
@@ -2184,7 +2185,291 @@ const terminals = [
   { id:399, name:"IOCL Bengaluru Depot", country:"India", city:"Bengaluru, Karnataka", lat:12.97, lng:77.59, cap:4200, tanks:82, berths:0, occ:"80%", products:["Diesel","Gasoline","Jet"], op:"IOCL", size:"lg", type:"inland" },
   { id:400, name:"BPCL Thiruvananthapuram Depot", country:"India", city:"Thiruvananthapuram, Kerala", lat:8.52, lng:76.94, cap:2100, tanks:46, berths:0, occ:"69%", products:["Diesel","Gasoline"], op:"BPCL", size:"md", type:"inland" },
   { id:401, name:"IOCL Madurai Depot", country:"India", city:"Madurai, Tamil Nadu", lat:9.93, lng:78.12, cap:2400, tanks:50, berths:0, occ:"71%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
-  { id:402, name:"IOCL Thoothukudi Terminal", country:"India", city:"Thoothukudi, Tamil Nadu", lat:8.76, lng:78.13, cap:3300, tanks:64, berths:6, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"IOCL", size:"md", type:"port" }
+  { id:402, name:"IOCL Thoothukudi Terminal", country:"India", city:"Thoothukudi, Tamil Nadu", lat:8.76, lng:78.13, cap:3300, tanks:64, berths:6, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"IOCL", size:"md", type:"port" },
+  { id:403, name:"AFS Heathrow Fuel Farm", country:"UK", city:"London Heathrow", lat:51.47, lng:-0.46, cap:4600, tanks:84, berths:0, occ:"85%", products:["Jet"], op:"AFS (Air BP/Q8/TotalEnergies/Valero)", size:"lg", type:"inland" },
+  { id:404, name:"JIFF Dubai Airport Fuel Farm", country:"UAE", city:"Dubai", lat:25.25, lng:55.36, cap:5200, tanks:92, berths:0, occ:"88%", products:["Jet"], op:"JIFF (Air BP/Chevron/ENOC/Shell)", size:"lg", type:"inland" },
+  { id:405, name:"CAFHI Changi Fuel Farm", country:"Singapore", city:"Changi", lat:1.36, lng:103.99, cap:4800, tanks:88, berths:0, occ:"87%", products:["Jet"], op:"CAFHI", size:"lg", type:"inland" },
+  { id:406, name:"AFSC Tank Farm Hong Kong", country:"Hong Kong", city:"Chek Lap Kok", lat:22.31, lng:113.92, cap:4100, tanks:74, berths:0, occ:"82%", products:["Jet"], op:"AFSC", size:"lg", type:"inland" },
+  { id:407, name:"PDX Airport Tank Farm", country:"USA", city:"Portland OR", lat:45.59, lng:-122.6, cap:2100, tanks:44, berths:0, occ:"73%", products:["Jet"], op:"Airline Consortium", size:"md", type:"inland" },
+  { id:408, name:"LAXFUEL Tank Farm", country:"USA", city:"Los Angeles CA", lat:33.94, lng:-118.41, cap:3600, tanks:68, berths:0, occ:"81%", products:["Jet"], op:"LAXFUEL Corporation", size:"lg", type:"inland" },
+  { id:409, name:"JFK Bulk Fuel Farm", country:"USA", city:"New York NY", lat:40.64, lng:-73.78, cap:4200, tanks:80, berths:0, occ:"84%", products:["Jet"], op:"JFK Fuel Infrastructure LLC", size:"lg", type:"inland" },
+  { id:410, name:"JUHI Schiphol Fuel Farm", country:"Netherlands", city:"Amsterdam Schiphol", lat:52.31, lng:4.76, cap:3900, tanks:72, berths:0, occ:"83%", products:["Jet"], op:"JUHI", size:"lg", type:"inland" },
+  { id:411, name:"VAFFC Vancouver Airport Fuel Farm", country:"Canada", city:"Vancouver YVR", lat:49.19, lng:-123.18, cap:2400, tanks:50, berths:0, occ:"75%", products:["Jet"], op:"Vancouver Airport Fuel Facilities Corp", size:"md", type:"inland" },
+  { id:412, name:"SMCA Roissy Fuel Depot", country:"France", city:"Paris CDG", lat:49.01, lng:2.55, cap:4400, tanks:80, berths:0, occ:"82%", products:["Jet"], op:"SMCA", size:"lg", type:"inland" },
+  { id:413, name:"Skytanking Frankfurt Fuel Farm", country:"Germany", city:"Frankfurt", lat:50.04, lng:8.57, cap:3400, tanks:64, berths:0, occ:"78%", products:["Jet"], op:"Skytanking", size:"md", type:"inland" },
+  { id:414, name:"NAAF Narita Fuel Farm", country:"Japan", city:"Narita", lat:35.77, lng:140.39, cap:3100, tanks:60, berths:0, occ:"80%", products:["Jet"], op:"NAAF", size:"md", type:"inland" },
+  { id:415, name:"JUHI Sydney Fuel Facilities", country:"Australia", city:"Sydney", lat:-33.95, lng:151.18, cap:2600, tanks:52, berths:0, occ:"76%", products:["Jet"], op:"Skytanking (JUHI)", size:"md", type:"inland" },
+  { id:416, name:"Menzies Toronto Pearson Tank Farm", country:"Canada", city:"Toronto YYZ", lat:43.68, lng:-79.63, cap:2200, tanks:46, berths:0, occ:"72%", products:["Jet"], op:"Menzies Aviation", size:"md", type:"inland" },
+  { id:417, name:"ASIG O'Hare Jet-A Tank Farm", country:"USA", city:"Chicago IL", lat:41.98, lng:-87.9, cap:3300, tanks:62, berths:0, occ:"79%", products:["Jet"], op:"ASIG (Menzies Aviation)", size:"md", type:"inland" },
+  { id:418, name:"BOSFUEL Logan Tank Farm", country:"USA", city:"Boston MA", lat:42.36, lng:-71.01, cap:2800, tanks:54, berths:0, occ:"77%", products:["Jet"], op:"BOSFUEL Consortium", size:"md", type:"inland" },
+  { id:419, name:"Skytanking Munich Fuel Farm", country:"Germany", city:"Munich", lat:48.35, lng:11.79, cap:3600, tanks:68, berths:0, occ:"81%", products:["Jet"], op:"Skytanking", size:"md", type:"inland" },
+  { id:420, name:"Exolum Madrid Barajas Fuel Farm", country:"Spain", city:"Madrid Barajas", lat:40.47, lng:-3.56, cap:3200, tanks:60, berths:0, occ:"78%", products:["Jet"], op:"Exolum", size:"md", type:"inland" },
+  { id:421, name:"QJET Hamad Airport Fuel Farm", country:"Qatar", city:"Doha", lat:25.27, lng:51.61, cap:4700, tanks:86, berths:0, occ:"89%", products:["Jet"], op:"QJET (WOQOD)", size:"lg", type:"inland" },
+  { id:422, name:"IOCL Salaya Depot", country:"India", city:"Salaya, Gujarat", lat:22.32, lng:69.6, cap:3400, tanks:66, berths:0, occ:"78%", products:["Crude"], op:"IOCL", size:"md", type:"inland" },
+  { id:423, name:"IOCL Viramgam Depot", country:"India", city:"Viramgam, Gujarat", lat:23.12, lng:72.04, cap:2600, tanks:54, berths:0, occ:"73%", products:["Crude","Diesel","Gasoline"], op:"IOCL", size:"md", type:"inland" },
+  { id:424, name:"IOCL Loni Depot", country:"India", city:"Loni, Uttar Pradesh", lat:28.75, lng:77.29, cap:3100, tanks:62, berths:0, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:425, name:"IOCL Koyali Terminal", country:"India", city:"Koyali, Gujarat", lat:22.35, lng:73.18, cap:4600, tanks:88, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"IOCL", size:"lg", type:"inland" },
+  { id:426, name:"GAIL Vijaipur Terminal", country:"India", city:"Vijaipur, Madhya Pradesh", lat:24.1, lng:77.75, cap:2900, tanks:58, berths:0, occ:"74%", products:["LNG","LPG"], op:"GAIL", size:"md", type:"inland" },
+  { id:427, name:"GAIL Auraiya Terminal", country:"India", city:"Auraiya, Uttar Pradesh", lat:26.47, lng:79.53, cap:2200, tanks:46, berths:0, occ:"69%", products:["LNG"], op:"GAIL", size:"md", type:"inland" },
+  { id:428, name:"HPCL Secunderabad Depot", country:"India", city:"Secunderabad, Telangana", lat:17.44, lng:78.5, cap:2400, tanks:50, berths:0, occ:"71%", products:["Diesel","Gasoline"], op:"HPCL", size:"md", type:"inland" },
+  { id:429, name:"HPCL Hassan Depot", country:"India", city:"Hassan, Karnataka", lat:13.01, lng:76.1, cap:1900, tanks:44, berths:0, occ:"67%", products:["Diesel","Gasoline"], op:"HPCL", size:"md", type:"inland" },
+  { id:430, name:"IOCL Coimbatore Depot", country:"India", city:"Coimbatore, Tamil Nadu", lat:11.02, lng:76.97, cap:2500, tanks:52, berths:0, occ:"72%", products:["Diesel","Gasoline"], op:"IOCL", size:"md", type:"inland" },
+  { id:431, name:"IOCL Salem Depot", country:"India", city:"Salem, Tamil Nadu", lat:11.66, lng:78.15, cap:2000, tanks:44, berths:0, occ:"68%", products:["Diesel","Gasoline"], op:"IOCL", size:"md", type:"inland" },
+  { id:432, name:"IOCL Karur Depot", country:"India", city:"Karur, Tamil Nadu", lat:10.96, lng:78.08, cap:1700, tanks:40, berths:0, occ:"65%", products:["Diesel","Gasoline"], op:"IOCL", size:"md", type:"inland" },
+  { id:433, name:"IOCL Ranchi Terminal", country:"India", city:"Ranchi, Jharkhand", lat:23.34, lng:85.31, cap:2800, tanks:56, berths:0, occ:"73%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:434, name:"IOCL Raipur Terminal", country:"India", city:"Raipur, Chhattisgarh", lat:21.25, lng:81.63, cap:3000, tanks:60, berths:0, occ:"75%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:435, name:"IOCL Patna Terminal", country:"India", city:"Patna, Bihar", lat:25.59, lng:85.14, cap:3300, tanks:64, berths:0, occ:"77%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"lg", type:"inland" },
+  { id:436, name:"IOCL Barauni Terminal", country:"India", city:"Barauni, Bihar", lat:25.47, lng:86.02, cap:5200, tanks:94, berths:0, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"IOCL", size:"lg", type:"inland" },
+  { id:437, name:"NRL Siliguri Terminal", country:"India", city:"Siliguri, West Bengal", lat:26.73, lng:88.43, cap:2100, tanks:46, berths:0, occ:"70%", products:["Diesel","Gasoline"], op:"NRL", size:"md", type:"inland" },
+  { id:438, name:"IMC Pipavav Terminal", country:"India", city:"Pipavav, Gujarat", lat:20.92, lng:71.51, cap:3600, tanks:70, berths:6, occ:"75%", products:["Chemicals","Diesel","Gasoline"], op:"IMC", size:"md", type:"port" },
+  { id:439, name:"IMC Dighi Terminal", country:"India", city:"Dighi, Maharashtra", lat:18.2, lng:72.94, cap:2800, tanks:56, berths:5, occ:"71%", products:["Chemicals","Diesel"], op:"IMC", size:"md", type:"port" },
+  { id:440, name:"IMC Mormugao Terminal", country:"India", city:"Mormugao, Goa", lat:15.42, lng:73.8, cap:2400, tanks:50, berths:5, occ:"69%", products:["Chemicals","Diesel","Gasoline"], op:"IMC", size:"md", type:"port" },
+  { id:441, name:"IMC Karwar Terminal", country:"India", city:"Karwar, Karnataka", lat:14.8, lng:74.13, cap:1900, tanks:44, berths:4, occ:"64%", products:["Chemicals","Diesel"], op:"IMC", size:"md", type:"port" },
+  { id:442, name:"IMC Kolkata Terminal", country:"India", city:"Kolkata, West Bengal", lat:22.57, lng:88.31, cap:3100, tanks:62, berths:6, occ:"74%", products:["Chemicals","Diesel","Gasoline"], op:"IMC", size:"md", type:"port" },
+  { id:443, name:"ONGC Hazira Plant", country:"India", city:"Hazira, Gujarat", lat:21.12, lng:72.62, cap:4200, tanks:80, berths:7, occ:"79%", products:["Crude","LNG","LPG"], op:"ONGC", size:"lg", type:"port" },
+  { id:444, name:"ONGC Uran Plant", country:"India", city:"Uran, Maharashtra", lat:18.87, lng:72.94, cap:5100, tanks:94, berths:8, occ:"83%", products:["Crude","LNG","LPG"], op:"ONGC", size:"lg", type:"port" },
+  { id:445, name:"HPCL Ajmer Terminal", country:"India", city:"Ajmer, Rajasthan", lat:26.333023, lng:74.564622, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:446, name:"HPCL Akola Depot", country:"India", city:"Akola, Maharashtra", lat:20.721842, lng:76.899887, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:447, name:"HPCL Bahadurgarh Terminal", country:"India", city:"Bahadurgarh, Haryana", lat:28.733535, lng:76.853207, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:448, name:"HPCL Baitalpur Depot", country:"India", city:"Deoria, Uttar Pradesh", lat:26.563824, lng:83.727059, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:449, name:"HPCL Balasore Depot", country:"India", city:"Balasore, Odisha", lat:21.496095, lng:86.848667, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:450, name:"HPCL Barauni Depot", country:"India", city:"Begusarai, Bihar", lat:25.4439, lng:86.04853, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:451, name:"HPCL Bareilly Depot", country:"India", city:"Bareilly, Uttar Pradesh", lat:28.2943, lng:79.17203, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:452, name:"HPCL Bengaluru Terminal", country:"India", city:"Bengaluru, Karnataka", lat:12.98702, lng:77.84745, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:453, name:"HPCL Bharatpur Terminal", country:"India", city:"Bharatpur, Rajasthan", lat:27.290376, lng:77.528291, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:454, name:"HPCL Bokaro Depot", country:"India", city:"Bokaro, Jharkhand", lat:23.686425, lng:86.065564, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:455, name:"HPCL Chennai Terminal", country:"India", city:"Chennai, Tamil Nadu", lat:13.242361, lng:80.311467, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:456, name:"HPCL Coimbatore Depot", country:"India", city:"Coimbatore, Tamil Nadu", lat:11.030765, lng:77.081881, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:457, name:"HPCL Delhi Terminal", country:"India", city:"Delhi", lat:28.6884, lng:76.9741, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:458, name:"HPCL Dharamapuri Terminal", country:"India", city:"Dharmapuri, Tamil Nadu", lat:12.02584, lng:78.112778, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:459, name:"HPCL Durgapur Depot", country:"India", city:"Durgapur, West Bengal", lat:23.4862, lng:87.384202, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:460, name:"HPCL Gulbarga Depot", country:"India", city:"Gulbarga, Karnataka", lat:17.27092, lng:76.87315, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:461, name:"HPCL Guwahati Depot", country:"India", city:"Guwahati, Assam", lat:26.11667, lng:91.7299, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:462, name:"HPCL Gwalior Depot", country:"India", city:"Gwalior, Madhya Pradesh", lat:26.30829, lng:78.12653, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:463, name:"HPCL Haldia Terminal", country:"India", city:"Haldia, West Bengal", lat:22.0696, lng:88.1544, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:464, name:"HPCL Hazira Depot", country:"India", city:"Surat, Gujarat", lat:21.183431, lng:72.717095, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:465, name:"HPCL Hisar Terminal", country:"India", city:"Hisar, Haryana", lat:29.296214, lng:76.02262, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:466, name:"HPCL Hubli Depot", country:"India", city:"Hubli, Karnataka", lat:15.41378, lng:75.06767, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:467, name:"HPCL Indore Depot", country:"India", city:"Indore, Madhya Pradesh", lat:22.81812, lng:75.92268, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:468, name:"HPCL Irumpanam Terminal", country:"India", city:"Ernakulam, Kerala", lat:9.986053, lng:76.354172, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:469, name:"HPCL Jabalpur Depot", country:"India", city:"Jabalpur, Madhya Pradesh", lat:23.144163, lng:79.692764, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:470, name:"HPCL Jaipur Terminal", country:"India", city:"Jaipur, Rajasthan", lat:26.785507, lng:75.506278, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:471, name:"HPCL Jammu Depot", country:"India", city:"Jammu, Jammu and Kashmir", lat:32.70178, lng:74.88398, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:472, name:"HPCL Jodhpur Terminal", country:"India", city:"Jodhpur, Rajasthan", lat:26.141399, lng:73.021815, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:473, name:"HPCL Kadapa Terminal", country:"India", city:"Kadapa, Andhra Pradesh", lat:14.417442, lng:78.942474, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:474, name:"HPCL Kandla Terminal", country:"India", city:"Kandla, Gujarat", lat:23.071785, lng:70.161212, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:475, name:"HPCL Kanpur Terminal", country:"India", city:"Kanpur, Uttar Pradesh", lat:26.378708, lng:80.116386, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:476, name:"HPCL Kolkata-I Terminal", country:"India", city:"Kolkata, West Bengal", lat:22.49306, lng:88.18906, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:477, name:"HPCL Kozhikode Depot", country:"India", city:"Kozhikode, Kerala", lat:11.34815, lng:75.740558, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:478, name:"HPCL Leh Depot", country:"India", city:"Leh, Ladakh", lat:34.14796, lng:77.46849, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:479, name:"HPCL Loni Terminal", country:"India", city:"Loni Kalbhor, Maharashtra", lat:18.49161, lng:74.01543, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:480, name:"HPCL Lucknow Depot", country:"India", city:"Lucknow, Uttar Pradesh", lat:26.770944, lng:80.843561, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:481, name:"HPCL MR-II Terminal", country:"India", city:"Mumbai, Maharashtra", lat:19.022905, lng:72.900402, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:482, name:"HPCL Madurai Depot", country:"India", city:"Madurai, Tamil Nadu", lat:9.851073, lng:78.032257, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:483, name:"HPCL Mangalore Terminal", country:"India", city:"Mangalore, Karnataka", lat:12.975627, lng:74.837706, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:484, name:"HPCL Mathura Terminal", country:"India", city:"Mathura, Uttar Pradesh", lat:27.3828, lng:77.698027, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:485, name:"HPCL Meerut Depot", country:"India", city:"Meerut, Uttar Pradesh", lat:28.94964, lng:77.6591, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:486, name:"HPCL Miraj Terminal", country:"India", city:"Sangli, Maharashtra", lat:17.006893, lng:74.523389, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:487, name:"HPCL Mughalsarai Depot", country:"India", city:"Chandauli, Uttar Pradesh", lat:25.283953, lng:83.14653, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:488, name:"HPCL Nalgarh Depot", country:"India", city:"Nalagarh, Himachal Pradesh", lat:31.02017, lng:76.71753, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:489, name:"HPCL Palanpur Terminal", country:"India", city:"Banaskantha, Gujarat", lat:24.215266, lng:72.301782, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:490, name:"HPCL Paradeep Terminal", country:"India", city:"Paradip, Odisha", lat:20.28258, lng:86.62244, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:491, name:"HPCL Patna Depot", country:"India", city:"Patna, Bihar", lat:25.557852, lng:84.858964, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:492, name:"HPCL Raipur Depot", country:"India", city:"Raipur, Chhattisgarh", lat:21.2256, lng:81.78318, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:493, name:"HPCL Rajahmundry Terminal", country:"India", city:"Rajahmundry, Andhra Pradesh", lat:17.20287, lng:81.84399, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:494, name:"HPCL Ramagundam Depot", country:"India", city:"Ramagundam, Telangana", lat:18.74406, lng:79.431768, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:495, name:"HPCL Roorkee Depot", country:"India", city:"Roorkee, Uttarakhand", lat:29.79482, lng:77.94594, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:496, name:"HPCL Sagar Depot", country:"India", city:"Sagar, Madhya Pradesh", lat:23.88146, lng:78.60588, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:497, name:"HPCL Sholapur Terminal", country:"India", city:"Solapur, Maharashtra", lat:17.729444, lng:75.780556, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:498, name:"HPCL Sitarganj Depot", country:"India", city:"Udham Singh Nagar, Uttarakhand", lat:29.015643, lng:79.683723, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:499, name:"HPCL Suryapet Terminal", country:"India", city:"Suryapet, Telangana", lat:17.0861, lng:79.66452, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:500, name:"HPCL Tirunelveli Depot", country:"India", city:"Tirunelveli, Tamil Nadu", lat:8.740559, lng:77.707506, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:501, name:"HPCL Vadodara Terminal", country:"India", city:"Vadodara, Gujarat", lat:22.426398, lng:73.220444, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:502, name:"HPCL Vasco Terminal", country:"India", city:"Vasco da Gama, Goa", lat:15.37974, lng:73.88559, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:503, name:"HPCL Vashi White Oil Terminal", country:"India", city:"Navi Mumbai, Maharashtra", lat:19.05807, lng:73.03071, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:504, name:"HPCL Visakh White Oil Terminal", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.717866, lng:83.243907, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:505, name:"HPCL Cassimode Black Oil Terminal", country:"India", city:"Chennai, Tamil Nadu", lat:13.11637, lng:80.296118, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:506, name:"HPCL Cochin Black Terminal", country:"India", city:"Kochi, Kerala", lat:9.96796, lng:76.29733, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:507, name:"HPCL HMEL Bitumen Terminal", country:"India", city:"Bathinda, Punjab", lat:29.913611, lng:74.962778, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:508, name:"HPCL Mahul Terminal", country:"India", city:"Mumbai, Maharashtra", lat:19.010675, lng:72.901154, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:509, name:"HPCL Mundra Terminal", country:"India", city:"Mundra, Gujarat", lat:22.795403, lng:69.689145, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:510, name:"HPCL Vashi Black Oil Depot", country:"India", city:"Navi Mumbai, Maharashtra", lat:19.058062, lng:73.032059, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:511, name:"HPCL Visakh Black Oil Terminal", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.690781, lng:83.262186, cap:3200, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"port" },
+  { id:512, name:"HPCL Dimapur Depot", country:"India", city:"Dimapur, Nagaland", lat:25.854268, lng:93.829083, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:513, name:"HPCL Raipur-II Depot", country:"India", city:"Raipur, Chhattisgarh", lat:21.220129, lng:81.793251, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:514, name:"HPCL HMEL White Oil Terminal", country:"India", city:"Bathinda, Punjab", lat:29.92918, lng:74.96385, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"HPCL", size:"md", type:"inland" },
+  { id:515, name:"BPCL Manglya Terminal", country:"India", city:"Indore, Madhya Pradesh", lat:22.75, lng:75.9, cap:2600, tanks:54, berths:0, occ:"72%", products:["Diesel","Gasoline","LPG"], op:"BPCL", size:"md", type:"inland" },
+  { id:516, name:"BPCL Piyala Terminal", country:"India", city:"Faridabad, Haryana", lat:28.35, lng:77.35, cap:2200, tanks:46, berths:0, occ:"68%", products:["Diesel","Gasoline"], op:"BPCL", size:"md", type:"inland" },
+  { id:517, name:"BPCL Kota Terminal", country:"India", city:"Kota, Rajasthan", lat:25.18, lng:75.83, cap:2800, tanks:56, berths:0, occ:"73%", products:["Diesel","Gasoline","LPG"], op:"BPCL", size:"md", type:"inland" },
+  { id:518, name:"BPCL Jobner Terminal", country:"India", city:"Jobner, Rajasthan", lat:26.87, lng:75.4, cap:1700, tanks:40, berths:0, occ:"64%", products:["Diesel","Gasoline"], op:"BPCL", size:"md", type:"inland" },
+  { id:519, name:"BPCL Chakan Terminal", country:"India", city:"Chakan, Maharashtra", lat:18.76, lng:73.86, cap:1900, tanks:44, berths:0, occ:"66%", products:["LPG"], op:"BPCL", size:"md", type:"inland" },
+  { id:520, name:"BPCL Shikrapur Terminal", country:"India", city:"Shikrapur, Maharashtra", lat:18.72, lng:74.11, cap:1600, tanks:38, berths:0, occ:"62%", products:["LPG"], op:"BPCL", size:"md", type:"inland" },
+  { id:521, name:"BPCL Ramanmandi Terminal", country:"India", city:"Bathinda, Punjab", lat:30.35, lng:75.05, cap:2000, tanks:44, berths:0, occ:"67%", products:["Diesel","Gasoline"], op:"BPCL", size:"md", type:"inland" },
+  { id:522, name:"BPCL Washala Terminal", country:"India", city:"Washala, Maharashtra", lat:19.9, lng:73.45, cap:1400, tanks:34, berths:0, occ:"60%", products:["Diesel","Gasoline"], op:"BPCL", size:"md", type:"inland" },
+  { id:523, name:"IOCL Khunti Terminal", country:"India", city:"Khunti, Jharkhand", lat:23.08, lng:85.28, cap:2000, tanks:44, berths:0, occ:"68%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:524, name:"MRPL Katipalla Terminal", country:"India", city:"Mangalore, Karnataka", lat:12.99, lng:74.8, cap:2900, tanks:58, berths:5, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"MRPL", size:"md", type:"port" },
+  { id:525, name:"MRPL Devangonthi Terminal", country:"India", city:"Bengaluru, Karnataka", lat:13.02, lng:77.83, cap:2300, tanks:48, berths:0, occ:"70%", products:["Diesel","Gasoline","Jet"], op:"MRPL", size:"md", type:"inland" },
+  { id:526, name:"CPCL Vallur Petroleum Terminal", country:"India", city:"Chennai, Tamil Nadu", lat:13.15, lng:80.23, cap:3400, tanks:66, berths:0, occ:"77%", products:["Diesel","Gasoline","LPG"], op:"CPCL", size:"md", type:"inland" },
+  { id:527, name:"CPCL Korukkupet Terminal", country:"India", city:"Chennai, Tamil Nadu", lat:13.12, lng:80.29, cap:1800, tanks:42, berths:0, occ:"65%", products:["Diesel","Gasoline"], op:"CPCL", size:"md", type:"inland" },
+  { id:528, name:"CPCL Tondiarpet Terminal", country:"India", city:"Chennai, Tamil Nadu", lat:13.12, lng:80.29, cap:1500, tanks:36, berths:0, occ:"63%", products:["Jet"], op:"CPCL", size:"md", type:"inland" },
+  { id:529, name:"Vopak Deer Park", country:"USA", city:"Deer Park TX", lat:29.73, lng:-95.13, cap:4800, tanks:88, berths:7, occ:"81%", products:["Chemicals","Diesel","Gasoline"], op:"Vopak", size:"lg", type:"port" },
+  { id:530, name:"Vopak Jakarta", country:"Indonesia", city:"Jakarta", lat:-6.1, lng:106.88, cap:3400, tanks:66, berths:6, occ:"75%", products:["Chemicals","Diesel","Gasoline"], op:"Vopak", size:"md", type:"port" },
+  { id:531, name:"Vopak Shanghai", country:"China", city:"Shanghai", lat:31.23, lng:121.47, cap:3900, tanks:74, berths:6, occ:"79%", products:["Chemicals","Diesel","Gasoline"], op:"Vopak", size:"lg", type:"port" },
+  { id:532, name:"Vopak Tianjin", country:"China", city:"Tianjin", lat:39.0, lng:117.71, cap:3100, tanks:60, berths:5, occ:"73%", products:["Chemicals","Diesel"], op:"Vopak", size:"md", type:"port" },
+  { id:533, name:"Vopak Bahia Las Minas", country:"Panama", city:"Colon", lat:9.36, lng:-79.86, cap:2600, tanks:52, berths:5, occ:"70%", products:["Crude","Diesel","Gasoline"], op:"Vopak", size:"md", type:"port" },
+  { id:534, name:"Engro Vopak Port Qasim", country:"Pakistan", city:"Port Qasim", lat:24.75, lng:67.35, cap:2900, tanks:58, berths:5, occ:"77%", products:["Chemicals","LPG"], op:"Engro Vopak", size:"md", type:"port" },
+  { id:535, name:"Vopak Terminal ACS Antwerp", country:"Belgium", city:"Antwerp", lat:51.25, lng:4.4, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:536, name:"Vopak Terminal Eurotank Antwerp", country:"Belgium", city:"Antwerp", lat:51.24, lng:4.39, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:537, name:"Vopak Terminal Linkeroever Antwerp", country:"Belgium", city:"Antwerp", lat:51.23, lng:4.36, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:538, name:"Vopak Brazil Alemoa Terminal", country:"Brazil", city:"Santos", lat:-23.95, lng:-46.35, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:539, name:"Vopak Brazil Aratu Terminal", country:"Brazil", city:"Salvador", lat:-12.77, lng:-38.48, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:540, name:"Ridley Island Energy Export Facility", country:"Canada", city:"Prince Rupert BC", lat:54.25, lng:-130.32, cap:1500, tanks:27, berths:6, occ:"78%", products:["LNG"], op:"Vopak (REEF)", size:"md", type:"port" },
+  { id:541, name:"Ridley Island Propane Export Terminal", country:"Canada", city:"Prince Rupert BC", lat:54.25, lng:-130.31, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"Vopak (RIPET)", size:"md", type:"port" },
+  { id:542, name:"Huizhou Terminal", country:"China", city:"Huizhou", lat:22.72, lng:114.42, cap:1399, tanks:25, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:543, name:"Vopak Terminal Haiteng", country:"China", city:"Nanjing", lat:32.06, lng:118.8, cap:2265, tanks:41, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:544, name:"Vopak Terminal Ningbo", country:"China", city:"Ningbo", lat:29.87, lng:121.72, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:545, name:"Vopak Terminal Qinzhou", country:"China", city:"Qinzhou", lat:21.95, lng:108.62, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:546, name:"Vopak Terminal Zhangjiagang", country:"China", city:"Zhangjiagang", lat:31.87, lng:120.56, cap:1246, tanks:23, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:547, name:"SPEC LNG", country:"Colombia", city:"Cartagena", lat:10.4, lng:-75.51, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:548, name:"Vopak Colombia Barranquilla Terminal", country:"Colombia", city:"Barranquilla", lat:10.96, lng:-74.8, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:549, name:"Vopak Colombia Cartagena Terminal", country:"Colombia", city:"Cartagena", lat:10.42, lng:-75.55, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:550, name:"AVTL CRL1 Terminal", country:"India", city:"Kochi, Kerala", lat:9.97, lng:76.28, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"AVTL", size:"md", type:"port" },
+  { id:551, name:"AVTL CRL2 Terminal", country:"India", city:"Kochi, Kerala", lat:9.97, lng:76.29, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"AVTL", size:"md", type:"port" },
+  { id:552, name:"AVTL JNPA Mumbai Terminal", country:"India", city:"Nhava Sheva, Maharashtra", lat:18.95, lng:72.95, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"AVTL", size:"md", type:"port" },
+  { id:553, name:"AVTL Kandla LPG Terminal", country:"India", city:"Kandla, Gujarat", lat:23.03, lng:70.22, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"AVTL", size:"md", type:"port" },
+  { id:554, name:"AVTL Mangalore LPG Terminal", country:"India", city:"Mangaluru, Karnataka", lat:12.9, lng:74.83, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"AVTL", size:"md", type:"port" },
+  { id:555, name:"AVTL Nadella Terminal", country:"India", city:"Kakinada, Andhra Pradesh", lat:16.99, lng:82.24, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude"], op:"AVTL", size:"md", type:"port" },
+  { id:556, name:"AVTL Pipavav Terminal", country:"India", city:"Pipavav, Gujarat", lat:20.92, lng:71.51, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"AVTL", size:"md", type:"port" },
+  { id:557, name:"AVTL Pipavav LPG Terminal", country:"India", city:"Pipavav, Gujarat", lat:20.91, lng:71.5, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"AVTL", size:"md", type:"port" },
+  { id:558, name:"Hindustan Aegis LPG Terminal", country:"India", city:"Mumbai, Maharashtra", lat:19.02, lng:72.9, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"Hindustan Aegis", size:"md", type:"port" },
+  { id:559, name:"Vopak Terminal Merak", country:"Indonesia", city:"Merak", lat:-5.93, lng:105.99, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:560, name:"Chemtank Jubail", country:"Saudi Arabia", city:"Jubail", lat:27.03, lng:49.65, cap:1420, tanks:26, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:561, name:"SabTank Al Jubail", country:"Saudi Arabia", city:"Jubail", lat:27.02, lng:49.66, cap:3645, tanks:66, berths:6, occ:"78%", products:["Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:562, name:"SabTank Yanbu", country:"Saudi Arabia", city:"Yanbu", lat:24.09, lng:38.06, cap:830, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:563, name:"Kertih Terminals", country:"Malaysia", city:"Kertih", lat:4.45, lng:103.45, cap:1000, tanks:20, berths:6, occ:"78%", products:["Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:564, name:"Pengerang Terminals Two", country:"Malaysia", city:"Johor", lat:1.35, lng:104.11, cap:3757, tanks:68, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:565, name:"LNG Terminal Altamira", country:"Mexico", city:"Altamira", lat:22.4, lng:-97.87, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:566, name:"Vopak Mexico Altamira Terminal", country:"Mexico", city:"Altamira", lat:22.39, lng:-97.86, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:567, name:"Vopak Mexico Coatzacoalcos Terminal", country:"Mexico", city:"Coatzacoalcos", lat:18.15, lng:-94.45, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:568, name:"Vopak Mexico Veracruz Terminal", country:"Mexico", city:"Veracruz", lat:19.2, lng:-96.13, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:569, name:"Engro Elengy LNG Terminal", country:"Pakistan", city:"Port Qasim", lat:24.75, lng:67.35, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"Engro Elengy", size:"md", type:"port" },
+  { id:570, name:"Vopak Panama Terminal", country:"Panama", city:"Panama City", lat:8.95, lng:-79.57, cap:938, tanks:20, berths:6, occ:"78%", products:["Crude"], op:"Vopak", size:"md", type:"port" },
+  { id:571, name:"Vopak Singapore Banyan Terminal", country:"Singapore", city:"Pulau Bukom", lat:1.24, lng:103.77, cap:3631, tanks:66, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:572, name:"Vopak Singapore Penjuru Terminal", country:"Singapore", city:"Penjuru", lat:1.3, lng:103.7, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:573, name:"Vopak Singapore Sakra Terminal", country:"Singapore", city:"Pulau Sakra", lat:1.23, lng:103.68, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:574, name:"Vopak Singapore Jurong Rock Caverns", country:"Singapore", city:"Jurong Island", lat:1.27, lng:103.68, cap:3675, tanks:67, berths:6, occ:"78%", products:["Crude"], op:"Vopak (JTC)", size:"md", type:"port" },
+  { id:575, name:"Vopak Terminal Durban", country:"South Africa", city:"Durban", lat:-29.87, lng:31.03, cap:901, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:576, name:"Vopak Terminal Lesedi", country:"South Africa", city:"Durban", lat:-29.85, lng:31.02, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude"], op:"Vopak", size:"md", type:"port" },
+  { id:577, name:"Vopak Terminal Terquimsa Tarragona", country:"Spain", city:"Tarragona", lat:41.11, lng:1.24, cap:1117, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:578, name:"Thai Tank Terminal", country:"Thailand", city:"Laem Chabang", lat:13.08, lng:100.88, cap:1810, tanks:33, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:579, name:"EemsEnergy Terminal", country:"Netherlands", city:"Eemshaven", lat:53.44, lng:6.83, cap:800, tanks:20, berths:6, occ:"78%", products:["LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:580, name:"Gate Terminal LNG Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.96, lng:4.03, cap:1350, tanks:25, berths:6, occ:"78%", products:["LNG"], op:"Vopak", size:"md", type:"port" },
+  { id:581, name:"Maasvlakte Olie Terminal Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.97, lng:4.05, cap:2727, tanks:50, berths:6, occ:"78%", products:["Crude"], op:"Vopak", size:"md", type:"port" },
+  { id:582, name:"Vopak Terminal Eemshaven", country:"Netherlands", city:"Eemshaven", lat:53.45, lng:6.84, cap:1703, tanks:31, berths:6, occ:"78%", products:["Crude"], op:"Vopak", size:"md", type:"port" },
+  { id:583, name:"Vopak Terminal Europoort Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.95, lng:4.13, cap:9631, tanks:175, berths:6, occ:"78%", products:["Crude"], op:"Vopak", size:"xl", type:"port" },
+  { id:584, name:"Vopak Terminal Laurenshaven Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.9, lng:4.47, cap:1698, tanks:31, berths:6, occ:"78%", products:["Crude"], op:"Vopak", size:"md", type:"port" },
+  { id:585, name:"Vopak Terminal Vlaardingen", country:"Netherlands", city:"Vlaardingen", lat:51.9, lng:4.34, cap:1556, tanks:28, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:586, name:"VIIA Freeport Terminal", country:"USA", city:"Freeport TX", lat:28.95, lng:-95.36, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"VIIA", size:"md", type:"port" },
+  { id:587, name:"VIIA Plaquemine Terminal", country:"USA", city:"Plaquemine LA", lat:30.29, lng:-91.24, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"VIIA", size:"md", type:"port" },
+  { id:588, name:"VIIA St Charles Terminal", country:"USA", city:"St. Charles LA", lat:29.96, lng:-90.35, cap:840, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"VIIA", size:"md", type:"port" },
+  { id:589, name:"Vopak Exolum Houston", country:"USA", city:"Houston TX", lat:29.75, lng:-95.26, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak Exolum", size:"md", type:"port" },
+  { id:590, name:"Vopak Terminal Corpus Christi", country:"USA", city:"Corpus Christi TX", lat:27.8, lng:-97.4, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:591, name:"Vopak Terminal Long Beach", country:"USA", city:"Long Beach CA", lat:33.76, lng:-118.2, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:592, name:"Vopak Terminal Los Angeles", country:"USA", city:"Los Angeles CA", lat:33.78, lng:-118.25, cap:949, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
+  { id:593, name:"enport Bendorf", country:"Germany", city:"Bendorf", lat:50.43, lng:7.57, cap:2100, tanks:46, berths:0, occ:"70%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:594, name:"enport Berlin", country:"Germany", city:"Berlin", lat:52.52, lng:13.4, cap:2400, tanks:50, berths:0, occ:"72%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:595, name:"enport Duisburg", country:"Germany", city:"Duisburg", lat:51.43, lng:6.76, cap:2900, tanks:58, berths:0, occ:"76%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:596, name:"enport Frankfurt/Main", country:"Germany", city:"Frankfurt", lat:50.11, lng:8.68, cap:3300, tanks:64, berths:0, occ:"78%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:597, name:"enport Gera", country:"Germany", city:"Gera", lat:50.88, lng:12.08, cap:1600, tanks:38, berths:0, occ:"64%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:598, name:"enport Hamburg-Blumensand", country:"Germany", city:"Hamburg", lat:53.52, lng:9.94, cap:3600, tanks:70, berths:6, occ:"80%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"lg", type:"port" },
+  { id:599, name:"enport Hamburg-Waltershof", country:"Germany", city:"Hamburg", lat:53.53, lng:9.9, cap:3100, tanks:62, berths:6, occ:"77%", products:["Diesel","Fuel Oil"], op:"enport (Oiltanking)", size:"md", type:"port" },
+  { id:600, name:"enport Hamm", country:"Germany", city:"Hamm", lat:51.68, lng:7.82, cap:1900, tanks:44, berths:0, occ:"68%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:601, name:"enport Hanau", country:"Germany", city:"Hanau", lat:50.13, lng:8.92, cap:1700, tanks:40, berths:0, occ:"66%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:602, name:"enport Karlsruhe", country:"Germany", city:"Karlsruhe", lat:49.01, lng:8.4, cap:2200, tanks:48, berths:0, occ:"71%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:603, name:"enport Rheinau-Honau", country:"Germany", city:"Rheinau", lat:48.62, lng:9.19, cap:1500, tanks:36, berths:0, occ:"62%", products:["Diesel","Jet"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:604, name:"enport Copenhagen", country:"Denmark", city:"Copenhagen", lat:55.69, lng:12.6, cap:2000, tanks:44, berths:6, occ:"69%", products:["Diesel","Fuel Oil"], op:"enport (Oiltanking)", size:"md", type:"port" },
+  { id:605, name:"enport Budapest", country:"Hungary", city:"Budapest", lat:47.5, lng:19.04, cap:2600, tanks:52, berths:0, occ:"73%", products:["Diesel","Gasoline"], op:"enport (Oiltanking)", size:"md", type:"inland" },
+  { id:606, name:"Advario Daya Bay", country:"China", city:"Huizhou, Guangdong", lat:22.7, lng:114.58, cap:800, tanks:38, berths:4, occ:"78%", products:["Chemicals","LNG"], op:"Advario", size:"md", type:"port" },
+  { id:607, name:"Advario Finland Hamina", country:"Finland", city:"Hamina", lat:60.29, lng:26.9, cap:800, tanks:7, berths:2, occ:"78%", products:["Crude","Diesel","Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:608, name:"Advario Finland Kotka", country:"Finland", city:"Kotka", lat:60.43, lng:26.92, cap:800, tanks:69, berths:2, occ:"78%", products:["Crude","Diesel","Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:609, name:"Advario Galveston County", country:"USA", city:"Texas City TX", lat:29.36, lng:-94.95, cap:800, tanks:54, berths:0, occ:"78%", products:["Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:610, name:"Advario Gas Terminal Kallo", country:"Belgium", city:"Kallo", lat:51.26, lng:4.25, cap:1089, tanks:16, berths:8, occ:"78%", products:["LNG"], op:"Advario", size:"md", type:"port" },
+  { id:611, name:"Advario Helios Singapore", country:"Singapore", city:"Jurong Island", lat:1.22, lng:103.67, cap:1284, tanks:20, berths:7, occ:"78%", products:["Diesel","LNG"], op:"Advario", size:"md", type:"port" },
+  { id:612, name:"Advario Nanjing", country:"China", city:"Nanjing, Jiangsu", lat:32.1, lng:118.6, cap:800, tanks:37, berths:9, occ:"78%", products:["Chemicals","LNG"], op:"Advario", size:"md", type:"port" },
+  { id:613, name:"Advario Singapore Chemical", country:"Singapore", city:"Jurong Island", lat:1.27, lng:103.74, cap:1022, tanks:84, berths:5, occ:"78%", products:["Diesel","Gasoline","Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:614, name:"Advario Singapore Limited", country:"Singapore", city:"Jurong Island", lat:1.22, lng:103.66, cap:3257, tanks:80, berths:12, occ:"78%", products:["Diesel","Gasoline","Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:615, name:"Advario Stolthaven Antwerp", country:"Belgium", city:"Antwerp", lat:51.31, lng:4.29, cap:3403, tanks:192, berths:8, occ:"78%", products:["Diesel","Gasoline","Chemicals","LNG"], op:"Advario", size:"md", type:"port" },
+  { id:616, name:"Advario Terminals Sohar", country:"Oman", city:"Sohar", lat:24.49, lng:56.62, cap:3237, tanks:66, berths:6, occ:"78%", products:["Diesel","Gasoline","Chemicals","LNG"], op:"Advario", size:"md", type:"port" },
+  { id:617, name:"Advario Texas City", country:"USA", city:"Texas City TX", lat:29.36, lng:-94.92, cap:1704, tanks:115, berths:12, occ:"78%", products:["Chemicals","LNG"], op:"Advario", size:"md", type:"port" },
+  { id:618, name:"Jurong Port Tank Terminals", country:"Singapore", city:"Jurong Island", lat:1.31, lng:103.72, cap:1462, tanks:38, berths:4, occ:"78%", products:["Diesel","Gasoline","Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:619, name:"Star Energy Advario", country:"UAE", city:"Jebel Ali, Dubai", lat:25.01, lng:55.08, cap:2373, tanks:43, berths:3, occ:"78%", products:["Diesel","Gasoline","Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:620, name:"Terminal Quimica Puerto Mexico", country:"Mexico", city:"Coatzacoalcos", lat:18.14, lng:-94.4, cap:800, tanks:2, berths:1, occ:"78%", products:["Chemicals"], op:"Advario", size:"md", type:"port" },
+  { id:621, name:"Kinder Morgan Galena Park", country:"USA", city:"Galena Park TX", lat:29.74, lng:-95.24, cap:5100, tanks:96, berths:8, occ:"82%", products:["Diesel","Gasoline","Chemicals"], op:"Kinder Morgan", size:"lg", type:"port" },
+  { id:622, name:"Kinder Morgan Pasadena", country:"USA", city:"Pasadena TX", lat:29.69, lng:-95.21, cap:7600, tanks:138, berths:0, occ:"85%", products:["Diesel","Gasoline","Chemicals"], op:"Kinder Morgan", size:"xl", type:"inland" },
+  { id:623, name:"Kinder Morgan BOSTCO", country:"USA", city:"Houston TX", lat:29.72, lng:-95.06, cap:6200, tanks:112, berths:7, occ:"84%", products:["Crude","Diesel"], op:"Kinder Morgan", size:"xl", type:"port" },
+  { id:624, name:"Kinder Morgan Deer Park", country:"USA", city:"Deer Park TX", lat:29.72, lng:-95.12, cap:3600, tanks:70, berths:0, occ:"77%", products:["Chemicals","Diesel"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:625, name:"Kinder Morgan Geismar River Terminal", country:"USA", city:"Geismar LA", lat:30.22, lng:-91.02, cap:3400, tanks:66, berths:6, occ:"76%", products:["Chemicals","Diesel"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:626, name:"Kinder Morgan Harvey", country:"USA", city:"Harvey LA", lat:29.9, lng:-90.08, cap:2400, tanks:50, berths:5, occ:"70%", products:["Chemicals","Diesel"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:627, name:"Kinder Morgan St Gabriel", country:"USA", city:"St. Gabriel LA", lat:30.27, lng:-91.1, cap:2100, tanks:46, berths:0, occ:"68%", products:["Chemicals"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:628, name:"Kinder Morgan Chesapeake", country:"USA", city:"Chesapeake VA", lat:36.77, lng:-76.29, cap:2600, tanks:54, berths:5, occ:"73%", products:["Diesel","Gasoline"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:629, name:"Kinder Morgan Fairless Hills", country:"USA", city:"Fairless Hills PA", lat:40.19, lng:-74.85, cap:1900, tanks:42, berths:0, occ:"65%", products:["Diesel","Gasoline","Chemicals"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:630, name:"Kinder Morgan Wilmington River Road", country:"USA", city:"Wilmington DE", lat:39.72, lng:-75.55, cap:1700, tanks:40, berths:5, occ:"63%", products:["Diesel","Chemicals"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:631, name:"Kinder Morgan Argo", country:"USA", city:"Argo IL", lat:41.79, lng:-87.8, cap:2300, tanks:48, berths:0, occ:"69%", products:["Chemicals","Diesel"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:632, name:"Kinder Morgan Cincinnati North", country:"USA", city:"Cincinnati OH", lat:39.25, lng:-84.51, cap:1800, tanks:42, berths:0, occ:"66%", products:["Diesel","Gasoline"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:633, name:"Kinder Morgan Indianapolis", country:"USA", city:"Indianapolis IN", lat:39.77, lng:-86.16, cap:2000, tanks:44, berths:0, occ:"68%", products:["Diesel","Gasoline"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:634, name:"Kinder Morgan St Louis", country:"USA", city:"St. Louis MO", lat:38.63, lng:-90.2, cap:2600, tanks:54, berths:0, occ:"72%", products:["Diesel","Gasoline","Chemicals"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:635, name:"Kinder Morgan Wood River", country:"USA", city:"Wood River IL", lat:38.86, lng:-90.09, cap:3200, tanks:62, berths:0, occ:"75%", products:["Crude","Diesel","Gasoline"], op:"Kinder Morgan", size:"md", type:"inland" },
+  { id:636, name:"Kinder Morgan Baltimore", country:"USA", city:"Baltimore MD", lat:39.27, lng:-76.58, cap:2900, tanks:58, berths:6, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:637, name:"Kinder Morgan Carteret", country:"USA", city:"Carteret NJ", lat:40.58, lng:-74.22, cap:3300, tanks:64, berths:6, occ:"77%", products:["Diesel","Gasoline","Chemicals"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:638, name:"Kinder Morgan Linden", country:"USA", city:"Linden NJ", lat:40.62, lng:-74.24, cap:2700, tanks:56, berths:5, occ:"73%", products:["Diesel","Gasoline"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:639, name:"Kinder Morgan Perth Amboy", country:"USA", city:"Perth Amboy NJ", lat:40.51, lng:-74.27, cap:2400, tanks:50, berths:5, occ:"71%", products:["Diesel","Gasoline","Chemicals"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:640, name:"Kinder Morgan North Charleston", country:"USA", city:"North Charleston SC", lat:32.89, lng:-79.97, cap:2200, tanks:48, berths:5, occ:"70%", products:["Diesel","Chemicals"], op:"Kinder Morgan", size:"md", type:"port" },
+  { id:641, name:"Inter Terminals Asnaes", country:"Denmark", city:"Asnaes", lat:55.68, lng:11.08, cap:3600, tanks:70, berths:6, occ:"78%", products:["Diesel","Gasoline"], op:"Inter Terminals", size:"md", type:"port" },
+  { id:642, name:"Inter Terminals Ensted", country:"Denmark", city:"Ensted", lat:54.9, lng:9.65, cap:4400, tanks:84, berths:7, occ:"81%", products:["Diesel","Gasoline"], op:"Inter Terminals", size:"lg", type:"port" },
+  { id:643, name:"Inter Terminals Gulfhavn", country:"Denmark", city:"Gulfhavn", lat:55.3, lng:10.85, cap:2100, tanks:46, berths:5, occ:"68%", products:["Diesel","Gasoline"], op:"Inter Terminals", size:"md", type:"port" },
+  { id:644, name:"Inter Terminals Stigsnaes", country:"Denmark", city:"Stigsnaes", lat:55.24, lng:11.22, cap:2800, tanks:56, berths:5, occ:"73%", products:["Diesel","Gasoline"], op:"Inter Terminals", size:"md", type:"port" },
+  { id:645, name:"Inter Terminals Gavle", country:"Sweden", city:"Gavle", lat:60.67, lng:17.14, cap:2900, tanks:58, berths:5, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"Inter Terminals", size:"md", type:"port" },
+  { id:646, name:"Inter Terminals Gothenburg", country:"Sweden", city:"Gothenburg", lat:57.7, lng:11.95, cap:3400, tanks:66, berths:6, occ:"77%", products:["Diesel","Gasoline","Chemicals"], op:"Inter Terminals", size:"md", type:"port" },
+  { id:647, name:"Inter Terminals Malmo", country:"Sweden", city:"Malmo", lat:55.61, lng:12.99, cap:3100, tanks:62, berths:6, occ:"76%", products:["Diesel","Gasoline","Chemicals"], op:"Inter Terminals", size:"md", type:"port" },
+  { id:648, name:"Inter Terminals Sodertalje", country:"Sweden", city:"Sodertalje", lat:59.2, lng:17.63, cap:2600, tanks:54, berths:5, occ:"71%", products:["Diesel","Gasoline","Chemicals"], op:"Inter Terminals", size:"md", type:"port" },
+  { id:649, name:"ITC Deer Park", country:"USA", city:"Deer Park TX", lat:29.71, lng:-95.13, cap:4400, tanks:84, berths:7, occ:"81%", products:["Chemicals"], op:"ITC (Intercontinental Terminals)", size:"lg", type:"port" },
+  { id:650, name:"ITC Pasadena", country:"USA", city:"Pasadena TX", lat:29.69, lng:-95.2, cap:3600, tanks:70, berths:0, occ:"77%", products:["Chemicals"], op:"ITC (Intercontinental Terminals)", size:"md", type:"inland" },
+  { id:651, name:"ITC Antwerp", country:"Belgium", city:"Antwerp", lat:51.25, lng:4.38, cap:3100, tanks:62, berths:6, occ:"75%", products:["Chemicals"], op:"ITC-Rubis", size:"md", type:"port" },
+  { id:652, name:"Tepsa Brest", country:"France", city:"Brest", lat:48.38, lng:-4.49, cap:1900, tanks:42, berths:5, occ:"66%", products:["Chemicals","Diesel"], op:"Tepsa (Rubis Terminal)", size:"md", type:"port" },
+  { id:653, name:"Tepsa Corsica", country:"France", city:"Ajaccio", lat:41.92, lng:8.74, cap:900, tanks:24, berths:4, occ:"58%", products:["Chemicals","Diesel"], op:"Tepsa (Rubis Terminal)", size:"md", type:"port" },
+  { id:654, name:"Tepsa Dunkirk", country:"France", city:"Dunkirk", lat:51.03, lng:2.38, cap:6800, tanks:124, berths:7, occ:"84%", products:["Chemicals","Diesel","Gasoline"], op:"Tepsa (Rubis Terminal)", size:"xl", type:"port" },
+  { id:655, name:"Tepsa Rouen", country:"France", city:"Rouen", lat:49.44, lng:1.09, cap:9200, tanks:158, berths:8, occ:"88%", products:["Chemicals","Diesel","Gasoline"], op:"Tepsa (Rubis Terminal)", size:"xl", type:"port" },
+  { id:656, name:"Tepsa Saint-Priest", country:"France", city:"Saint-Priest", lat:45.7, lng:4.95, cap:2400, tanks:50, berths:0, occ:"71%", products:["Chemicals"], op:"Tepsa (Rubis Terminal)", size:"md", type:"inland" },
+  { id:657, name:"Tepsa Salaise-sur-Sanne", country:"France", city:"Salaise-sur-Sanne", lat:45.35, lng:4.8, cap:700, tanks:20, berths:0, occ:"56%", products:["Chemicals"], op:"Tepsa (Rubis Terminal)", size:"md", type:"inland" },
+  { id:658, name:"Tepsa Village-Neuf", country:"France", city:"Village-Neuf", lat:47.61, lng:7.55, cap:1400, tanks:34, berths:0, occ:"63%", products:["Chemicals"], op:"Tepsa (Rubis Terminal)", size:"md", type:"inland" },
+  { id:659, name:"Tepsa Rotterdam Botlek", country:"Netherlands", city:"Rotterdam", lat:51.88, lng:4.32, cap:4700, tanks:88, berths:6, occ:"80%", products:["Chemicals"], op:"Tepsa (Rubis Terminal)", size:"lg", type:"port" },
+  { id:660, name:"Tepsa Europoort", country:"Netherlands", city:"Rotterdam", lat:51.95, lng:4.13, cap:3200, tanks:64, berths:6, occ:"75%", products:["Chemicals"], op:"Tepsa (Rubis Terminal)", size:"md", type:"port" },
+  { id:661, name:"Tepsa Barcelona", country:"Spain", city:"Barcelona", lat:41.35, lng:2.15, cap:4200, tanks:80, berths:6, occ:"79%", products:["Chemicals","Diesel","Gasoline"], op:"Tepsa (Rubis Terminal)", size:"lg", type:"port" },
+  { id:662, name:"Tepsa Bilbao", country:"Spain", city:"Bilbao", lat:43.32, lng:-3.02, cap:4000, tanks:76, berths:6, occ:"78%", products:["Chemicals","Diesel","Gasoline"], op:"Tepsa (Rubis Terminal)", size:"lg", type:"port" },
+  { id:663, name:"Tepsa Tarragona", country:"Spain", city:"Tarragona", lat:41.1, lng:1.22, cap:1900, tanks:44, berths:5, occ:"67%", products:["Chemicals"], op:"Tepsa (Rubis Terminal)", size:"md", type:"port" },
+  { id:664, name:"Tepsa Valencia", country:"Spain", city:"Valencia", lat:39.44, lng:-0.32, cap:2300, tanks:48, berths:5, occ:"70%", products:["Chemicals","Diesel","Gasoline"], op:"Tepsa (Rubis Terminal)", size:"md", type:"port" },
+  { id:665, name:"VTTI ATB Johor", country:"Malaysia", city:"Johor", lat:1.47, lng:103.75, cap:3600, tanks:68, berths:6, occ:"78%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:666, name:"VTTI KHT Port Qasim", country:"Pakistan", city:"Port Qasim", lat:24.75, lng:67.35, cap:2900, tanks:58, berths:5, occ:"73%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:667, name:"VTTI VTD Dalian", country:"China", city:"Dalian", lat:38.93, lng:121.62, cap:3200, tanks:62, berths:6, occ:"76%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"port" },
+  { id:668, name:"VTTI Fujairah", country:"UAE", city:"Fujairah", lat:25.13, lng:56.34, cap:4800, tanks:88, berths:7, occ:"82%", products:["Diesel","Gasoline","Fuel Oil"], op:"VTTI", size:"lg", type:"port" },
+  { id:669, name:"VIDA Bioenergy Tilburg", country:"Netherlands", city:"Tilburg", lat:51.56, lng:5.09, cap:1400, tanks:32, berths:0, occ:"63%", products:["Chemicals"], op:"VIDA Bioenergy (VTTI)", size:"md", type:"inland" },
+  { id:670, name:"VIDA Bioenergy Glentham", country:"UK", city:"Glentham", lat:53.37, lng:-0.44, cap:1200, tanks:28, berths:0, occ:"60%", products:["Chemicals"], op:"VIDA Bioenergy (VTTI)", size:"md", type:"inland" },
+  { id:671, name:"VTTI Zevenellen", country:"Netherlands", city:"Zevenellen", lat:51.83, lng:4.53, cap:2100, tanks:46, berths:0, occ:"68%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"inland" },
+  { id:672, name:"Adriatic LNG", country:"Italy", city:"Rovigo", lat:45.13, lng:12.53, cap:6200, tanks:110, berths:0, occ:"84%", products:["LNG"], op:"VTTI (Adriatic LNG)", size:"xl", type:"port" },
+  { id:673, name:"Dragon LNG", country:"UK", city:"Waterston", lat:51.7, lng:-5.03, cap:5100, tanks:94, berths:0, occ:"81%", products:["LNG"], op:"VTTI (Dragon LNG)", size:"lg", type:"port" },
+  { id:674, name:"VTTI ATPC Antwerp", country:"Belgium", city:"Antwerp", lat:51.24, lng:4.37, cap:2900, tanks:58, berths:6, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:675, name:"VTTI ATT Ploce", country:"Croatia", city:"Ploce", lat:43.05, lng:17.43, cap:1800, tanks:42, berths:5, occ:"66%", products:["Diesel","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:676, name:"VTTI ETA Amsterdam", country:"Netherlands", city:"Amsterdam", lat:52.4, lng:4.85, cap:3400, tanks:66, berths:6, occ:"77%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:677, name:"VTTI ETT Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.9, lng:4.36, cap:4100, tanks:80, berths:6, occ:"80%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"lg", type:"port" },
+  { id:678, name:"VTTI VTTV Vasilikos", country:"Cyprus", city:"Vasilikos", lat:34.72, lng:33.13, cap:3300, tanks:64, berths:6, occ:"75%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:679, name:"VTTI BCT Cape Town", country:"South Africa", city:"Cape Town", lat:-33.9, lng:18.43, cap:2600, tanks:54, berths:5, occ:"71%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:680, name:"VTTI Kenya Mombasa", country:"Kenya", city:"Mombasa", lat:-4.05, lng:39.66, cap:2300, tanks:48, berths:5, occ:"69%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:681, name:"VTTI SCC Seaport Canaveral", country:"USA", city:"Cape Canaveral FL", lat:28.41, lng:-80.6, cap:1900, tanks:42, berths:5, occ:"65%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:682, name:"VTTI PATSA Balboa", country:"Panama", city:"Panama City", lat:8.96, lng:-79.56, cap:2400, tanks:50, berths:5, occ:"70%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:683, name:"VTTI VITCO Zarate", country:"Argentina", city:"Zarate", lat:-34.1, lng:-59.03, cap:2100, tanks:46, berths:5, occ:"67%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"port" },
+  { id:684, name:"Buckeye Yabucoa", country:"Puerto Rico", city:"Yabucoa", lat:18.05, lng:-65.83, cap:4400, tanks:44, berths:0, occ:"79%", products:["Diesel","Gasoline","Fuel Oil"], op:"Buckeye Partners", size:"lg", type:"port" },
+  { id:685, name:"Buckeye St Lucia Terminal", country:"St. Lucia", city:"Cul de Sac", lat:13.99, lng:-60.97, cap:4900, tanks:50, berths:0, occ:"81%", products:["Crude","Diesel","Fuel Oil"], op:"Buckeye Partners", size:"lg", type:"port" },
+  { id:686, name:"Buckeye South Portland", country:"USA", city:"South Portland ME", lat:43.64, lng:-70.24, cap:1600, tanks:38, berths:0, occ:"64%", products:["Diesel","Gasoline"], op:"Buckeye Partners", size:"md", type:"inland" }
 ];
 
 // Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
@@ -2525,7 +2810,67 @@ function mapZoomOut() { if (usingGoogle && gMap) gMap.setZoom(gMap.getZoom() - 1
 function mapPanTo(lat, lng) { if (usingGoogle && gMap) gMap.panTo({lat, lng}); else if (map) map.panTo([lat, lng]); }
 function mapResize() { if (!usingGoogle && map) map.invalidateSize(); }
 
+// ── MODAL / BROWSER-HISTORY INTEGRATION ──
+// Terminal modals (the quick popup and the full fact sheet) previously never
+// touched browser history, so the Back button skipped straight past the site
+// to whatever page was open before. This gives each terminal a real URL hash
+// (shareable/bookmarkable) and makes Back — and the in-app Close buttons —
+// close the modal instead of navigating away.
+let _modalHistoryOwned = false;
+
+function pushModalHistory(terminalId) {
+  history.pushState({ tbTerminalId: terminalId }, '', '#terminal-' + terminalId);
+  _modalHistoryOwned = true;
+}
+
+// Called by a Close button: if we own the current history entry (i.e. it was
+// pushed by pushModalHistory), go back and let the popstate handler finish
+// the close. Returns true if it handled the close, false if the caller should
+// hide the modal directly (e.g. no history entry to unwind).
+function popModalHistoryIfOwned() {
+  if (_modalHistoryOwned && history.state && history.state.tbTerminalId != null) {
+    history.back();
+    return true;
+  }
+  return false;
+}
+
+window.addEventListener('popstate', (ev) => {
+  _modalHistoryOwned = false;
+  const goingToTerminal = ev.state && ev.state.tbTerminalId != null;
+  if (goingToTerminal) {
+    // Forward/back landed on a terminal state (e.g. user pressed Forward
+    // after Back, or opened a deep link) — (re)open that terminal's popup.
+    const t = findTerminalById(ev.state.tbTerminalId);
+    if (t) renderPopup(t);
+    return;
+  }
+  // No terminal in the new state — close whichever modal is open.
+  const fs = document.getElementById('factSheetModal');
+  if (fs && !fs.classList.contains('hidden')) hideFactSheetOnly();
+  const pop = document.getElementById('terminal-popup');
+  if (pop && pop.style.display !== 'none') hidePopupOnly();
+});
+
+// Deep-link support: if the page loads with #terminal-<id> already in the
+// URL (a shared/bookmarked link), open that terminal once terminals are ready.
+function openTerminalFromHash() {
+  const m = /^#terminal-(\d+)/.exec(location.hash);
+  if (!m) return;
+  const t = findTerminalById(parseInt(m[1], 10));
+  if (t) {
+    history.replaceState({ tbTerminalId: t.id }, '', '#terminal-' + t.id);
+    _modalHistoryOwned = true;
+    renderPopup(t);
+  }
+}
+
 function showPopup(t) {
+  pushModalHistory(t.id);
+  renderPopup(t);
+}
+
+function renderPopup(t) {
   selectedTerminal = t;
   document.getElementById('p-name').textContent = t.name;
   const ty = TERMINAL_TYPES[terminalType(t)];
@@ -2580,6 +2925,11 @@ function showPopup(t) {
 }
 
 function closePopup() {
+  if (popModalHistoryIfOwned()) return; // popstate handler below will finish the close
+  hidePopupOnly();
+}
+
+function hidePopupOnly() {
   document.getElementById('terminal-popup').style.display = 'none';
   selectedTerminal = null;
   // Hide the globe beacon and resume gentle auto-spin.
@@ -3000,6 +3350,7 @@ function toggleShipLayerOnMap() {
 function viewFull() {
   const t = selectedTerminal;
   if (!t) return;
+  pushModalHistory(t.id);
   const ty = TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port;
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('fs-name', t.name);
@@ -3031,13 +3382,18 @@ function viewFull() {
 }
 
 function closeFactSheet() {
+  if (popModalHistoryIfOwned()) return; // popstate handler below will finish the close
+  hideFactSheetOnly();
+}
+
+function hideFactSheetOnly() {
   document.getElementById('factSheetModal').classList.add('hidden');
 }
 
 // From the fact sheet, jump to the map centered on this terminal with its popup.
 function factSheetLocate() {
   const t = selectedTerminal;
-  closeFactSheet();
+  hideFactSheetOnly();
   if (!t) return;
   switchView('map');
   setTimeout(() => { showPopup(t); mapPanTo(t.lat, t.lng); if (map) map.setView([t.lat, t.lng], 6); }, 250);
@@ -3116,9 +3472,9 @@ const REGION_COUNTRIES = {
   'East Med & Levant': ['Israel','Lebanon','Egypt','Cyprus','Turkey','Syria'],
   'Middle East': ['UAE','Saudi Arabia','Kuwait','Qatar','Bahrain','Oman','Iran','Iraq','Yemen','Jordan'],
   'North Africa': ['Morocco','Tunisia','Libya','Algeria'],
-  'East Asia': ['China','Japan','Taiwan','South Korea'],
+  'East Asia': ['China','Japan','Taiwan','South Korea','Hong Kong'],
   'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines','Brunei','Myanmar'],
-  'North America': ['USA','Canada','Mexico','Panama','Trinidad and Tobago','Jamaica','Dominican Republic','Cuba','Bahamas'],
+  'North America': ['USA','Canada','Mexico','Panama','Trinidad and Tobago','Jamaica','Dominican Republic','Cuba','Bahamas','Puerto Rico','St. Lucia'],
   'South America': ['Brazil','Colombia','Argentina','Venezuela','Chile','Peru','Ecuador','Uruguay','Bolivia','Guyana','Suriname','Paraguay'],
   'West Africa': ['Nigeria','Angola','Ghana','Ivory Coast','Togo','Senegal','Cameroon','DRC','Gabon','Republic of Congo','Equatorial Guinea','Mauritania','Sierra Leone','Liberia','Guinea','Benin','Gambia','Burkina Faso','Mali','Chad','Central African Republic','Niger','Cape Verde','Guinea-Bissau'],
   'East & South Africa': ['South Africa','Kenya','Tanzania','Mozambique','Egypt','Sudan','Uganda','Zambia','Namibia','Zimbabwe','Ethiopia','Djibouti','Mauritius','Seychelles','Madagascar','Somalia','Eritrea','Malawi','Rwanda','Botswana','South Sudan','Burundi','Lesotho','Eswatini','Comoros'],
@@ -4492,6 +4848,8 @@ async function startApp() {
     try { DataService.startAutoRefresh(); } catch (e) { console.warn('startApp: startAutoRefresh failed', e); }
     // Globe is the default landing view; build it (or queue until Three.js loads).
     try { onGlobeShown(); } catch (e) { console.warn('startApp: onGlobeShown failed', e); }
+    // Deep link: if the URL already names a terminal (#terminal-<id>), open it.
+    try { openTerminalFromHash(); } catch (e) { console.warn('startApp: openTerminalFromHash failed', e); }
   } catch (e) {
     // Last-resort net: log it, but still fall through to hideBootLoader() below
     // so the person never gets stuck on the loader even on a wholly unexpected error.
