@@ -5849,7 +5849,7 @@ loadScript(
   <div class="admin-header">
     <div class="logo">
       <div class="logo-icon"><img src="logo.png" alt="Tank Bazaar"></div>
-      TANK <span style="color:var(--accent2);">BAZAAR</span>
+      TANK <span>BAZAAR</span>
     </div>
     <div class="admin-badge">Admin Panel</div>
     <div class="admin-super-badge" id="superBadge">★ Super Admin</div>
@@ -6406,11 +6406,13 @@ loadScript(
         </div>
         <div class="admin-card">
           <div class="admin-card-title">Active Sessions</div>
-          <table class="admin-table"><thead><tr><th>User</th><th>IP Address</th><th>Browser</th><th>Started</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr><td class="cell-name">esraigroup@gmail.com</td><td>192.168.1.101</td><td>Chrome 124 / Windows</td><td>10:32 UTC</td><td><button class="btn-admin danger" onclick="toast('Session terminated.')">Terminate</button></td></tr>
-            <tr><td class="cell-name">admin2@tankbazaar.com</td><td>10.0.0.22</td><td>Firefox 122 / Mac</td><td>09:14 UTC</td><td><button class="btn-admin danger" onclick="toast('Session terminated.')">Terminate</button></td></tr>
-          </tbody></table>
+          <table class="admin-table"><thead><tr><th>User</th><th>Browser</th><th>Actions</th></tr></thead>
+          <tbody id="activeSessionsTbody"></tbody></table>
+          <p style="color:var(--text-dim);font-size:10px;margin-top:10px;">
+            This app doesn't yet have a server-side session store, so it can only show your own current
+            browser session here — not IP address, other devices, or other users' sessions. Building real
+            multi-session tracking would need a backend session table keyed by device/IP.
+          </p>
         </div>
       </div>
 
@@ -7004,6 +7006,39 @@ function adminNav(section, clickedEl) {
   if (section === 'claims') loadClaims();
   if (section === 'listings') loadAdminListings();
   if (section === 'addterminal') initTerminalAutocomplete();
+  if (section === 'security') renderActiveSessions();
+}
+
+// Best-effort, honest browser/OS label from the real user agent — no fake
+// specifics (IP, other sessions) are ever fabricated here.
+function detectBrowserLabel() {
+  const ua = navigator.userAgent || '';
+  let browser = 'Unknown browser';
+  if (ua.includes('Edg/')) browser = 'Edge';
+  else if (ua.includes('Chrome/') && !ua.includes('Chromium')) browser = 'Chrome';
+  else if (ua.includes('Firefox/')) browser = 'Firefox';
+  else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Safari';
+  let os = 'Unknown OS';
+  if (ua.includes('Windows')) os = 'Windows';
+  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+  else if (ua.includes('Macintosh')) os = 'Mac';
+  else if (ua.includes('Android')) os = 'Android';
+  else if (ua.includes('Linux')) os = 'Linux';
+  return `${browser} / ${os}`;
+}
+
+function renderActiveSessions() {
+  const tbody = document.getElementById('activeSessionsTbody');
+  if (!tbody) return;
+  if (!currentUser) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text-dim);">Not signed in.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = `<tr>
+    <td class="cell-name">${currentUser.email} <span style="color:var(--text-dim);font-size:10px;">(this session)</span></td>
+    <td>${detectBrowserLabel()}</td>
+    <td><button class="btn-admin danger" onclick="userLogout()">Sign Out</button></td>
+  </tr>`;
 }
 
 // Data & API nav → opens Site Settings and scrolls to the connection cards.
