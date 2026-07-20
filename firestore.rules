@@ -7,6 +7,14 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && request.auth.token.email == 'esraigroup@gmail.com';
     }
+    // A signed-in user whose OWN profile doc says they've been verified.
+    // get() on a doc that doesn't exist yet (e.g. the instant after first
+    // sign-in, before their profile is written) safely evaluates to false
+    // here rather than granting access, so this fails closed.
+    function isApprovedUser() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
 
     // Any signed-in user can create & manage their own profile.
     // Admin can read/manage everyone.
@@ -28,10 +36,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Terminals: public read. Admin can write anything. A validated owner
+    // Terminals: read now requires the super admin OR a verified, signed-in
+    // user — the site is sign-in + approval gated end-to-end, not just at
+    // the UI layer. Admin can write anything. A validated owner
     // (resource.ownerId == their uid) may update the doc (operational metrics).
     match /terminals/{doc} {
-      allow read:   if true;
+      allow read:   if isAdmin() || isApprovedUser();
       allow create: if isAdmin();
       allow delete: if isAdmin();
       allow update: if isAdmin()
@@ -46,10 +56,10 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // Storage capacity listings: public read (it's a marketplace). The listing
-    // owner (ownerId == their uid) can create/edit/delete their own; admin any.
+    // Storage capacity listings: same approval-gated read as terminals. The
+    // listing owner (ownerId == their uid) can create/edit/delete their own; admin any.
     match /listings/{doc} {
-      allow read:   if true;
+      allow read:   if isAdmin() || isApprovedUser();
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
       allow update, delete: if isAdmin()
                     || (isSignedIn() && resource.data.ownerId == request.auth.uid);

@@ -1797,16 +1797,12 @@ const terminals = [
   { id:22, name:"Pertamina Cilacap", country:"Indonesia", city:"Cilacap", lat:-7.73, lng:109.01, cap:5100, tanks:98, berths:8, occ:"84%", products:["Crude","Gasoline","Diesel"], op:"Pertamina", size:"lg", type:"port" },
   { id:23, name:"Nayara Energy Vadinar", country:"India", city:"Vadinar, Gujarat", lat:22.46, lng:69.76, cap:7800, tanks:138, berths:12, occ:"86%", products:["Crude","Diesel","LPG"], op:"Nayara", size:"xl", type:"port" },
   { id:24, name:"ExxonMobil Jurong", country:"Singapore", city:"Jurong Island", lat:1.22, lng:103.70, cap:4300, tanks:84, berths:7, occ:"88%", products:["Crude","Chemicals","Gasoline"], op:"ExxonMobil", size:"xl", type:"port" },
-  // ── Inland terminals (pipeline / rail / truck fed — no marine berths) ──
   { id:25, name:"Cushing Hub", country:"USA", city:"Cushing, Oklahoma", lat:35.98, lng:-96.77, cap:13000, tanks:210, berths:0, occ:"79%", products:["Crude"], op:"Enbridge", size:"xl", type:"inland" },
   { id:26, name:"IOCL Panipat Depot", country:"India", city:"Panipat, Haryana", lat:29.39, lng:76.97, cap:3600, tanks:72, berths:0, occ:"81%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"lg", type:"inland" },
   { id:27, name:"HPCL Bhatinda Terminal", country:"India", city:"Bhatinda, Punjab", lat:30.21, lng:74.95, cap:2200, tanks:46, berths:0, occ:"73%", products:["Diesel","Gasoline"], op:"HPCL", size:"md", type:"inland" },
   { id:28, name:"Tank & Rast Karlsruhe", country:"Germany", city:"Karlsruhe", lat:49.01, lng:8.40, cap:2900, tanks:58, berths:0, occ:"70%", products:["Gasoline","Diesel","Chemicals"], op:"MiRO", size:"md", type:"inland" },
-  // ── Additional terminal ──
   { id:29, name:"Reliance Jamnagar", country:"India", city:"Jamnagar, Gujarat", lat:22.34, lng:69.85, cap:14500, tanks:240, berths:18, occ:"93%", products:["Crude","Diesel","Gasoline","LPG"], op:"Reliance", size:"xl", type:"port" },
-  // ── Additional port terminal ──
   { id:30, name:"Vopak Sebarok", country:"Singapore", city:"Pulau Sebarok", lat:1.20, lng:103.80, cap:5400, tanks:100, berths:9, occ:"90%", products:["Crude","Chemicals"], op:"Vopak", size:"lg", type:"port" },
-  // ── India — port-based terminals ──
   { id:31, name:"APSEZ Mundra", country:"India", city:"Mundra, Gujarat", lat:22.74, lng:69.70, cap:9600, tanks:168, berths:14, occ:"87%", products:["Crude","Diesel","LPG","Chemicals"], op:"Adani Ports", size:"xl", type:"port" },
   { id:32, name:"GCPTCL Dahej", country:"India", city:"Dahej, Gujarat", lat:21.70, lng:72.58, cap:4200, tanks:84, berths:7, occ:"81%", products:["Chemicals","LPG","LNG"], op:"GCPTCL", size:"lg", type:"port" },
   { id:33, name:"AVTL Kandla", country:"India", city:"Kandla, Gujarat", lat:23.02, lng:70.22, cap:5600, tanks:104, berths:9, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Aegis Vopak", size:"lg", type:"port" },
@@ -1816,7 +1812,6 @@ const terminals = [
   { id:37, name:"IMC Nhava Sheva", country:"India", city:"Nhava Sheva, Maharashtra", lat:18.95, lng:72.94, cap:4400, tanks:88, berths:8, occ:"83%", products:["Chemicals","Diesel","Gasoline"], op:"IMC", size:"lg", type:"port" },
   { id:38, name:"VIPL Vizag", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.69, lng:83.30, cap:5200, tanks:96, berths:8, occ:"85%", products:["Crude","LPG","Diesel"], op:"VIPL", size:"lg", type:"port" },
   { id:39, name:"ETTPL Ennore", country:"India", city:"Ennore, Tamil Nadu", lat:13.24, lng:80.33, cap:3900, tanks:78, berths:6, occ:"79%", products:["Crude","LPG","Chemicals"], op:"ETTPL", size:"lg", type:"port" },
-  // ── Middle East — port-based terminals ──
   { id:40, name:"Qatar Mesaieed Terminal", country:"Qatar", city:"Mesaieed", lat:24.98, lng:51.55, cap:9800, tanks:172, berths:13, occ:"90%", products:["Crude","LNG","LPG"], op:"QatarEnergy", size:"xl", type:"port" },
   { id:41, name:"Ras Tanura Terminal", country:"Saudi Arabia", city:"Ras Tanura", lat:26.64, lng:50.15, cap:13500, tanks:224, berths:18, occ:"94%", products:["Crude","Gasoline","Diesel"], op:"Saudi Aramco", size:"xl", type:"port" },
   { id:42, name:"Jebel Ali Terminal", country:"UAE", city:"Jebel Ali, Dubai", lat:24.98, lng:55.06, cap:8600, tanks:152, berths:12, occ:"89%", products:["Crude","Gasoline","Chemicals"], op:"ENOC", size:"xl", type:"port" },
@@ -1826,24 +1821,18 @@ const terminals = [
   { id:46, name:"Shuaiba Terminal", country:"Kuwait", city:"Shuaiba", lat:29.05, lng:48.15, cap:7800, tanks:140, berths:12, occ:"88%", products:["Crude","Diesel","LPG"], op:"KNPC", size:"xl", type:"port" },
   { id:47, name:"Sitra Terminal", country:"Bahrain", city:"Sitra", lat:26.15, lng:50.66, cap:4300, tanks:86, berths:7, occ:"83%", products:["Crude","Gasoline","Diesel"], op:"Bapco", size:"lg", type:"port" },
   { id:48, name:"Sidi Kerir Terminal", country:"Egypt", city:"Sidi Kerir, Alexandria", lat:31.10, lng:29.65, cap:6800, tanks:122, berths:10, occ:"85%", products:["Crude","Diesel"], op:"SUMED", size:"xl", type:"port" },
-  // ── Japan — port-based terminal ──
   { id:49, name:"Kawasaki Terminal", country:"Japan", city:"Kawasaki", lat:35.51, lng:139.75, cap:5400, tanks:102, berths:9, occ:"86%", products:["Crude","Gasoline","LPG"], op:"ENEOS", size:"lg", type:"port" },
-  // ── Europe ──
   { id:50, name:"Vopak Algeciras", country:"Spain", city:"Algeciras", lat:36.13, lng:-5.44, cap:4030, tanks:88, berths:7, occ:"82%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"lg", type:"port" },
   { id:51, name:"Oiltanking Malta", country:"Malta", city:"Birżebbuġa", lat:35.83, lng:14.55, cap:2800, tanks:74, berths:6, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"Oiltanking", size:"md", type:"port" },
   { id:52, name:"CLH Bilbao", country:"Spain", city:"Bilbao", lat:43.35, lng:-3.06, cap:3200, tanks:80, berths:6, occ:"84%", products:["Diesel","Gasoline","Chemicals"], op:"Exolum", size:"md", type:"port" },
-  // ── Russia ──
   { id:53, name:"Primorsk Oil Terminal", country:"Russia", city:"Primorsk", lat:60.34, lng:28.62, cap:7600, tanks:118, berths:8, occ:"88%", products:["Crude","Diesel"], op:"Transneft", size:"xl", type:"port" },
   { id:54, name:"Novorossiysk CPC", country:"Russia", city:"Novorossiysk", lat:44.66, lng:37.79, cap:8200, tanks:130, berths:9, occ:"90%", products:["Crude"], op:"Transneft", size:"xl", type:"port" },
   { id:55, name:"Ust-Luga Terminal", country:"Russia", city:"Ust-Luga", lat:59.67, lng:28.27, cap:5100, tanks:96, berths:7, occ:"85%", products:["Crude","Diesel","Gasoline"], op:"Rosneft", size:"lg", type:"port" },
-  // ── South America ──
   { id:56, name:"Petrobras São Sebastião", country:"Brazil", city:"São Sebastião", lat:-23.80, lng:-45.40, cap:6200, tanks:110, berths:8, occ:"81%", products:["Crude","Diesel","Gasoline"], op:"Petrobras", size:"xl", type:"port" },
   { id:57, name:"Oiltanking Cartagena", country:"Colombia", city:"Cartagena", lat:10.32, lng:-75.51, cap:3400, tanks:78, berths:6, occ:"77%", products:["Crude","LPG","Chemicals"], op:"Oiltanking", size:"md", type:"port" },
   { id:58, name:"Vopak Buenos Aires", country:"Argentina", city:"Buenos Aires", lat:-34.62, lng:-58.36, cap:2900, tanks:72, berths:5, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"md", type:"port" },
-  // ── Australia ──
   { id:59, name:"Vopak Botany Bay", country:"Australia", city:"Sydney", lat:-33.98, lng:151.20, cap:3100, tanks:76, berths:5, occ:"80%", products:["Diesel","Gasoline","Chemicals"], op:"Vopak", size:"md", type:"port" },
   { id:60, name:"Kwinana Terminal", country:"Australia", city:"Perth", lat:-32.23, lng:115.77, cap:3600, tanks:82, berths:6, occ:"83%", products:["Crude","Diesel","Gasoline"], op:"BP", size:"md", type:"port" },
-  // ── Africa ──
   { id:61, name:"Saldanha Bay Terminal", country:"South Africa", city:"Saldanha", lat:-33.02, lng:17.94, cap:5800, tanks:104, berths:7, occ:"79%", products:["Crude"], op:"Vopak", size:"lg", type:"port" },
   { id:62, name:"Mombasa Oil Terminal", country:"Kenya", city:"Mombasa", lat:-4.04, lng:39.65, cap:2700, tanks:70, berths:5, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"KPC", size:"md", type:"port" },
   { id:63, name:"Oiltanking Abidjan", country:"Ivory Coast", city:"Abidjan", lat:5.25, lng:-4.00, cap:2500, tanks:66, berths:5, occ:"73%", products:["Diesel","Gasoline","LPG"], op:"Oiltanking", size:"md", type:"port" },
@@ -2357,7 +2346,7 @@ const terminals = [
   { id:571, name:"Vopak Singapore Banyan Terminal", country:"Singapore", city:"Pulau Bukom", lat:1.24, lng:103.77, cap:3631, tanks:66, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
   { id:572, name:"Vopak Singapore Penjuru Terminal", country:"Singapore", city:"Penjuru", lat:1.3, lng:103.7, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
   { id:573, name:"Vopak Singapore Sakra Terminal", country:"Singapore", city:"Pulau Sakra", lat:1.23, lng:103.68, cap:800, tanks:20, berths:6, occ:"78%", products:["Chemicals"], op:"Vopak", size:"md", type:"port" },
-  { id:574, name:"Vopak Singapore Jurong Rock Caverns", country:"Singapore", city:"Jurong Island", lat:1.27, lng:103.68, cap:3675, tanks:67, berths:6, occ:"78%", products:["Crude"], op:"Vopak (JTC)", size:"md", type:"port" },
+  { id:574, name:"Vopak Singapore Jurong Rock Caverns", country:"Singapore", city:"Jurong Island", lat:1.27, lng:103.68, cap:3675, tanks:67, berths:6, occ:"78%", products:["Crude"], op:"Vopak (JTC)", size:"md", type:"port", tankType:"cavern" },
   { id:575, name:"Vopak Terminal Durban", country:"South Africa", city:"Durban", lat:-29.87, lng:31.03, cap:901, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals"], op:"Vopak", size:"md", type:"port" },
   { id:576, name:"Vopak Terminal Lesedi", country:"South Africa", city:"Durban", lat:-29.85, lng:31.02, cap:800, tanks:20, berths:6, occ:"78%", products:["Crude"], op:"Vopak", size:"md", type:"port" },
   { id:577, name:"Vopak Terminal Terquimsa Tarragona", country:"Spain", city:"Tarragona", lat:41.11, lng:1.24, cap:1117, tanks:20, berths:6, occ:"78%", products:["Crude","Chemicals","LNG"], op:"Vopak", size:"md", type:"port" },
@@ -2451,25 +2440,85 @@ const terminals = [
   { id:665, name:"VTTI ATB Johor", country:"Malaysia", city:"Johor", lat:1.47, lng:103.75, cap:3600, tanks:68, berths:6, occ:"78%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
   { id:666, name:"VTTI KHT Port Qasim", country:"Pakistan", city:"Port Qasim", lat:24.75, lng:67.35, cap:2900, tanks:58, berths:5, occ:"73%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
   { id:667, name:"VTTI VTD Dalian", country:"China", city:"Dalian", lat:38.93, lng:121.62, cap:3200, tanks:62, berths:6, occ:"76%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"port" },
-  { id:668, name:"VTTI Fujairah", country:"UAE", city:"Fujairah", lat:25.13, lng:56.34, cap:4800, tanks:88, berths:7, occ:"82%", products:["Diesel","Gasoline","Fuel Oil"], op:"VTTI", size:"lg", type:"port" },
-  { id:669, name:"VIDA Bioenergy Tilburg", country:"Netherlands", city:"Tilburg", lat:51.56, lng:5.09, cap:1400, tanks:32, berths:0, occ:"63%", products:["Chemicals"], op:"VIDA Bioenergy (VTTI)", size:"md", type:"inland" },
-  { id:670, name:"VIDA Bioenergy Glentham", country:"UK", city:"Glentham", lat:53.37, lng:-0.44, cap:1200, tanks:28, berths:0, occ:"60%", products:["Chemicals"], op:"VIDA Bioenergy (VTTI)", size:"md", type:"inland" },
-  { id:671, name:"VTTI Zevenellen", country:"Netherlands", city:"Zevenellen", lat:51.83, lng:4.53, cap:2100, tanks:46, berths:0, occ:"68%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"inland" },
-  { id:672, name:"Adriatic LNG", country:"Italy", city:"Rovigo", lat:45.13, lng:12.53, cap:6200, tanks:110, berths:0, occ:"84%", products:["LNG"], op:"VTTI (Adriatic LNG)", size:"xl", type:"port" },
-  { id:673, name:"Dragon LNG", country:"UK", city:"Waterston", lat:51.7, lng:-5.03, cap:5100, tanks:94, berths:0, occ:"81%", products:["LNG"], op:"VTTI (Dragon LNG)", size:"lg", type:"port" },
-  { id:674, name:"VTTI ATPC Antwerp", country:"Belgium", city:"Antwerp", lat:51.24, lng:4.37, cap:2900, tanks:58, berths:6, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
-  { id:675, name:"VTTI ATT Ploce", country:"Croatia", city:"Ploce", lat:43.05, lng:17.43, cap:1800, tanks:42, berths:5, occ:"66%", products:["Diesel","Chemicals"], op:"VTTI", size:"md", type:"port" },
-  { id:676, name:"VTTI ETA Amsterdam", country:"Netherlands", city:"Amsterdam", lat:52.4, lng:4.85, cap:3400, tanks:66, berths:6, occ:"77%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
-  { id:677, name:"VTTI ETT Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.9, lng:4.36, cap:4100, tanks:80, berths:6, occ:"80%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"lg", type:"port" },
-  { id:678, name:"VTTI VTTV Vasilikos", country:"Cyprus", city:"Vasilikos", lat:34.72, lng:33.13, cap:3300, tanks:64, berths:6, occ:"75%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
-  { id:679, name:"VTTI BCT Cape Town", country:"South Africa", city:"Cape Town", lat:-33.9, lng:18.43, cap:2600, tanks:54, berths:5, occ:"71%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
-  { id:680, name:"VTTI Kenya Mombasa", country:"Kenya", city:"Mombasa", lat:-4.05, lng:39.66, cap:2300, tanks:48, berths:5, occ:"69%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
-  { id:681, name:"VTTI SCC Seaport Canaveral", country:"USA", city:"Cape Canaveral FL", lat:28.41, lng:-80.6, cap:1900, tanks:42, berths:5, occ:"65%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
-  { id:682, name:"VTTI PATSA Balboa", country:"Panama", city:"Panama City", lat:8.96, lng:-79.56, cap:2400, tanks:50, berths:5, occ:"70%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
-  { id:683, name:"VTTI VITCO Zarate", country:"Argentina", city:"Zarate", lat:-34.1, lng:-59.03, cap:2100, tanks:46, berths:5, occ:"67%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"port" },
-  { id:684, name:"Buckeye Yabucoa", country:"Puerto Rico", city:"Yabucoa", lat:18.05, lng:-65.83, cap:4400, tanks:44, berths:0, occ:"79%", products:["Diesel","Gasoline","Fuel Oil"], op:"Buckeye Partners", size:"lg", type:"port" },
-  { id:685, name:"Buckeye St Lucia Terminal", country:"St. Lucia", city:"Cul de Sac", lat:13.99, lng:-60.97, cap:4900, tanks:50, berths:0, occ:"81%", products:["Crude","Diesel","Fuel Oil"], op:"Buckeye Partners", size:"lg", type:"port" },
-  { id:686, name:"Buckeye South Portland", country:"USA", city:"South Portland ME", lat:43.64, lng:-70.24, cap:1600, tanks:38, berths:0, occ:"64%", products:["Diesel","Gasoline"], op:"Buckeye Partners", size:"md", type:"inland" }
+  { id:668, name:"VIDA Bioenergy Tilburg", country:"Netherlands", city:"Tilburg", lat:51.56, lng:5.09, cap:1400, tanks:32, berths:0, occ:"63%", products:["Chemicals"], op:"VIDA Bioenergy (VTTI)", size:"md", type:"inland" },
+  { id:669, name:"VIDA Bioenergy Glentham", country:"UK", city:"Glentham", lat:53.37, lng:-0.44, cap:1200, tanks:28, berths:0, occ:"60%", products:["Chemicals"], op:"VIDA Bioenergy (VTTI)", size:"md", type:"inland" },
+  { id:670, name:"VTTI Zevenellen", country:"Netherlands", city:"Zevenellen", lat:51.83, lng:4.53, cap:2100, tanks:46, berths:0, occ:"68%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"inland" },
+  { id:671, name:"Adriatic LNG", country:"Italy", city:"Rovigo", lat:45.13, lng:12.53, cap:6200, tanks:110, berths:0, occ:"84%", products:["LNG"], op:"VTTI (Adriatic LNG)", size:"xl", type:"port" },
+  { id:672, name:"Dragon LNG", country:"UK", city:"Waterston", lat:51.7, lng:-5.03, cap:5100, tanks:94, berths:0, occ:"81%", products:["LNG"], op:"VTTI (Dragon LNG)", size:"lg", type:"port" },
+  { id:673, name:"VTTI ATPC Antwerp", country:"Belgium", city:"Antwerp", lat:51.24, lng:4.37, cap:2900, tanks:58, berths:6, occ:"74%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:674, name:"VTTI ATT Ploce", country:"Croatia", city:"Ploce", lat:43.05, lng:17.43, cap:1800, tanks:42, berths:5, occ:"66%", products:["Diesel","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:675, name:"VTTI ETA Amsterdam", country:"Netherlands", city:"Amsterdam", lat:52.4, lng:4.85, cap:3400, tanks:66, berths:6, occ:"77%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:676, name:"VTTI ETT Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.9, lng:4.36, cap:4100, tanks:80, berths:6, occ:"80%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"lg", type:"port" },
+  { id:677, name:"VTTI VTTV Vasilikos", country:"Cyprus", city:"Vasilikos", lat:34.72, lng:33.13, cap:3300, tanks:64, berths:6, occ:"75%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:678, name:"VTTI BCT Cape Town", country:"South Africa", city:"Cape Town", lat:-33.9, lng:18.43, cap:2600, tanks:54, berths:5, occ:"71%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:679, name:"VTTI Kenya Mombasa", country:"Kenya", city:"Mombasa", lat:-4.05, lng:39.66, cap:2300, tanks:48, berths:5, occ:"69%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:680, name:"VTTI SCC Seaport Canaveral", country:"USA", city:"Cape Canaveral FL", lat:28.41, lng:-80.6, cap:1900, tanks:42, berths:5, occ:"65%", products:["Diesel","Gasoline"], op:"VTTI", size:"md", type:"port" },
+  { id:681, name:"VTTI PATSA Balboa", country:"Panama", city:"Panama City", lat:8.96, lng:-79.56, cap:2400, tanks:50, berths:5, occ:"70%", products:["Diesel","Gasoline","Chemicals"], op:"VTTI", size:"md", type:"port" },
+  { id:682, name:"VTTI VITCO Zarate", country:"Argentina", city:"Zarate", lat:-34.1, lng:-59.03, cap:2100, tanks:46, berths:5, occ:"67%", products:["Chemicals","Diesel"], op:"VTTI", size:"md", type:"port" },
+  { id:683, name:"Buckeye Yabucoa", country:"Puerto Rico", city:"Yabucoa", lat:18.05, lng:-65.83, cap:4400, tanks:44, berths:0, occ:"79%", products:["Diesel","Gasoline","Fuel Oil"], op:"Buckeye Partners", size:"lg", type:"port" },
+  { id:684, name:"Buckeye St Lucia Terminal", country:"St. Lucia", city:"Cul de Sac", lat:13.99, lng:-60.97, cap:4900, tanks:50, berths:0, occ:"81%", products:["Crude","Diesel","Fuel Oil"], op:"Buckeye Partners", size:"lg", type:"port" },
+  { id:685, name:"Buckeye South Portland", country:"USA", city:"South Portland ME", lat:43.64, lng:-70.24, cap:1600, tanks:38, berths:0, occ:"64%", products:["Diesel","Gasoline"], op:"Buckeye Partners", size:"md", type:"inland" },
+  { id:686, name:"Sinopec Kantons Huizhou Huade", country:"China", city:"Huizhou, Guangdong", lat:22.71, lng:114.6, cap:3400, tanks:66, berths:6, occ:"77%", products:["Crude"], op:"Sinopec Kantons", size:"md", type:"port" },
+  { id:687, name:"Sinopec Kantons Tangshan Caofeidian", country:"China", city:"Caofeidian, Hebei", lat:39.03, lng:118.45, cap:7900, tanks:140, berths:8, occ:"88%", products:["Crude"], op:"Sinopec Kantons", size:"xl", type:"port" },
+  { id:688, name:"Sinopec Kantons Qingdao Shihua", country:"China", city:"Qingdao", lat:35.95, lng:120.3, cap:3800, tanks:72, berths:6, occ:"79%", products:["Crude"], op:"Sinopec Kantons", size:"md", type:"port" },
+  { id:689, name:"Sinopec Kantons Ningbo Shihua", country:"China", city:"Ningbo", lat:29.9, lng:121.75, cap:3600, tanks:68, berths:6, occ:"78%", products:["Crude"], op:"Sinopec Kantons", size:"md", type:"port" },
+  { id:690, name:"Sinopec Kantons Tianjin Port Shihua", country:"China", city:"Tianjin", lat:38.98, lng:117.75, cap:3300, tanks:64, berths:5, occ:"76%", products:["Crude"], op:"Sinopec Kantons", size:"md", type:"port" },
+  { id:691, name:"Sinopec Kantons Zhanjiang Port Petrochemical", country:"China", city:"Zhanjiang", lat:21.18, lng:110.38, cap:2900, tanks:58, berths:5, occ:"74%", products:["Crude"], op:"Sinopec Kantons", size:"md", type:"port" },
+  { id:692, name:"Fujairah Oil Terminal FZC", country:"UAE", city:"Fujairah", lat:25.14, lng:56.35, cap:5600, tanks:102, berths:8, occ:"83%", products:["Crude","Diesel","Fuel Oil"], op:"Sinopec Kantons / FOT", size:"lg", type:"port" },
+  { id:693, name:"Vesta Terminals Antwerp", country:"Belgium", city:"Antwerp", lat:51.27, lng:4.34, cap:3100, tanks:60, berths:6, occ:"75%", products:["Chemicals","Diesel"], op:"Vesta Terminals (Sinopec Kantons)", size:"md", type:"port" },
+  { id:694, name:"Vesta Terminals Flushing", country:"Netherlands", city:"Vlissingen", lat:51.45, lng:3.6, cap:2700, tanks:54, berths:5, occ:"72%", products:["Chemicals","Diesel"], op:"Vesta Terminals (Sinopec Kantons)", size:"md", type:"port" },
+  { id:695, name:"Vesta Terminals Tallinn", country:"Estonia", city:"Tallinn", lat:59.45, lng:24.77, cap:1900, tanks:42, berths:5, occ:"66%", products:["Chemicals","Diesel"], op:"Vesta Terminals (Sinopec Kantons)", size:"md", type:"port" },
+  { id:696, name:"PipeChina Dalian LNG", country:"China", city:"Dalian, Liaoning", lat:38.9, lng:121.55, cap:6000, tanks:60, berths:3, occ:"70%", products:["LNG"], op:"PipeChina", size:"xl", type:"port" },
+  { id:697, name:"PipeChina Tianjin LNG", country:"China", city:"Tianjin", lat:38.98, lng:117.8, cap:2200, tanks:30, berths:2, occ:"66%", products:["LNG"], op:"PipeChina", size:"md", type:"port" },
+  { id:698, name:"PipeChina Zhangzhou LNG", country:"China", city:"Zhangzhou, Fujian", lat:23.95, lng:117.55, cap:3000, tanks:36, berths:2, occ:"68%", products:["LNG"], op:"PipeChina", size:"md", type:"port" },
+  { id:699, name:"PipeChina Yuedong (Jieyang) LNG", country:"China", city:"Jieyang, Guangdong", lat:23.05, lng:116.55, cap:5000, tanks:48, berths:3, occ:"74%", products:["LNG"], op:"PipeChina", size:"lg", type:"port" },
+  { id:700, name:"PipeChina Shenzhen (Diefu) LNG", country:"China", city:"Shenzhen, Guangdong", lat:22.55, lng:114.55, cap:4000, tanks:42, berths:3, occ:"76%", products:["LNG"], op:"PipeChina", size:"lg", type:"port" },
+  { id:701, name:"PipeChina Beihai LNG", country:"China", city:"Beihai, Guangxi", lat:21.55, lng:109.2, cap:3000, tanks:36, berths:2, occ:"65%", products:["LNG"], op:"PipeChina", size:"md", type:"port" },
+  { id:702, name:"PipeChina Fangchenggang LNG", country:"China", city:"Fangchenggang, Guangxi", lat:21.65, lng:108.35, cap:800, tanks:20, berths:2, occ:"58%", products:["LNG"], op:"PipeChina", size:"md", type:"port" },
+  { id:703, name:"PipeChina Hainan (Yangpu) LNG", country:"China", city:"Yangpu, Hainan", lat:19.75, lng:109.15, cap:3000, tanks:36, berths:2, occ:"71%", products:["LNG"], op:"PipeChina", size:"md", type:"port" },
+  { id:704, name:"Sheskharis Grushovaya Complex", country:"Russia", city:"Novorossiysk", lat:44.68, lng:37.78, cap:7900, tanks:140, berths:9, occ:"87%", products:["Crude","Diesel"], op:"Transneft", size:"xl", type:"port" },
+  { id:705, name:"LLC Nord Trans Bunker", country:"Russia", city:"Vladivostok", lat:43.12, lng:131.9, cap:2500, tanks:50, berths:5, occ:"70%", products:["Crude","Gasoline","LNG","Fuel Oil"], op:"Nord Trans Bunker", size:"md", type:"port" },
+  { id:706, name:"Wangjiagou Liquids Storage Terminal", country:"China", city:"Korla, Xinjiang", lat:41.73, lng:86.13, cap:3200, tanks:62, berths:0, occ:"72%", products:["Crude"], op:"PetroChina", size:"md", type:"inland", yearCommissioned:2009, connectivity:["Pipeline","Road"] },
+  { id:707, name:"Khorgos Terminal", country:"China", city:"Khorgos, Xinjiang", lat:44.2, lng:80.42, cap:2600, tanks:52, berths:0, occ:"69%", products:["LNG"], op:"PetroChina", size:"md", type:"inland" },
+  { id:708, name:"Dushanzi Terminal", country:"China", city:"Dushanzi, Xinjiang", lat:44.32, lng:84.87, cap:3600, tanks:68, berths:0, occ:"75%", products:["Crude","Diesel","Gasoline"], op:"PetroChina", size:"md", type:"inland" },
+  { id:709, name:"Shanshan Storage Facility", country:"China", city:"Shanshan, Xinjiang", lat:42.87, lng:90.21, cap:1900, tanks:42, berths:0, occ:"64%", products:["LNG"], op:"PetroChina", size:"md", type:"inland" },
+  { id:710, name:"Huineng LNG Terminal", country:"China", city:"Ordos, Inner Mongolia", lat:39.35, lng:109.7, cap:2700, tanks:54, berths:0, occ:"70%", products:["LNG"], op:"Huineng Coal Chemical", size:"md", type:"inland" },
+  { id:711, name:"China Railway Logistics Xilinhot", country:"China", city:"Xilinhot, Inner Mongolia", lat:43.97, lng:116.1, cap:1600, tanks:36, berths:0, occ:"60%", products:["Chemicals"], op:"China Railway Logistics", size:"md", type:"inland" },
+  { id:712, name:"China Railway Logistics Baotou", country:"China", city:"Baotou, Inner Mongolia", lat:40.66, lng:109.84, cap:2100, tanks:46, berths:0, occ:"66%", products:["Chemicals"], op:"China Railway Logistics", size:"md", type:"inland" },
+  { id:713, name:"IOCL Silchar Depot", country:"India", city:"Silchar, Assam", lat:24.83, lng:92.78, cap:1400, tanks:32, berths:0, occ:"62%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:714, name:"IOCL Tinsukia Depot", country:"India", city:"Tinsukia, Assam", lat:27.49, lng:95.36, cap:1600, tanks:36, berths:0, occ:"65%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:715, name:"IOCL Doimukh Depot", country:"India", city:"Doimukh, Arunachal Pradesh", lat:27.15, lng:93.68, cap:900, tanks:22, berths:0, occ:"55%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:716, name:"IOCL Sekerkote Terminal", country:"India", city:"Sekerkote, Tripura", lat:23.75, lng:91.3, cap:2200, tanks:46, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:717, name:"IOCL Haldia", country:"India", city:"Haldia, West Bengal", lat:22.07, lng:88.15, cap:3800, tanks:72, berths:6, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"IOCL", size:"md", type:"port" },
+  { id:718, name:"IOCL Siliguri Depot", country:"India", city:"Siliguri, West Bengal", lat:26.71, lng:88.43, cap:1900, tanks:42, berths:0, occ:"67%", products:["Diesel","Gasoline","LPG"], op:"IOCL", size:"md", type:"inland" },
+  { id:719, name:"Jugopetrol Kotor Terminal", country:"Montenegro", city:"Kotor", lat:42.42, lng:18.77, cap:1400, tanks:32, berths:4, occ:"64%", products:["Diesel","Gasoline"], op:"Jugopetrol AD Kotor", size:"md", type:"port" },
+  { id:720, name:"Mozyr Oil Refinery Terminal", country:"Belarus", city:"Mozyr", lat:52.05, lng:29.25, cap:3600, tanks:68, berths:0, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"Mozyr NPZ", size:"md", type:"inland" },
+  { id:721, name:"Pivdenny Oil Terminal", country:"Ukraine", city:"Yuzhne", lat:46.62, lng:31.15, cap:2900, tanks:58, berths:5, occ:"71%", products:["Crude","Diesel"], op:"Pivdenny", size:"md", type:"port" },
+  { id:722, name:"Giurgiulesti Oil Terminal", country:"Moldova", city:"Giurgiulesti", lat:45.47, lng:28.18, cap:1200, tanks:28, berths:3, occ:"60%", products:["Diesel","Gasoline"], op:"Giurgiulesti International Free Port", size:"md", type:"port" },
+  { id:723, name:"Durres Oil Terminal", country:"Albania", city:"Durres", lat:41.31, lng:19.45, cap:1700, tanks:38, berths:4, occ:"66%", products:["Diesel","Gasoline"], op:"Albpetrol", size:"md", type:"port" },
+  { id:724, name:"Transpetrol Sahy Terminal", country:"Slovakia", city:"Sahy", lat:48.07, lng:18.95, cap:1300, tanks:30, berths:0, occ:"61%", products:["Crude"], op:"Transpetrol", size:"md", type:"inland" },
+  { id:725, name:"Luka Koper Fuel Terminal", country:"Slovenia", city:"Koper", lat:45.55, lng:13.73, cap:2100, tanks:44, berths:5, occ:"69%", products:["Diesel","Gasoline"], op:"Luka Koper", size:"md", type:"port" },
+  { id:726, name:"OMV Lobau Terminal", country:"Austria", city:"Vienna", lat:48.22, lng:16.5, cap:2400, tanks:50, berths:0, occ:"70%", products:["Diesel","Gasoline","Crude"], op:"OMV", size:"md", type:"inland" },
+  { id:727, name:"Basel Kleinhuningen Terminal", country:"Switzerland", city:"Basel", lat:47.58, lng:7.61, cap:1900, tanks:42, berths:3, occ:"67%", products:["Diesel","Gasoline"], op:"Basel Fuel Terminal Consortium", size:"md", type:"inland" },
+  { id:728, name:"Enemed Terminal", country:"Malta", city:"Marsaxlokk", lat:35.84, lng:14.54, cap:1600, tanks:36, berths:4, occ:"64%", products:["Diesel","Gasoline","LPG"], op:"Enemed", size:"md", type:"port" },
+  { id:729, name:"Hairatan Fuel Depot", country:"Afghanistan", city:"Hairatan", lat:37.2, lng:67.13, cap:1200, tanks:28, berths:0, occ:"58%", products:["Diesel","Gasoline"], op:"Afghan National Oil", size:"md", type:"inland" },
+  { id:730, name:"Yerevan Fuel Terminal", country:"Armenia", city:"Yerevan", lat:40.18, lng:44.51, cap:1000, tanks:24, berths:0, occ:"55%", products:["Diesel","Gasoline"], op:"Flash Armenia", size:"md", type:"inland" },
+  { id:731, name:"Amlekhgunj Oil Depot", country:"Nepal", city:"Amlekhgunj", lat:27.18, lng:84.98, cap:1500, tanks:32, berths:0, occ:"63%", products:["Diesel","Gasoline"], op:"Nepal Oil Corporation", size:"md", type:"inland" },
+  { id:732, name:"Ulaanbaatar Fuel Depot", country:"Mongolia", city:"Ulaanbaatar", lat:47.92, lng:106.92, cap:1300, tanks:30, berths:0, occ:"60%", products:["Diesel","Gasoline"], op:"Mongolia Petroleum", size:"md", type:"inland" },
+  { id:733, name:"Sihanoukville Port Terminal", country:"Cambodia", city:"Sihanoukville", lat:10.63, lng:103.52, cap:1800, tanks:40, berths:4, occ:"67%", products:["Diesel","Gasoline"], op:"Sokimex", size:"md", type:"port" },
+  { id:734, name:"PNG LNG Caution Bay", country:"Papua New Guinea", city:"Port Moresby", lat:-9.32, lng:147.09, cap:4600, tanks:58, berths:2, occ:"80%", products:["LNG"], op:"ExxonMobil PNG LNG", size:"lg", type:"port" },
+  { id:735, name:"Suva Fuel Terminal", country:"Fiji", city:"Suva", lat:-18.14, lng:178.44, cap:1100, tanks:26, berths:3, occ:"57%", products:["Diesel","Gasoline"], op:"Fiji Gas / Total Fiji", size:"md", type:"port" },
+  { id:736, name:"Bosanski Brod Refinery", country:"Bosnia and Herzegovina", city:"Bosanski Brod", lat:45.14, lng:17.98, cap:2600, tanks:52, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"NIS / Bosanski Brod Rafinerija", size:"md", type:"inland" },
+  { id:737, name:"OKTA Skopje Refinery", country:"North Macedonia", city:"Skopje", lat:41.98, lng:21.6, cap:2000, tanks:44, berths:0, occ:"66%", products:["Diesel","Gasoline"], op:"OKTA", size:"md", type:"inland" },
+  { id:738, name:"Reykjavik Fuel Terminal", country:"Iceland", city:"Reykjavik", lat:64.15, lng:-21.9, cap:1400, tanks:32, berths:4, occ:"61%", products:["Diesel","Gasoline"], op:"N1 / Skeljungur", size:"md", type:"port" },
+  { id:739, name:"RECOPE Puerto Moin", country:"Costa Rica", city:"Puerto Moin", lat:9.98, lng:-83.05, cap:1900, tanks:40, berths:4, occ:"68%", products:["Diesel","Gasoline"], op:"RECOPE", size:"md", type:"port" },
+  { id:740, name:"Puerto Quetzal Fuel Terminal", country:"Guatemala", city:"Puerto Quetzal", lat:13.93, lng:-90.79, cap:2100, tanks:44, berths:5, occ:"70%", products:["Diesel","Gasoline"], op:"Puma Energy Guatemala", size:"md", type:"port" },
+  { id:741, name:"Puerto Cortes Fuel Terminal", country:"Honduras", city:"Puerto Cortes", lat:15.83, lng:-87.94, cap:2300, tanks:48, berths:5, occ:"71%", products:["Diesel","Gasoline"], op:"Puma Energy Honduras", size:"md", type:"port" },
+  { id:742, name:"Corinto Fuel Terminal", country:"Nicaragua", city:"Corinto", lat:12.48, lng:-87.17, cap:1600, tanks:36, berths:4, occ:"64%", products:["Diesel","Gasoline"], op:"Puma Energy Nicaragua", size:"md", type:"port" },
+  { id:743, name:"Acajutla Fuel Terminal", country:"El Salvador", city:"Acajutla", lat:13.59, lng:-89.83, cap:1800, tanks:38, berths:4, occ:"66%", products:["Diesel","Gasoline"], op:"RASA / Puma Energy", size:"md", type:"port" },
+  { id:744, name:"Varreux Fuel Terminal", country:"Haiti", city:"Port-au-Prince", lat:18.58, lng:-72.38, cap:1500, tanks:34, berths:4, occ:"62%", products:["Diesel","Gasoline"], op:"DINASA", size:"md", type:"port" },
+  { id:745, name:"Bridgetown Fuel Terminal", country:"Barbados", city:"Bridgetown", lat:13.1, lng:-59.62, cap:900, tanks:22, berths:3, occ:"53%", products:["Diesel","Gasoline"], op:"Rubis Barbados", size:"md", type:"port" },
+  { id:746, name:"Nampo Oil Terminal", country:"North Korea", city:"Nampo", lat:38.74, lng:125.41, cap:2200, tanks:46, berths:4, occ:"69%", products:["Crude","Diesel"], op:"Korea Oil Industry Group", size:"md", type:"port" }
 ];
 
 // Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
@@ -2499,6 +2548,10 @@ function normalizeTerminal(t) {
       metrics: blankMetrics(),
       ownerId: null,          // uid of validated owner (null = unclaimed)
       claimStatus: 'unclaimed', // unclaimed | pending | owned
+      access: null,           // captive | independent | jv | null (not yet specified)
+      connectivity: [],       // e.g. ['Pipeline','Rail','Road'] — inland transport modes; marine access is implied by type==='port'
+      yearCommissioned: null, // e.g. 2009 | null (not yet specified)
+      tankType: null,         // aboveground | cavern | null (not yet specified)
     }, t, { metrics: Object.assign(blankMetrics(), t.metrics || {}) });
   } catch (e) {
     console.warn('normalizeTerminal: skipping record that failed to normalize', t, e);
@@ -3347,6 +3400,17 @@ function toggleShipLayerOnMap() {
 // this jumped to the Benchmark page, which only lists the top terminals by
 // capacity — so smaller terminals had no fact sheet there. This shows the
 // specific terminal's full details regardless of its size/ranking.
+// Friendly label for a terminal's ownership/access type. Centralized so the
+// fact sheet, admin table, etc. all describe the same value the same way.
+function accessLabel(access) {
+  return { captive: 'Captive', independent: 'Independent', jv: 'Joint Venture' }[access] || 'Not specified';
+}
+
+// Friendly label for a terminal's tank/storage construction type.
+function tankTypeLabel(tankType) {
+  return { aboveground: 'Aboveground', cavern: 'Underground Cavern' }[tankType] || 'Not specified';
+}
+
 function viewFull() {
   const t = selectedTerminal;
   if (!t) return;
@@ -3359,6 +3423,10 @@ function viewFull() {
   set('fs-occ', t.occ || '—');
   set('fs-tanks', t.tanks != null ? t.tanks : '—');
   set('fs-berths', t.berths != null ? t.berths : '—');
+  set('fs-access', accessLabel(t.access));
+  set('fs-connectivity', (t.connectivity && t.connectivity.length) ? t.connectivity.join(', ') : '—');
+  set('fs-year', t.yearCommissioned != null && t.yearCommissioned !== '' ? t.yearCommissioned : '—');
+  set('fs-tanktype', tankTypeLabel(t.tankType));
   document.getElementById('fs-products').innerHTML = (t.products || []).map(p => `<span class="popup-product">${p}</span>`).join('') || '<span style="color:var(--text-dim);font-size:11px;">—</span>';
 
   const m = t.metrics || {};
@@ -3466,20 +3534,20 @@ function currentTypeFilter() {
 // Map each region label to the countries it covers.
 const REGION_COUNTRIES = {
   'ARA (NW Europe)': ['Netherlands','Belgium','UK','Germany','Ireland','Luxembourg'],
-  'Mediterranean Europe': ['Spain','Malta','Italy','France','Greece','Portugal','Bulgaria','Romania','Croatia','Albania','Switzerland','Austria','Hungary','Slovakia','Czech Republic','Serbia','Slovenia'],
-  'Baltic & Scandinavia': ['Estonia','Sweden','Norway','Denmark','Finland','Greenland','Poland'],
-  'Russia & Caspian': ['Russia','Kazakhstan','Azerbaijan','Georgia','Belarus','Ukraine','Moldova','Turkmenistan','Uzbekistan','Kyrgyzstan'],
+  'Mediterranean Europe': ['Spain','Malta','Italy','France','Greece','Portugal','Bulgaria','Romania','Croatia','Albania','Montenegro','Switzerland','Austria','Hungary','Slovakia','Czech Republic','Serbia','Slovenia','Bosnia and Herzegovina','North Macedonia'],
+  'Baltic & Scandinavia': ['Estonia','Sweden','Norway','Denmark','Finland','Greenland','Poland','Iceland'],
+  'Russia & Caspian': ['Russia','Kazakhstan','Azerbaijan','Georgia','Belarus','Ukraine','Moldova','Turkmenistan','Uzbekistan','Kyrgyzstan','Afghanistan','Armenia'],
   'East Med & Levant': ['Israel','Lebanon','Egypt','Cyprus','Turkey','Syria'],
   'Middle East': ['UAE','Saudi Arabia','Kuwait','Qatar','Bahrain','Oman','Iran','Iraq','Yemen','Jordan'],
   'North Africa': ['Morocco','Tunisia','Libya','Algeria'],
-  'East Asia': ['China','Japan','Taiwan','South Korea','Hong Kong'],
-  'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines','Brunei','Myanmar'],
-  'North America': ['USA','Canada','Mexico','Panama','Trinidad and Tobago','Jamaica','Dominican Republic','Cuba','Bahamas','Puerto Rico','St. Lucia'],
+  'East Asia': ['China','Japan','Taiwan','South Korea','Hong Kong','Mongolia','North Korea'],
+  'Southeast Asia': ['Singapore','Malaysia','Indonesia','Thailand','Vietnam','Philippines','Brunei','Myanmar','Cambodia'],
+  'North America': ['USA','Canada','Mexico','Panama','Trinidad and Tobago','Jamaica','Dominican Republic','Cuba','Bahamas','Puerto Rico','St. Lucia','Costa Rica','Guatemala','Honduras','Nicaragua','El Salvador','Haiti','Barbados'],
   'South America': ['Brazil','Colombia','Argentina','Venezuela','Chile','Peru','Ecuador','Uruguay','Bolivia','Guyana','Suriname','Paraguay'],
   'West Africa': ['Nigeria','Angola','Ghana','Ivory Coast','Togo','Senegal','Cameroon','DRC','Gabon','Republic of Congo','Equatorial Guinea','Mauritania','Sierra Leone','Liberia','Guinea','Benin','Gambia','Burkina Faso','Mali','Chad','Central African Republic','Niger','Cape Verde','Guinea-Bissau'],
   'East & South Africa': ['South Africa','Kenya','Tanzania','Mozambique','Egypt','Sudan','Uganda','Zambia','Namibia','Zimbabwe','Ethiopia','Djibouti','Mauritius','Seychelles','Madagascar','Somalia','Eritrea','Malawi','Rwanda','Botswana','South Sudan','Burundi','Lesotho','Eswatini','Comoros'],
-  'Australia': ['Australia','New Zealand'],
-  'India Subcontinent': ['India','Bangladesh','Pakistan','Sri Lanka','Maldives'],
+  'Australia': ['Australia','New Zealand','Papua New Guinea','Fiji'],
+  'India Subcontinent': ['India','Bangladesh','Pakistan','Sri Lanka','Maldives','Nepal'],
 };
 
 function activeProducts() {
@@ -4844,6 +4912,14 @@ async function startApp() {
     try { renderTerminalList(terminals); } catch (e) { console.warn('startApp: renderTerminalList failed', e); }
     try { initMap(); } catch (e) { console.warn('startApp: initMap failed', e); }
     try { initAuthListener(); } catch (e) { console.warn('startApp: initAuthListener failed', e); }
+    // Don't reveal anything until the first real auth/access check has
+    // completed — otherwise there'd be a brief flash of the app (or a stale
+    // gate) before we actually know whether this visitor is signed in and
+    // approved. Capped well inside the existing 8s absolute failsafe above,
+    // so a stuck check still can't leave the loader on screen forever.
+    try {
+      await Promise.race([_authResolved, new Promise(res => setTimeout(res, 6000))]);
+    } catch (e) { console.warn('startApp: auth resolution wait failed', e); }
     try { updateDataSourceStatus(); } catch (e) { console.warn('startApp: updateDataSourceStatus failed', e); }
     try { DataService.startAutoRefresh(); } catch (e) { console.warn('startApp: startAutoRefresh failed', e); }
     // Globe is the default landing view; build it (or queue until Three.js loads).
@@ -5299,6 +5375,7 @@ loadScript(
 .status-active { color: var(--accent3); }
 .status-inactive { color: var(--text-dim); }
 .status-suspended { color: var(--danger); }
+.status-pending { color: var(--gold); }
 
 /* Toast */
 .admin-toast {
@@ -5531,6 +5608,10 @@ loadScript(
       <div class="fs-stat"><div class="fs-stat-label">Berth Occupancy</div><div class="fs-stat-val" id="fs-occ">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Tanks</div><div class="fs-stat-val" id="fs-tanks">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Berths</div><div class="fs-stat-val" id="fs-berths">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Ownership Type</div><div class="fs-stat-val" id="fs-access" style="font-size:14px;">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Connectivity</div><div class="fs-stat-val" id="fs-connectivity" style="font-size:14px;">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Commissioning Year</div><div class="fs-stat-val" id="fs-year">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Storage Type</div><div class="fs-stat-val" id="fs-tanktype" style="font-size:14px;">—</div></div>
     </div>
 
     <div class="fs-section-label">Products Stored</div>
@@ -5574,7 +5655,7 @@ loadScript(
 
 <div class="modal-overlay hidden" id="loginGate">
   <div class="login-box">
-    <button class="modal-close-x" onclick="hideLoginGate()" id="loginCloseX">×</button>
+    <button class="modal-close-x" onclick="hideLoginGate()" id="loginCloseX" style="display:none;">×</button>
     <div style="text-align:center;margin-bottom:20px;">
       <div class="logo-icon" style="width:46px;height:46px;margin:0 auto 12px;"><img src="logo.png" alt="Tank Bazaar"></div>
       <h2 style="font-family:var(--font-display);">TANK BAZAAR</h2>
@@ -5615,6 +5696,25 @@ loadScript(
     <div id="previewNotice" style="display:none;margin-top:16px;padding:10px;background:rgba(232,193,112,0.08);border:1px solid rgba(232,193,112,0.25);border-radius:8px;font-size:10px;color:var(--gold);text-align:center;line-height:1.5;">
       ◐ Preview Mode — Firebase not configured.<br>
       <a onclick="continueAsGuest()" style="color:var(--accent);cursor:pointer;text-decoration:underline;">Continue as guest →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ACCESS-PENDING GATE — shown when someone is authenticated but not
+     yet approved by the super admin (or a status/connection check
+     failed). Mandatory, no close button: this is a wall, not a modal.
+════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="pendingGate">
+  <div class="login-box" style="text-align:center;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div class="logo-icon" style="width:46px;height:46px;margin:0 auto 12px;"><img src="logo.png" alt="Tank Bazaar"></div>
+      <h2 style="font-family:var(--font-display);" id="pendingGateTitle">Pending Verification</h2>
+      <p id="pendingGateMsg">Your account is awaiting approval. You'll get access as soon as an administrator verifies you.</p>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="login-submit" style="flex:none;width:auto;padding:10px 20px;" onclick="recheckAccess()">↻ Check Again</button>
+      <button class="sso-btn" style="flex:none;width:auto;padding:10px 20px;" onclick="userLogout()">Sign Out</button>
     </div>
   </div>
 </div>
@@ -6001,9 +6101,17 @@ loadScript(
         <div class="admin-page-sub">Enter geo-tagged terminal data into the database.</div>
         <div class="admin-card">
           <div class="admin-card-title">Terminal Details</div>
-          <div class="admin-form-grid">
+          <div class="admin-form-grid three">
             <div class="admin-field"><label>Terminal Name</label><input type="text" id="nt-name" placeholder="e.g. Vopak Rotterdam"></div>
             <div class="admin-field"><label>Operator / Company</label><input type="text" id="nt-op" placeholder="e.g. Vopak"></div>
+            <div class="admin-field"><label>Ownership Type</label>
+              <select id="nt-access">
+                <option value="">— Not specified —</option>
+                <option value="captive">Captive</option>
+                <option value="independent">Independent</option>
+                <option value="jv">Joint Venture</option>
+              </select>
+            </div>
           </div>
           <div class="admin-field" id="nt-search-wrap" style="margin-bottom:6px;">
             <label>🔍 Search Address (auto-fills City/Country/Lat/Lng)</label>
@@ -6046,6 +6154,17 @@ loadScript(
           <div class="admin-form-grid">
             <div class="admin-field"><label>Berth Occupancy (%)</label><input type="text" id="nt-occ" placeholder="89%"></div>
             <div class="admin-field"><label>Products Stored (comma-separated)</label><input type="text" id="nt-products" placeholder="Crude, LNG, Chemicals"></div>
+          </div>
+          <div class="admin-form-grid three">
+            <div class="admin-field"><label>Connectivity (comma-separated)</label><input type="text" id="nt-connectivity" placeholder="Pipeline, Rail, Road"></div>
+            <div class="admin-field"><label>Commissioning Year</label><input type="text" id="nt-year" placeholder="2009"></div>
+            <div class="admin-field"><label>Storage Type</label>
+              <select id="nt-tanktype">
+                <option value="">— Not specified —</option>
+                <option value="aboveground">Aboveground</option>
+                <option value="cavern">Underground Cavern</option>
+              </select>
+            </div>
           </div>
           <div class="admin-form-grid one">
             <div class="admin-field"><label>Additional Notes</label><textarea id="nt-notes" placeholder="Any additional operational details..."></textarea></div>
@@ -6311,6 +6430,60 @@ function isAdminEmail(email) { return ADMIN_EMAILS.map(e=>e.toLowerCase()).inclu
 function isSuperAdmin(email) { return (email||'').toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase(); }
 function roleForEmail(email) { return isSuperAdmin(email) ? 'superadmin' : isAdminEmail(email) ? 'admin' : 'member'; }
 
+// ── ACCESS GATE ──
+// The site now requires (1) sign-in and (2) super-admin verification before
+// any content is shown. Three possible screens: the mandatory sign-in wall,
+// the "pending verification" wall, or (once approved) the app itself. The
+// super admin's own email always bypasses the approval check, independent
+// of any Firestore read, so a database hiccup can never lock them out.
+//
+// `_authResolved` is a promise startApp() awaits before hiding the boot
+// loader, so nobody ever sees a flash of the app (or a stale gate) before
+// the first real auth-state check has completed.
+let _resolveAuthCheck;
+const _authResolved = new Promise(res => { _resolveAuthCheck = res; });
+
+function grantAccess() {
+  document.getElementById('loginGate').classList.add('hidden');
+  document.getElementById('pendingGate').classList.add('hidden');
+  if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
+}
+
+function showMandatorySignIn() {
+  document.getElementById('pendingGate').classList.add('hidden');
+  showLoginGate();
+  if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
+}
+
+// kind: 'pending' | 'suspended' | 'error'
+function showPendingGate(kind) {
+  document.getElementById('loginGate').classList.add('hidden');
+  const title = document.getElementById('pendingGateTitle');
+  const msg = document.getElementById('pendingGateMsg');
+  if (kind === 'suspended') {
+    title.textContent = 'Access Suspended';
+    msg.textContent = 'Your account access has been suspended. Contact the site administrator if you believe this is a mistake.';
+  } else if (kind === 'error') {
+    title.textContent = 'Connection Issue';
+    msg.textContent = "We couldn't verify your access right now. Check your connection and try again.";
+  } else {
+    title.textContent = 'Pending Verification';
+    msg.textContent = "Your account is awaiting approval. You'll get access as soon as an administrator verifies you.";
+  }
+  document.getElementById('pendingGate').classList.remove('hidden');
+  if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
+}
+
+// "Check Again" button on the pending screen — re-runs the same check
+// without requiring a full sign-out/sign-in round trip.
+function recheckAccess() {
+  if (firebaseReady && fbAuth.currentUser) {
+    onUserSignedIn(fbAuth.currentUser);
+  } else {
+    showMandatorySignIn();
+  }
+}
+
 function showLoginGate() {
   document.getElementById('loginGate').classList.remove('hidden');
   document.getElementById('previewNotice').style.display = isPreviewMode ? 'block' : 'none';
@@ -6330,8 +6503,10 @@ function signInWith(provider) {
   else if (provider === 'apple') { p = new firebase.auth.OAuthProvider('apple.com'); p.addScope('email'); p.addScope('name'); }
   else if (provider === 'microsoft') { p = new firebase.auth.OAuthProvider('microsoft.com'); p.addScope('email'); }
   // Try popup first (better UX on desktop); fall back to redirect if it's blocked.
+  // (No .then() success handler needed here: onAuthStateChanged → onUserSignedIn
+  // is the single source of truth for which gate to show next, so we don't
+  // race it by closing the gate optimistically before the approval check runs.)
   fbAuth.signInWithPopup(p)
-    .then(() => { hideLoginGate(); })
     .catch(err => {
       const code = err.code || '';
       if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' ||
@@ -6351,7 +6526,6 @@ function emailSignIn() {
   const pass = document.getElementById('loginPass').value;
   if (!email || !pass) { showLoginError('Enter email and password.'); return; }
   fbAuth.signInWithEmailAndPassword(email, pass)
-    .then(() => hideLoginGate())
     .catch(err => showLoginError(err.message));
 }
 
@@ -6361,7 +6535,7 @@ function emailSignUp() {
   const pass = document.getElementById('loginPass').value;
   if (!email || pass.length < 6) { showLoginError('Enter email and a password of at least 6 characters.'); return; }
   fbAuth.createUserWithEmailAndPassword(email, pass)
-    .then(() => { hideLoginGate(); toast('Account created — welcome!'); })
+    .then(() => { toast('Account created — an administrator will verify your access shortly.'); })
     .catch(err => showLoginError(err.message));
 }
 
@@ -6387,13 +6561,15 @@ function continueAsGuest() {
 // React to Firebase auth state
 function initAuthListener() {
   if (!firebaseReady) {
-    // Preview mode — show sign-in button, no gating
+    // Preview mode — no Firebase configured, so there's nothing to gate
+    // against. Show the sign-in button but don't block the app; this is a
+    // local/dev fallback, not a production security boundary.
     document.getElementById('signInBtn').style.display = '';
+    if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
     return;
   }
   // Complete any pending redirect sign-in (Google/Apple/Microsoft via redirect)
   fbAuth.getRedirectResult()
-    .then(res => { if (res && res.user) { hideLoginGate(); } })
     .catch(err => { if (err && err.code) { console.error('Redirect sign-in error:', err.code, err.message); toast(err.message, 'error'); } });
 
   fbAuth.onAuthStateChanged(async (u) => {
@@ -6402,6 +6578,7 @@ function initAuthListener() {
     } else {
       currentUser = null;
       applyLoggedOutUI();
+      showMandatorySignIn();
     }
   });
 }
@@ -6538,10 +6715,25 @@ async function onUserSignedIn(u) {
   };
   applyLoggedInUI();
 
+  // The super admin's own email always gets in, independent of any Firestore
+  // read — a database hiccup or a bad rule can never lock out this account.
+  if (isSuperAdmin(u.email)) grantAccess();
+
   try {
     // Read existing profile via REST (plain HTTPS — not the blocked transport).
+    // Distinguish "genuinely no record" (existing stays null, no exception —
+    // a real brand-new user) from "the read itself failed" (fetchFailed) —
+    // conflating the two would risk silently downgrading an already-approved
+    // user to pending on a mere network blip.
     let existing = null;
-    try { existing = await FS_REST.get('users', u.uid); } catch (e) { /* treat as new */ }
+    let fetchFailed = false;
+    try { existing = await FS_REST.get('users', u.uid); }
+    catch (e) { fetchFailed = true; console.error('[TANK BAZAAR] profile fetch failed:', e.message); }
+
+    if (!isSuperAdmin(u.email) && fetchFailed) {
+      showPendingGate('error');
+      return; // don't guess at / overwrite their real status below
+    }
 
     const now = new Date();
     const base = {
@@ -6549,7 +6741,10 @@ async function onUserSignedIn(u) {
       name: (existing && existing.name) || u.displayName || u.email.split('@')[0],
       photoURL: u.photoURL || '',
       provider: provider, role: role,
-      lastLogin: now, status: (existing && existing.status) || 'active',
+      // New sign-ups default to 'pending' (super-admin verification required).
+      // Anyone who already has a record keeps their existing status exactly
+      // as-is — this never resets an already-active or already-suspended user.
+      lastLogin: now, status: (existing && existing.status) || 'pending',
       loginCount: ((existing && existing.loginCount) || 0) + 1,
     };
     if (!existing || !existing.createdAt) {
@@ -6572,11 +6767,22 @@ async function onUserSignedIn(u) {
     currentUser.profile = Object.assign({}, existing || {}, base);
     currentUser.name = currentUser.profile.name || currentUser.name;
     applyLoggedInUI();
+
+    // Gate decision for everyone except the super admin (already granted above).
+    let accessGranted = isSuperAdmin(u.email);
+    if (!isSuperAdmin(u.email)) {
+      if (base.status === 'active') { grantAccess(); accessGranted = true; }
+      else showPendingGate(base.status === 'suspended' ? 'suspended' : 'pending');
+    }
+
     trackPageView();
 
-    // If an admin just signed in, sync any new code-defined terminals to Firestore
-    // (load() at startup may have run before auth completed).
-    if (currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+    // Terminals now require an approved reader at the database level, so the
+    // very first TerminalStore.load() during boot (which runs before auth
+    // resolves) will have been denied for everyone. Re-load once access is
+    // actually granted, so approved users see live Firestore data rather than
+    // being stuck on the static in-file seed array.
+    if (accessGranted) {
       TerminalStore.load().then(() => {
         renderTerminalList(typeof filteredTerminals==='function'?filteredTerminals():terminals);
         if (typeof refreshGlobe === 'function') refreshGlobe();
@@ -6586,6 +6792,9 @@ async function onUserSignedIn(u) {
   } catch (e) {
     console.error('[TANK BAZAAR] ❌ Profile write failed (REST):', e.message);
     toast('Signed in, but could not save profile: ' + e.message, 'error');
+    // A write failure shouldn't leave a non-superadmin in limbo with no gate
+    // shown at all — fail closed with the connection-error screen.
+    if (!isSuperAdmin(u.email)) showPendingGate('error');
   }
 }
 
@@ -6848,15 +7057,20 @@ async function loadUsersFromFirestore() {
       createdAtRaw: d.createdAt || null,
       lastLoginRaw: d.lastLogin || null,
       last: fmtDate(d.lastLogin) || '—',
-      status: d.status || 'active',
+      status: d.status || 'pending',
       country: d.country || '—',
       views: d.pageViews || 0,
       company: d.company || '—',
       segment: d.segment || '',
       loginCount: d.loginCount || 0,
     }));
-    // Newest first
-    usersData.sort((a,b) => (b.loginCount||0) - (a.loginCount||0));
+    // Pending users first (need the super admin's attention), then newest-active first.
+    usersData.sort((a,b) => {
+      const pa = a.status === 'pending' ? 0 : 1;
+      const pb = b.status === 'pending' ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      return (b.loginCount||0) - (a.loginCount||0);
+    });
   } catch (e) { console.warn('Could not load users:', e.message); usersData = []; }
 }
 
@@ -6874,6 +7088,7 @@ function renderUsersTable() {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-dim);">${firebaseReady ? 'No users yet. Users appear here after they sign in.' : 'Configure Firebase to see registered users.'}</td></tr>`;
     return;
   }
+  const iAmSuperAdmin = currentUser && isSuperAdmin(currentUser.email);
   tbody.innerHTML = filtered.map(u => `
     <tr>
       <td><div style="display:flex;align-items:center;gap:8px;">
@@ -6886,14 +7101,34 @@ function renderUsersTable() {
       <td>${u.last}</td>
       <td><span class="status-${u.status}">● ${u.status}</span></td>
       <td>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn-admin" onclick="viewProfile('${u.id}')">Profile</button>
+          ${u.status === 'pending' && iAmSuperAdmin ? `<button class="btn-admin primary" onclick="approveUser('${u.id}')">Approve</button>` : ''}
+          ${u.status === 'pending' ? `<button class="btn-admin warning" onclick="suspendUser('${u.id}')">Deny</button>` : ''}
           ${u.role !== 'superadmin' ? `<button class="btn-admin danger" onclick="removeUser('${u.id}')">Remove</button>` : ''}
           ${u.status === 'active' && u.role !== 'superadmin' ? `<button class="btn-admin warning" onclick="suspendUser('${u.id}')">Suspend</button>` : ''}
+          ${u.status === 'suspended' && iAmSuperAdmin ? `<button class="btn-admin primary" onclick="approveUser('${u.id}')">Reinstate</button>` : ''}
         </div>
       </td>
     </tr>
   `).join('');
+}
+
+// Only the super admin can verify (approve) a user for now — enforced here
+// AND at the database level (firestore.rules only lets that exact email
+// write to another user's doc), so a client-side mistake can't grant access.
+function approveUser(id) {
+  if (!currentUser || !isSuperAdmin(currentUser.email)) {
+    toast('Only the super admin can verify users right now.', 'error');
+    return;
+  }
+  const u = usersData.find(x=>x.id===id);
+  if (!u) return;
+  u.status = 'active';
+  if (firebaseReady) FS_REST.setMerge('users', id, { status: 'active' }).catch(e => toast(e.message, 'error'));
+  renderUsersTable();
+  toast(`${u.name} verified — they now have access.`);
+  logActivity(`Verified user: ${u.name}`, 'info');
 }
 
 function removeUser(id) {
@@ -7206,13 +7441,17 @@ async function addTerminalFromForm() {
   const occ = document.getElementById('nt-occ').value || '75%';
   const prods = document.getElementById('nt-products').value.split(',').map(s=>s.trim()).filter(Boolean);
   const type = document.getElementById('nt-type') ? document.getElementById('nt-type').value : 'port';
+  const access = document.getElementById('nt-access') ? (document.getElementById('nt-access').value || null) : null;
+  const connectivity = document.getElementById('nt-connectivity') ? document.getElementById('nt-connectivity').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const yearCommissioned = document.getElementById('nt-year') && document.getElementById('nt-year').value.trim() !== '' ? parseInt(document.getElementById('nt-year').value) || null : null;
+  const tankType = document.getElementById('nt-tanktype') ? (document.getElementById('nt-tanktype').value || null) : null;
   if (!name || !city || !country || isNaN(lat) || isNaN(lng)) { toast('Please fill all required fields.', 'error'); return; }
 
   if (editingTerminalId != null) {
     // Update existing terminal (preserves metrics/ownership).
     const t = findTerminalById(editingTerminalId);
     if (t) {
-      Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ,
+      Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, connectivity, yearCommissioned, tankType,
         products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
       await TerminalStore.save(t);
       refreshMapMarkers(filteredTerminals());
@@ -7228,7 +7467,7 @@ async function addTerminalFromForm() {
   }
 
   const nextId = terminals.reduce((m,t)=>Math.max(m, t.id||0), 0) + 1;
-  const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
+  const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, connectivity, yearCommissioned, tankType, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
   terminals.push(newT);
   await TerminalStore.save(newT);
   addMarker(newT);
@@ -7271,15 +7510,23 @@ function editTerminalForm(id) {
   document.getElementById('nt-berths').value = t.berths;
   document.getElementById('nt-occ').value = t.occ;
   document.getElementById('nt-products').value = t.products.join(', ');
+  if (document.getElementById('nt-access')) document.getElementById('nt-access').value = t.access || '';
+  if (document.getElementById('nt-connectivity')) document.getElementById('nt-connectivity').value = (t.connectivity || []).join(', ');
+  if (document.getElementById('nt-year')) document.getElementById('nt-year').value = t.yearCommissioned != null ? t.yearCommissioned : '';
+  if (document.getElementById('nt-tanktype')) document.getElementById('nt-tanktype').value = t.tankType || '';
   if (document.getElementById('nt-type')) document.getElementById('nt-type').value = terminalType(t);
 }
 
 function clearTerminalForm() {
   editingTerminalId = null;
-  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes','nt-search'].forEach(id => {
+  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes','nt-search','nt-connectivity','nt-year'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const accessEl = document.getElementById('nt-access');
+  if (accessEl) accessEl.value = '';
+  const tankTypeEl = document.getElementById('nt-tanktype');
+  if (tankTypeEl) tankTypeEl.value = '';
 }
 
 // ── MAIL ─────────────────────────────────────────────────────────
