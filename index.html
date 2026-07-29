@@ -1774,34 +1774,34 @@ function updateDataSourceStatus() {
 
 const terminals = [
   { id:1, name:"Vopak Fujairah", country:"UAE", city:"Fujairah", lat:25.12, lng:56.34, cap:12000, tanks:182, berths:14, occ:"91%", products:["Crude","Diesel","Gasoline"], op:"Vopak Horizon Fujairah Limited", size:"xl", type:"port" },
-  { id:2, name:"Amuay Refinery", country:"Venezuela", city:"Punto Fijo", lat:11.75, lng:-70.21, cap:8900, tanks:142, berths:10, occ:"78%", products:["Crude","LPG"], op:"Petróleos de Venezuela, S.A.", size:"xl", type:"port" },
+  { id:2, name:"Amuay Refinery", country:"Venezuela", city:"Punto Fijo", lat:11.75, lng:-70.21, cap:8900, tanks:142, berths:10, occ:"78%", products:["Crude","LPG"], op:"Petróleos de Venezuela, S.A.", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:3, name:"Oiltanking Amsterdam", country:"Netherlands", city:"Amsterdam", lat:52.38, lng:4.90, cap:5200, tanks:96, berths:8, occ:"85%", products:["Gasoline","Diesel","Chemicals"], op:"Oiltanking GmbH", size:"lg", type:"port" },
   { id:4, name:"Vopak Rotterdam", country:"Netherlands", city:"Rotterdam", lat:51.92, lng:4.47, cap:7100, tanks:128, berths:12, occ:"89%", products:["Crude","LNG","Chemicals"], op:"Koninklijke Vopak N.V.", size:"xl", type:"port" },
   { id:5, name:"Kamco Kaohsiung", country:"Taiwan", city:"Kaohsiung", lat:22.62, lng:120.27, cap:3800, tanks:74, berths:6, occ:"72%", products:["Crude","Gasoline"], op:"Kuwait Aviation Fuelling Company K.S.C.C.", size:"lg", type:"port" },
   { id:6, name:"Birch Shipping Singapore", country:"Singapore", city:"Singapore", lat:1.26, lng:103.82, cap:6400, tanks:112, berths:11, occ:"94%", products:["Crude","LPG","Diesel"], op:"Birch Terminals LLC", size:"xl", type:"port" },
   { id:7, name:"Mitsui Chiba", country:"Japan", city:"Chiba", lat:35.61, lng:140.10, cap:4100, tanks:88, berths:7, occ:"81%", products:["Crude","Gasoline","LPG"], op:"Mitsui & Co., Ltd.", size:"lg", type:"port" },
-  { id:8, name:"Paradip Refinery", country:"India", city:"Paradip, Odisha", lat:20.26, lng:86.68, cap:9200, tanks:164, berths:15, occ:"88%", products:["Crude","Diesel","LPG"], op:"Indian Oil Corporation Limited", size:"xl", type:"port" },
+  { id:8, name:"Paradip Refinery", country:"India", city:"Paradip, Odisha", lat:20.26, lng:86.68, cap:9200, tanks:164, berths:15, occ:"88%", products:["Crude","Diesel","LPG"], op:"Indian Oil Corporation Limited", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:9, name:"Vopak Houston", country:"USA", city:"Houston TX", lat:29.75, lng:-95.26, cap:5800, tanks:104, berths:9, occ:"76%", products:["Crude","Chemicals","Gasoline"], op:"Koninklijke Vopak N.V.", size:"lg", type:"port" },
   { id:10, name:"Buckeye Texas City", country:"USA", city:"Texas City TX", lat:29.38, lng:-94.90, cap:3200, tanks:68, berths:5, occ:"69%", products:["Gasoline","Diesel"], op:"Buckeye Partners, L.P.", size:"md", type:"port" },
   { id:11, name:"Oiltanking Antwerp", country:"Belgium", city:"Antwerp", lat:51.26, lng:4.39, cap:4500, tanks:82, berths:8, occ:"83%", products:["Crude","Chemicals","Diesel"], op:"Oiltanking GmbH", size:"lg", type:"port" },
   { id:12, name:"Vivo Energy Lagos", country:"Nigeria", city:"Lagos", lat:6.44, lng:3.41, cap:2400, tanks:48, berths:5, occ:"71%", products:["Gasoline","Diesel","LPG"], op:"Vivo Energy Holding B.V.", size:"md", type:"port" },
-  { id:13, name:"Jubail Refinery", country:"Saudi Arabia", city:"Jubail", lat:27.00, lng:49.66, cap:11200, tanks:196, berths:16, occ:"92%", products:["Crude","LPG","Gasoline"], op:"Saudi Aramco Jubail Refinery Company", size:"xl", type:"port" },
-  { id:14, name:"Ruwais Refinery", country:"UAE", city:"Ruwais", lat:24.10, lng:52.73, cap:10800, tanks:188, berths:14, occ:"95%", products:["Crude","LNG","Diesel"], op:"Abu Dhabi National Oil Company", size:"xl", type:"port" },
+  { id:13, name:"Jubail Refinery", country:"Saudi Arabia", city:"Jubail", lat:27.00, lng:49.66, cap:11200, tanks:196, berths:16, occ:"92%", products:["Crude","LPG","Gasoline"], op:"Saudi Aramco Jubail Refinery Company", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:14, name:"Ruwais Refinery", country:"UAE", city:"Ruwais", lat:24.10, lng:52.73, cap:10800, tanks:188, berths:14, occ:"95%", products:["Crude","LNG","Diesel"], op:"Abu Dhabi National Oil Company", size:"xl", type:"port", facilityClass:["process"], processType:["refineries","petrochemicals"], primaryClass:"process" },
   { id:15, name:"Kinder Morgan Long Beach", country:"USA", city:"Long Beach CA", lat:33.75, lng:-118.22, cap:2800, tanks:56, berths:4, occ:"67%", products:["Crude","Gasoline"], op:"Kinder Morgan Inc", size:"md", type:"port" },
   { id:16, name:"Vopak Pengerang", country:"Malaysia", city:"Johor", lat:1.38, lng:104.11, cap:6200, tanks:108, berths:10, occ:"87%", products:["Crude","LNG","Chemicals"], op:"Koninklijke Vopak N.V.", size:"xl", type:"port" },
   { id:17, name:"BPCL Mumbai", country:"India", city:"Mumbai", lat:18.96, lng:72.85, cap:4800, tanks:92, berths:8, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"Bharat Petroleum Corporation Limited", size:"lg", type:"port" },
   { id:18, name:"Europoort Terminals", country:"Netherlands", city:"Rotterdam", lat:51.95, lng:4.01, cap:5600, tanks:102, berths:9, occ:"86%", products:["Crude","LNG","LPG"], op:"Europoort Terminals B.V.", size:"lg", type:"port" },
-  { id:19, name:"Mina Al-Ahmadi Refinery", country:"Kuwait", city:"Mina Ahmadi", lat:29.07, lng:48.16, cap:8700, tanks:156, berths:13, occ:"90%", products:["Crude","Gasoline","LPG"], op:"Kuwait Petroleum Corporation", size:"xl", type:"port" },
+  { id:19, name:"Mina Al-Ahmadi Refinery", country:"Kuwait", city:"Mina Ahmadi", lat:29.07, lng:48.16, cap:8700, tanks:156, berths:13, occ:"90%", products:["Crude","Gasoline","LPG"], op:"Kuwait Petroleum Corporation", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:20, name:"Sonatrach Arzew", country:"Algeria", city:"Arzew", lat:35.85, lng:-0.32, cap:3900, tanks:76, berths:7, occ:"74%", products:["LNG","LPG","Crude"], op:"Sonatrach S.P.A.", size:"lg", type:"port" },
   { id:21, name:"Ineos Grangemouth", country:"UK", city:"Falkirk, Scotland", lat:56.02, lng:-3.69, cap:2100, tanks:44, berths:4, occ:"68%", products:["Crude","Chemicals"], op:"INEOS Limited", size:"md", type:"port" },
-  { id:22, name:"Cilacap Refinery", country:"Indonesia", city:"Cilacap", lat:-7.73, lng:109.01, cap:5100, tanks:98, berths:8, occ:"84%", products:["Crude","Gasoline","Diesel"], op:"PT Pertamina", size:"lg", type:"port" },
-  { id:23, name:"Vadinar Refinery", country:"India", city:"Vadinar, Gujarat", lat:22.46, lng:69.76, cap:7800, tanks:138, berths:12, occ:"86%", products:["Crude","Diesel","LPG"], op:"Nayara Energy Limited", size:"xl", type:"port" },
-  { id:24, name:"Jurong Refinery", country:"Singapore", city:"Jurong Island", lat:1.22, lng:103.70, cap:4300, tanks:84, berths:7, occ:"88%", products:["Crude","Chemicals","Gasoline"], op:"Exxon Mobil Corporation", size:"xl", type:"port" },
+  { id:22, name:"Cilacap Refinery", country:"Indonesia", city:"Cilacap", lat:-7.73, lng:109.01, cap:5100, tanks:98, berths:8, occ:"84%", products:["Crude","Gasoline","Diesel"], op:"PT Pertamina", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:23, name:"Vadinar Refinery", country:"India", city:"Vadinar, Gujarat", lat:22.46, lng:69.76, cap:7800, tanks:138, berths:12, occ:"86%", products:["Crude","Diesel","LPG"], op:"Nayara Energy Limited", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:24, name:"Jurong Refinery", country:"Singapore", city:"Jurong Island", lat:1.22, lng:103.70, cap:4300, tanks:84, berths:7, occ:"88%", products:["Crude","Chemicals","Gasoline"], op:"Exxon Mobil Corporation", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:25, name:"Cushing Hub", country:"USA", city:"Cushing, Oklahoma", lat:35.98, lng:-96.77, cap:13000, tanks:210, berths:0, occ:"79%", products:["Crude"], op:"Enbridge", size:"xl", type:"inland" },
   { id:26, name:"IOCL Panipat Depot", country:"India", city:"Panipat, Haryana", lat:29.39, lng:76.97, cap:3600, tanks:72, berths:0, occ:"81%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"lg", type:"inland" },
   { id:27, name:"HPCL Bhatinda Terminal", country:"India", city:"Bhatinda, Punjab", lat:30.21, lng:74.95, cap:2200, tanks:46, berths:0, occ:"73%", products:["Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"inland" },
   { id:28, name:"Tank & Rast Karlsruhe", country:"Germany", city:"Karlsruhe", lat:49.01, lng:8.40, cap:2900, tanks:58, berths:0, occ:"70%", products:["Gasoline","Diesel","Chemicals"], op:"MiRO", size:"md", type:"inland" },
-  { id:29, name:"Jamnagar Refinery", country:"India", city:"Jamnagar, Gujarat", lat:22.34, lng:69.85, cap:14500, tanks:240, berths:18, occ:"93%", products:["Crude","Diesel","Gasoline","LPG"], op:"Reliance Industries Limited", size:"xl", type:"port" },
+  { id:29, name:"Jamnagar Refinery", country:"India", city:"Jamnagar, Gujarat", lat:22.34, lng:69.85, cap:14500, tanks:240, berths:18, occ:"93%", products:["Crude","Diesel","Gasoline","LPG"], op:"Reliance Industries Limited", size:"xl", type:"port", facilityClass:["process"], processType:["refineries","petrochemicals"], primaryClass:"process" },
   { id:30, name:"Vopak Sebarok", country:"Singapore", city:"Pulau Sebarok", lat:1.20, lng:103.80, cap:5400, tanks:100, berths:9, occ:"90%", products:["Crude","Chemicals"], op:"Koninklijke Vopak N.V.", size:"lg", type:"port" },
   { id:31, name:"APSEZ Mundra", country:"India", city:"Mundra, Gujarat", lat:22.74, lng:69.70, cap:9600, tanks:168, berths:14, occ:"87%", products:["Crude","Diesel","LPG","Chemicals"], op:"Adani Ports & SEZ Limited", size:"xl", type:"port" },
   { id:32, name:"GCPTCL Dahej", country:"India", city:"Dahej, Gujarat", lat:21.70, lng:72.58, cap:4200, tanks:84, berths:7, occ:"81%", products:["Chemicals","LPG","LNG"], op:"Gujarat Chemical Port Limited", size:"lg", type:"port" },
@@ -1813,15 +1813,15 @@ const terminals = [
   { id:38, name:"VIPL Vizag", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.69, lng:83.30, cap:5200, tanks:96, berths:8, occ:"85%", products:["Crude","LPG","Diesel"], op:"VIPL", size:"lg", type:"port" },
   { id:39, name:"ETTPL Ennore", country:"India", city:"Ennore, Tamil Nadu", lat:13.24, lng:80.33, cap:3900, tanks:78, berths:6, occ:"79%", products:["Crude","LPG","Chemicals"], op:"ETTPL", size:"lg", type:"port" },
   { id:40, name:"Qatar Mesaieed Terminal", country:"Qatar", city:"Mesaieed", lat:24.98, lng:51.55, cap:9800, tanks:172, berths:13, occ:"90%", products:["Crude","LNG","LPG"], op:"QatarEnergy", size:"xl", type:"port" },
-  { id:41, name:"Ras Tanura Refinery & Terminal", country:"Saudi Arabia", city:"Ras Tanura", lat:26.64, lng:50.15, cap:13500, tanks:224, berths:18, occ:"94%", products:["Crude","Gasoline","Diesel"], op:"Saudi Arabian Oil Company", size:"xl", type:"port" },
-  { id:42, name:"ENOC Jebel Ali Oil Refinery", country:"UAE", city:"Jebel Ali, Dubai", lat:24.98, lng:55.06, cap:8600, tanks:152, berths:12, occ:"89%", products:["Crude","Gasoline","Chemicals"], op:"Emirates National Oil Company L.L.C.", size:"xl", type:"port" },
+  { id:41, name:"Ras Tanura Refinery & Terminal", country:"Saudi Arabia", city:"Ras Tanura", lat:26.64, lng:50.15, cap:13500, tanks:224, berths:18, occ:"94%", products:["Crude","Gasoline","Diesel"], op:"Saudi Arabian Oil Company", size:"xl", type:"port", facilityClass:["process","storage"], processType:["refineries"], primaryClass:"storage" },
+  { id:42, name:"ENOC Jebel Ali Oil Refinery", country:"UAE", city:"Jebel Ali, Dubai", lat:24.98, lng:55.06, cap:8600, tanks:152, berths:12, occ:"89%", products:["Crude","Gasoline","Chemicals"], op:"Emirates National Oil Company L.L.C.", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:43, name:"Sohar Port Terminal", country:"Oman", city:"Sohar", lat:24.51, lng:56.63, cap:6200, tanks:114, berths:10, occ:"84%", products:["Crude","Diesel","LPG"], op:"Oman Tank Terminal Company S.A.O.C.", size:"xl", type:"port" },
   { id:44, name:"Basra Oil Terminal", country:"Iraq", city:"Basra", lat:30.05, lng:47.80, cap:11200, tanks:190, berths:15, occ:"91%", products:["Crude"], op:"Basra Oil Company", size:"xl", type:"port" },
-  { id:45, name:"Bandar Abbas Oil Refinery", country:"Iran", city:"Bandar Abbas", lat:27.16, lng:56.21, cap:7400, tanks:132, berths:11, occ:"82%", products:["Crude","Gasoline","LPG"], op:"National Iranian Oil Company", size:"xl", type:"port" },
-  { id:46, name:"Shuaiba Refinery", country:"Kuwait", city:"Shuaiba", lat:29.05, lng:48.15, cap:7800, tanks:140, berths:12, occ:"88%", products:["Crude","Diesel","LPG"], op:"Kuwait National Petroleum Company", size:"xl", type:"port" },
+  { id:45, name:"Bandar Abbas Oil Refinery", country:"Iran", city:"Bandar Abbas", lat:27.16, lng:56.21, cap:7400, tanks:132, berths:11, occ:"82%", products:["Crude","Gasoline","LPG"], op:"National Iranian Oil Company", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:46, name:"Shuaiba Refinery", country:"Kuwait", city:"Shuaiba", lat:29.05, lng:48.15, cap:7800, tanks:140, berths:12, occ:"88%", products:["Crude","Diesel","LPG"], op:"Kuwait National Petroleum Company", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:47, name:"Sitra Terminal", country:"Bahrain", city:"Sitra", lat:26.15, lng:50.66, cap:4300, tanks:86, berths:7, occ:"83%", products:["Crude","Gasoline","Diesel"], op:"BAPCO Refining", size:"lg", type:"port" },
   { id:48, name:"Sidi Kerir Terminal", country:"Egypt", city:"Sidi Kerir, Alexandria", lat:31.10, lng:29.65, cap:6800, tanks:122, berths:10, occ:"85%", products:["Crude","Diesel"], op:"The Arab Petroleum Pipelines Company", size:"xl", type:"port" },
-  { id:49, name:"Kawasaki Refinery", country:"Japan", city:"Kawasaki", lat:35.51, lng:139.75, cap:5400, tanks:102, berths:9, occ:"86%", products:["Crude","Gasoline","LPG"], op:"ENEOS Corporation", size:"lg", type:"port" },
+  { id:49, name:"Kawasaki Refinery", country:"Japan", city:"Kawasaki", lat:35.51, lng:139.75, cap:5400, tanks:102, berths:9, occ:"86%", products:["Crude","Gasoline","LPG"], op:"ENEOS Corporation", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:50, name:"Vopak Algeciras", country:"Spain", city:"Algeciras", lat:36.13, lng:-5.44, cap:4030, tanks:88, berths:7, occ:"82%", products:["Diesel","Gasoline","Chemicals"], op:"Koninklijke Vopak N.V.", size:"lg", type:"port" },
   { id:51, name:"Oiltanking Malta", country:"Malta", city:"Birżebbuġa", lat:35.83, lng:14.55, cap:2800, tanks:74, berths:6, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"Oiltanking GmbH", size:"md", type:"port" },
   { id:52, name:"CLH Bilbao", country:"Spain", city:"Bilbao", lat:43.35, lng:-3.06, cap:3200, tanks:80, berths:6, occ:"84%", products:["Diesel","Gasoline","Chemicals"], op:"Exolum Corporation, S.A.", size:"md", type:"port" },
@@ -1847,21 +1847,21 @@ const terminals = [
   { id:72, name:"RIL Dahej", country:"India", city:"Dahej, Gujarat", lat:21.7, lng:72.58, cap:3200, tanks:104, berths:6, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Reliance Industries Limited", size:"md", type:"port" },
   { id:73, name:"IOCL Mundra", country:"India", city:"Mundra, Gujarat", lat:22.74, lng:69.7, cap:2800, tanks:104, berths:7, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"sm", type:"port" },
   { id:74, name:"IOCL Vadinar", country:"India", city:"Vadinar, Gujarat", lat:22.28, lng:69.72, cap:3600, tanks:56, berths:7, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"port" },
-  { id:75, name:"Panipat Refinery", country:"India", city:"Panipat, Haryana", lat:29.39, lng:76.97, cap:3600, tanks:56, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
-  { id:76, name:"Mangalore Refinery", country:"India", city:"Mangalore, Karnataka", lat:12.92, lng:74.86, cap:6200, tanks:48, berths:6, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Mangalore Refinery and Petrochemicals Limited", size:"lg", type:"port" },
+  { id:75, name:"Panipat Refinery", country:"India", city:"Panipat, Haryana", lat:29.39, lng:76.97, cap:3600, tanks:56, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:76, name:"Mangalore Refinery", country:"India", city:"Mangalore, Karnataka", lat:12.92, lng:74.86, cap:6200, tanks:48, berths:6, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Mangalore Refinery and Petrochemicals Limited", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:77, name:"BPCL Puthuvypeen SPM Crude Oil Terminal", country:"India", city:"Kochi, Kerala", lat:9.98, lng:76.22, cap:5400, tanks:64, berths:8, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Bharat Petroleum Corporation Limited", size:"lg", type:"port", access:"captive" },
-  { id:78, name:"Bina Refinery", country:"India", city:"Bina, Madhya Pradesh", lat:24.18, lng:78.2, cap:3200, tanks:92, berths:0, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Bharat Petroleum Corporation Limited", size:"md", type:"inland" },
-  { id:79, name:"Mumbai Refinery", country:"India", city:"Mumbai, Maharashtra", lat:18.99, lng:72.85, cap:3600, tanks:64, berths:7, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"port" },
-  { id:80, name:"Mumbai Refinery", country:"India", city:"Mumbai, Maharashtra", lat:19.01, lng:72.87, cap:3200, tanks:56, berths:8, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Bharat Petroleum Corporation Limited", size:"md", type:"port" },
-  { id:81, name:"Manali Refinery", country:"India", city:"Chennai, Tamil Nadu", lat:13.24, lng:80.31, cap:2400, tanks:104, berths:6, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Chennai Petroleum Corporation Limited", size:"sm", type:"port" },
-  { id:82, name:"Guwahati Refinery", country:"India", city:"Guwahati, Assam", lat:26.19, lng:91.75, cap:3200, tanks:92, berths:0, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
-  { id:83, name:"Digboi Refinery", country:"India", city:"Digboi, Assam", lat:27.39, lng:95.62, cap:2400, tanks:92, berths:0, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"sm", type:"inland" },
-  { id:84, name:"Mathura Refinery", country:"India", city:"Mathura, Uttar Pradesh", lat:27.49, lng:77.67, cap:4200, tanks:80, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
-  { id:85, name:"Numaligarh Refinery", country:"India", city:"Numaligarh, Assam", lat:26.62, lng:93.73, cap:3600, tanks:64, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Numaligarh Refinery Limited", size:"md", type:"inland" },
-  { id:86, name:"Visakha Refinery", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.69, lng:83.22, cap:3200, tanks:56, berths:6, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"port" },
-  { id:87, name:"Bathinda Refinery", country:"India", city:"Bathinda, Punjab", lat:30.21, lng:74.95, cap:3200, tanks:56, berths:0, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"HPCL-Mittal Energy Limited", size:"md", type:"inland" },
-  { id:88, name:"Barmer Refinery", country:"India", city:"Barmer, Rajasthan", lat:25.75, lng:71.38, cap:3200, tanks:72, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"HPCL Rajasthan Refinery Limited", size:"md", type:"inland" },
-  { id:89, name:"Cauvery Basin Refinery", country:"India", city:"Nagapattinam, Tamil Nadu", lat:10.76, lng:79.84, cap:5400, tanks:56, berths:4, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Chennai Petroleum Corporation Limited", size:"lg", type:"port" },
+  { id:78, name:"Bina Refinery", country:"India", city:"Bina, Madhya Pradesh", lat:24.18, lng:78.2, cap:3200, tanks:92, berths:0, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Bharat Petroleum Corporation Limited", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:79, name:"Mumbai Refinery", country:"India", city:"Mumbai, Maharashtra", lat:18.99, lng:72.85, cap:3600, tanks:64, berths:7, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:80, name:"Mumbai Refinery", country:"India", city:"Mumbai, Maharashtra", lat:19.01, lng:72.87, cap:3200, tanks:56, berths:8, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Bharat Petroleum Corporation Limited", size:"md", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:81, name:"Manali Refinery", country:"India", city:"Chennai, Tamil Nadu", lat:13.24, lng:80.31, cap:2400, tanks:104, berths:6, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Chennai Petroleum Corporation Limited", size:"sm", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:82, name:"Guwahati Refinery", country:"India", city:"Guwahati, Assam", lat:26.19, lng:91.75, cap:3200, tanks:92, berths:0, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:83, name:"Digboi Refinery", country:"India", city:"Digboi, Assam", lat:27.39, lng:95.62, cap:2400, tanks:92, berths:0, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"sm", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:84, name:"Mathura Refinery", country:"India", city:"Mathura, Uttar Pradesh", lat:27.49, lng:77.67, cap:4200, tanks:80, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:85, name:"Numaligarh Refinery", country:"India", city:"Numaligarh, Assam", lat:26.62, lng:93.73, cap:3600, tanks:64, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Numaligarh Refinery Limited", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:86, name:"Visakha Refinery", country:"India", city:"Visakhapatnam, Andhra Pradesh", lat:17.69, lng:83.22, cap:3200, tanks:56, berths:6, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:87, name:"Bathinda Refinery", country:"India", city:"Bathinda, Punjab", lat:30.21, lng:74.95, cap:3200, tanks:56, berths:0, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"HPCL-Mittal Energy Limited", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:88, name:"Barmer Refinery", country:"India", city:"Barmer, Rajasthan", lat:25.75, lng:71.38, cap:3200, tanks:72, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"HPCL Rajasthan Refinery Limited", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:89, name:"Cauvery Basin Refinery", country:"India", city:"Nagapattinam, Tamil Nadu", lat:10.76, lng:79.84, cap:5400, tanks:56, berths:4, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Chennai Petroleum Corporation Limited", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:90, name:"HPCL Kakinada", country:"India", city:"Kakinada, Andhra Pradesh", lat:16.99, lng:82.24, cap:4200, tanks:92, berths:7, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"port" },
   { id:91, name:"HPCL Vijaywada", country:"India", city:"Vijayawada, Andhra Pradesh", lat:16.51, lng:80.65, cap:3200, tanks:80, berths:0, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"inland" },
   { id:92, name:"Vysotsk LUKOIL Terminal", country:"Russia", city:"Vysotsk", lat:60.62, lng:28.57, cap:3600, tanks:56, berths:6, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Vysotsk", size:"md", type:"port" },
@@ -1898,7 +1898,7 @@ const terminals = [
   { id:123, name:"Kalundborg Terminal", country:"Denmark", city:"Kalundborg", lat:55.68, lng:11.09, cap:3600, tanks:92, berths:7, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"Kalundborg", size:"md", type:"port" },
   { id:124, name:"Porvoo Terminal", country:"Finland", city:"Porvoo", lat:60.3, lng:25.55, cap:3600, tanks:104, berths:5, occ:"88%", products:["Crude","Diesel","Gasoline"], op:"Porvoo", size:"md", type:"port" },
   { id:125, name:"Naantali Terminal", country:"Finland", city:"Naantali", lat:60.47, lng:22.03, cap:7100, tanks:72, berths:7, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Naantali", size:"xl", type:"port" },
-  { id:126, name:"Yanbu Refinery", country:"Saudi Arabia", city:"Yanbu", lat:24.09, lng:38.06, cap:8600, tanks:148, berths:12, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Aramco", size:"xl", type:"port" },
+  { id:126, name:"Yanbu Refinery", country:"Saudi Arabia", city:"Yanbu", lat:24.09, lng:38.06, cap:8600, tanks:148, berths:12, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Aramco", size:"xl", type:"port", facilityClass:["process"], processType:["refineries","petrochemicals"], primaryClass:"process" },
   { id:127, name:"Aramco Jeddah", country:"Saudi Arabia", city:"Jeddah", lat:21.48, lng:39.15, cap:5400, tanks:96, berths:8, occ:"79%", products:["Diesel","Gasoline","Jet"], op:"Aramco", size:"lg", type:"port" },
   { id:128, name:"QatarEnergy Ras Laffan", country:"Qatar", city:"Ras Laffan", lat:25.9, lng:51.6, cap:9800, tanks:172, berths:16, occ:"90%", products:["LNG","Condensate","LPG"], op:"QatarEnergy", size:"xl", type:"port" },
   { id:129, name:"OQ Duqm", country:"Oman", city:"Duqm", lat:19.67, lng:57.7, cap:6200, tanks:104, berths:9, occ:"73%", products:["Crude","Diesel"], op:"OQ S.A.O.C.", size:"lg", type:"port" },
@@ -1931,7 +1931,7 @@ const terminals = [
   { id:156, name:"Petroecuador Esmeraldas", country:"Ecuador", city:"Esmeraldas", lat:0.98, lng:-79.65, cap:3400, tanks:66, berths:6, occ:"71%", products:["Crude","Gasoline","Diesel"], op:"Petroecuador", size:"md", type:"port" },
   { id:157, name:"ANCAP Montevideo", country:"Uruguay", city:"Montevideo", lat:-34.87, lng:-56.2, cap:2600, tanks:52, berths:5, occ:"68%", products:["Gasoline","Diesel","LPG"], op:"Administración Nacional de Combustibles, Alcohol y Portland", size:"md", type:"port" },
   { id:158, name:"YPFB La Paz Depot", country:"Bolivia", city:"La Paz", lat:-16.5, lng:-68.15, cap:1400, tanks:36, berths:0, occ:"64%", products:["Diesel","Gasoline"], op:"Yacimientos Petrolíferos Fiscales Bolivianos", size:"md", type:"inland" },
-  { id:159, name:"Puerto La Cruz Refinery", country:"Venezuela", city:"Puerto La Cruz", lat:10.22, lng:-64.63, cap:6800, tanks:116, berths:10, occ:"79%", products:["Crude","Diesel"], op:"Petróleos de Venezuela, S.A.", size:"lg", type:"port" },
+  { id:159, name:"Puerto La Cruz Refinery", country:"Venezuela", city:"Puerto La Cruz", lat:10.22, lng:-64.63, cap:6800, tanks:116, berths:10, occ:"79%", products:["Crude","Diesel"], op:"Petróleos de Venezuela, S.A.", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:160, name:"YPF Bahia Blanca", country:"Argentina", city:"Bahia Blanca", lat:-38.72, lng:-62.27, cap:4100, tanks:80, berths:7, occ:"75%", products:["Crude","Gasoline","Diesel"], op:"YPF S.A.", size:"lg", type:"port" },
   { id:161, name:"NAMCOR Walvis Bay", country:"Namibia", city:"Walvis Bay", lat:-22.96, lng:14.51, cap:2200, tanks:44, berths:5, occ:"66%", products:["Diesel","Gasoline"], op:"National Petroleum Corporation of Namibia (Pty) Ltd", size:"md", type:"port" },
   { id:162, name:"SDTM Djibouti Port", country:"Djibouti", city:"Djibouti City", lat:11.6, lng:43.15, cap:2900, tanks:58, berths:6, occ:"74%", products:["Diesel","Gasoline","Jet"], op:"SDTM", size:"md", type:"port" },
@@ -1945,21 +1945,21 @@ const terminals = [
   { id:170, name:"Channel Infrastructure Marsden Point", country:"New Zealand", city:"Whangarei", lat:-35.86, lng:174.5, cap:3300, tanks:64, berths:6, occ:"78%", products:["Gasoline","Diesel","Jet"], op:"Channel", size:"lg", type:"port" },
   { id:171, name:"Z Energy Auckland", country:"New Zealand", city:"Auckland", lat:-36.84, lng:174.77, cap:2400, tanks:48, berths:5, occ:"73%", products:["Gasoline","Diesel"], op:"Z Energy", size:"md", type:"port" },
   { id:172, name:"Pertamina Tanjung Priok", country:"Indonesia", city:"Jakarta", lat:-6.1, lng:106.88, cap:5200, tanks:94, berths:8, occ:"85%", products:["Gasoline","Diesel","LPG"], op:"PT Pertamina", size:"lg", type:"port" },
-  { id:173, name:"Dumai Refinery", country:"Indonesia", city:"Dumai", lat:1.68, lng:101.45, cap:4400, tanks:82, berths:7, occ:"79%", products:["Crude","Gasoline","Diesel"], op:"PT Pertamina", size:"lg", type:"port" },
+  { id:173, name:"Dumai Refinery", country:"Indonesia", city:"Dumai", lat:1.68, lng:101.45, cap:4400, tanks:82, berths:7, occ:"79%", products:["Crude","Gasoline","Diesel"], op:"PT Pertamina", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:174, name:"PV Oil Vung Tau", country:"Vietnam", city:"Vung Tau", lat:10.35, lng:107.08, cap:3600, tanks:70, berths:6, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"PV Oil", size:"md", type:"port" },
   { id:175, name:"BSR Dung Quat", country:"Vietnam", city:"Dung Quat", lat:15.38, lng:108.77, cap:4900, tanks:88, berths:7, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"Binh Son Refining and Petrochemical Joint Stock Company", size:"lg", type:"port" },
   { id:176, name:"Padma Oil Chittagong", country:"Bangladesh", city:"Chittagong", lat:22.34, lng:91.83, cap:3800, tanks:72, berths:7, occ:"79%", products:["Diesel","Gasoline","Jet"], op:"Padma Oil", size:"lg", type:"port" },
   { id:177, name:"Meghna Petroleum Dhaka Depot", country:"Bangladesh", city:"Dhaka", lat:23.81, lng:90.41, cap:2200, tanks:50, berths:0, occ:"71%", products:["Diesel","Gasoline","LPG"], op:"Meghna", size:"md", type:"inland" },
   { id:178, name:"Ceypetco Colombo", country:"Sri Lanka", city:"Colombo", lat:6.93, lng:79.85, cap:3400, tanks:66, berths:6, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"Ceypetco", size:"lg", type:"port" },
   { id:179, name:"Ceypetco Trincomalee", country:"Sri Lanka", city:"Trincomalee", lat:8.57, lng:81.23, cap:2600, tanks:54, berths:5, occ:"68%", products:["Diesel","Gasoline"], op:"Ceypetco", size:"md", type:"port" },
-  { id:180, name:"Map Ta Phut Refinery", country:"Thailand", city:"Rayong", lat:12.68, lng:101.15, cap:6600, tanks:116, berths:10, occ:"86%", products:["Crude","Gasoline","LPG"], op:"PTT Public Company Limited", size:"xl", type:"port" },
+  { id:180, name:"Map Ta Phut Refinery", country:"Thailand", city:"Rayong", lat:12.68, lng:101.15, cap:6600, tanks:116, berths:10, occ:"86%", products:["Crude","Gasoline","LPG"], op:"PTT Public Company Limited", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:181, name:"Thai Oil Sriracha", country:"Thailand", city:"Sriracha", lat:13.17, lng:100.93, cap:5100, tanks:94, berths:8, occ:"83%", products:["Crude","Diesel","Gasoline"], op:"Thai Oil", size:"lg", type:"port" },
-  { id:182, name:"Port Dickson Refinery", country:"Malaysia", city:"Port Dickson", lat:2.52, lng:101.8, cap:4700, tanks:88, berths:7, occ:"81%", products:["Crude","Gasoline","Diesel"], op:"Petron Malaysia Refining & Marketing Bhd", size:"lg", type:"port" },
+  { id:182, name:"Port Dickson Refinery", country:"Malaysia", city:"Port Dickson", lat:2.52, lng:101.8, cap:4700, tanks:88, berths:7, occ:"81%", products:["Crude","Gasoline","Diesel"], op:"Petron Malaysia Refining & Marketing Bhd", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:183, name:"Petronas Bintulu", country:"Malaysia", city:"Bintulu", lat:3.17, lng:113.03, cap:5800, tanks:102, berths:9, occ:"89%", products:["LNG","Condensate"], op:"Petronas", size:"xl", type:"port" },
   { id:184, name:"Petron Batangas", country:"Philippines", city:"Batangas", lat:13.76, lng:121.06, cap:4300, tanks:80, berths:7, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Petron", size:"lg", type:"port" },
   { id:185, name:"Petron Limay", country:"Philippines", city:"Limay", lat:14.56, lng:120.6, cap:3600, tanks:70, berths:6, occ:"74%", products:["Gasoline","Diesel","LPG"], op:"Petron", size:"md", type:"port" },
-  { id:186, name:"Ulsan Refinery", country:"South Korea", city:"Ulsan", lat:35.5, lng:129.38, cap:8900, tanks:158, berths:14, occ:"90%", products:["Crude","Gasoline","Diesel"], op:"SK Energy", size:"xl", type:"port" },
-  { id:187, name:"Yeosu Refinery", country:"South Korea", city:"Yeosu", lat:34.76, lng:127.66, cap:7600, tanks:138, berths:12, occ:"87%", products:["Crude","Diesel","Gasoline"], op:"GS Caltex", size:"xl", type:"port" },
+  { id:186, name:"Ulsan Refinery", country:"South Korea", city:"Ulsan", lat:35.5, lng:129.38, cap:8900, tanks:158, berths:14, occ:"90%", products:["Crude","Gasoline","Diesel"], op:"SK Energy", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:187, name:"Yeosu Refinery", country:"South Korea", city:"Yeosu", lat:34.76, lng:127.66, cap:7600, tanks:138, berths:12, occ:"87%", products:["Crude","Diesel","Gasoline"], op:"GS Caltex", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:188, name:"Hanwha Total Daesan", country:"South Korea", city:"Daesan", lat:37.0, lng:126.35, cap:5400, tanks:98, berths:8, occ:"84%", products:["Crude","Gasoline","Diesel"], op:"Hanwha Total", size:"lg", type:"port" },
   { id:189, name:"Cosmo Oil Yokkaichi", country:"Japan", city:"Yokkaichi", lat:34.97, lng:136.62, cap:4200, tanks:80, berths:7, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"Cosmo Oil", size:"lg", type:"port" },
   { id:190, name:"Idemitsu Kashima", country:"Japan", city:"Kashima", lat:35.95, lng:140.65, cap:3900, tanks:76, berths:6, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Idemitsu", size:"lg", type:"port" },
@@ -1968,7 +1968,7 @@ const terminals = [
   { id:193, name:"Tupras Aliaga", country:"Turkey", city:"Aliaga", lat:38.8, lng:26.97, cap:4900, tanks:90, berths:8, occ:"81%", products:["Crude","Diesel","Gasoline"], op:"Tupras", size:"lg", type:"port" },
   { id:194, name:"Motor Oil Hellas Thessaloniki", country:"Greece", city:"Thessaloniki", lat:40.64, lng:22.94, cap:3200, tanks:62, berths:6, occ:"75%", products:["Gasoline","Diesel","LPG"], op:"Motor Oil Hellas", size:"md", type:"port" },
   { id:195, name:"SIOT Trieste", country:"Italy", city:"Trieste", lat:45.65, lng:13.78, cap:8600, tanks:150, berths:13, occ:"90%", products:["Crude"], op:"Società Italiana per l'Oleodotto Transalpino S.p.A.", size:"xl", type:"port" },
-  { id:196, name:"Augusta Refinery", country:"Italy", city:"Augusta", lat:37.23, lng:15.22, cap:6100, tanks:110, berths:9, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Sonatrach Raffineria Italiana S.R.L.", size:"xl", type:"port" },
+  { id:196, name:"Augusta Refinery", country:"Italy", city:"Augusta", lat:37.23, lng:15.22, cap:6100, tanks:110, berths:9, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Sonatrach Raffineria Italiana S.R.L.", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:197, name:"Iplom Genoa", country:"Italy", city:"Genoa", lat:44.41, lng:8.93, cap:3700, tanks:72, berths:6, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"Iplom", size:"lg", type:"port" },
   { id:198, name:"Rubis Strasbourg Depot", country:"France", city:"Strasbourg", lat:48.58, lng:7.75, cap:1800, tanks:44, berths:0, occ:"65%", products:["Diesel","Gasoline"], op:"Rubis", size:"md", type:"inland" },
   { id:199, name:"KazTransOil Atyrau", country:"Kazakhstan", city:"Atyrau", lat:47.1, lng:51.92, cap:4400, tanks:84, berths:7, occ:"80%", products:["Crude"], op:"KazTransOil", size:"lg", type:"port" },
@@ -1997,7 +1997,7 @@ const terminals = [
   { id:222, name:"Colon Oil Terminal", country:"Panama", city:"Colon", lat:9.36, lng:-79.9, cap:2800, tanks:56, berths:5, occ:"71%", products:["Gasoline","Diesel","LPG"], op:"Colon Oil", size:"md", type:"port" },
   { id:223, name:"PDVSA Jose Terminal", country:"Venezuela", city:"Jose", lat:10.08, lng:-64.79, cap:9100, tanks:160, berths:14, occ:"89%", products:["Crude"], op:"Petróleos de Venezuela, S.A.", size:"xl", type:"port" },
   { id:224, name:"De-Kastri Terminal", country:"Russia", city:"De-Kastri", lat:51.47, lng:140.79, cap:4200, tanks:78, berths:7, occ:"81%", products:["Crude"], op:"Exxon Neftegas", size:"lg", type:"port" },
-  { id:225, name:"Tuapse Refinery", country:"Russia", city:"Tuapse", lat:44.1, lng:39.07, cap:3800, tanks:72, berths:6, occ:"76%", products:["Crude","Diesel","Fuel Oil"], op:"PJSC Rosneft Oil Company", size:"lg", type:"port" },
+  { id:225, name:"Tuapse Refinery", country:"Russia", city:"Tuapse", lat:44.1, lng:39.07, cap:3800, tanks:72, berths:6, occ:"76%", products:["Crude","Diesel","Fuel Oil"], op:"PJSC Rosneft Oil Company", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:226, name:"Polar Oil Nuuk", country:"Greenland", city:"Nuuk", lat:64.18, lng:-51.72, cap:900, tanks:24, berths:3, occ:"58%", products:["Diesel","Gasoline"], op:"Polar Oil", size:"md", type:"port" },
   { id:227, name:"Alyeska Pipeline Valdez", country:"USA", city:"Valdez AK", lat:61.13, lng:-146.35, cap:7100, tanks:124, berths:10, occ:"83%", products:["Crude"], op:"Alyeska", size:"xl", type:"port" },
   { id:228, name:"Port of Copenhagen Terminal", country:"Denmark", city:"Copenhagen", lat:55.68, lng:12.6, cap:2400, tanks:52, berths:5, occ:"70%", products:["Gasoline","Diesel","Jet"], op:"Port of Copenhagen", size:"md", type:"port" },
@@ -2005,7 +2005,7 @@ const terminals = [
   { id:230, name:"Preem Nynashamn", country:"Sweden", city:"Nynashamn", lat:58.9, lng:17.95, cap:2800, tanks:56, berths:5, occ:"74%", products:["Diesel","Gasoline","Fuel Oil"], op:"Preem", size:"md", type:"port" },
   { id:231, name:"Baltic Tank Hamina", country:"Finland", city:"Hamina", lat:60.57, lng:27.2, cap:2100, tanks:46, berths:4, occ:"69%", products:["Diesel","Gasoline","LPG"], op:"Baltic Tank", size:"md", type:"port" },
   { id:232, name:"Alexela Sillamae", country:"Estonia", city:"Sillamae", lat:59.4, lng:27.77, cap:1900, tanks:42, berths:4, occ:"67%", products:["Diesel","Gasoline"], op:"Alexela", size:"md", type:"port" },
-  { id:233, name:"Burgas Refinery", country:"Bulgaria", city:"Burgas", lat:42.51, lng:27.46, cap:4900, tanks:90, berths:7, occ:"80%", products:["Crude","Gasoline","Diesel"], op:"Lukoil Neftochim", size:"lg", type:"port" },
+  { id:233, name:"Burgas Refinery", country:"Bulgaria", city:"Burgas", lat:42.51, lng:27.46, cap:4900, tanks:90, berths:7, occ:"80%", products:["Crude","Gasoline","Diesel"], op:"Lukoil Neftochim", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:234, name:"Petrol AD Ruse Depot", country:"Bulgaria", city:"Ruse", lat:43.85, lng:25.96, cap:1500, tanks:38, berths:0, occ:"64%", products:["Diesel","Gasoline"], op:"Petrol AD", size:"md", type:"inland" },
   { id:235, name:"Rompetrol Constanta", country:"Romania", city:"Constanta", lat:44.18, lng:28.65, cap:5600, tanks:102, berths:8, occ:"84%", products:["Crude","Gasoline","Diesel"], op:"Rompetrol", size:"lg", type:"port" },
   { id:236, name:"Petrom Ploiesti Depot", country:"Romania", city:"Ploiesti", lat:44.94, lng:26.02, cap:2600, tanks:56, berths:0, occ:"72%", products:["Diesel","Gasoline","LPG"], op:"Petrom", size:"md", type:"inland" },
@@ -2043,7 +2043,7 @@ const terminals = [
   { id:268, name:"Sunoco Philadelphia", country:"USA", city:"Philadelphia PA", lat:39.9, lng:-75.2, cap:5300, tanks:98, berths:8, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"Sunoco", size:"lg", type:"port" },
   { id:269, name:"Suncor Montreal", country:"Canada", city:"Montreal", lat:45.55, lng:-73.55, cap:3600, tanks:70, berths:6, occ:"77%", products:["Crude","Gasoline","Diesel"], op:"Suncor", size:"lg", type:"port" },
   { id:270, name:"Petrobras Santos", country:"Brazil", city:"Santos", lat:-23.96, lng:-46.33, cap:7200, tanks:128, berths:11, occ:"85%", products:["Crude","Gasoline","Diesel"], op:"Petrobras", size:"xl", type:"port" },
-  { id:271, name:"Duque de Caxias Refinery", country:"Brazil", city:"Duque de Caxias", lat:-22.79, lng:-43.31, cap:5800, tanks:104, berths:0, occ:"81%", products:["Crude","Diesel","Gasoline"], op:"Petrobras", size:"lg", type:"inland" },
+  { id:271, name:"Duque de Caxias Refinery", country:"Brazil", city:"Duque de Caxias", lat:-22.79, lng:-43.31, cap:5800, tanks:104, berths:0, occ:"81%", products:["Crude","Diesel","Gasoline"], op:"Petrobras", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:272, name:"Petrobras Paranagua", country:"Brazil", city:"Paranagua", lat:-25.52, lng:-48.51, cap:3300, tanks:64, berths:6, occ:"73%", products:["Gasoline","Diesel","LPG"], op:"Petrobras", size:"md", type:"port" },
   { id:273, name:"ExxonMobil Georgetown Liza Base", country:"Guyana", city:"Georgetown", lat:6.8, lng:-58.16, cap:2900, tanks:58, berths:5, occ:"79%", products:["Crude"], op:"Exxon Mobil Corporation", size:"md", type:"port" },
   { id:274, name:"Staatsolie Paramaribo", country:"Suriname", city:"Paramaribo", lat:5.85, lng:-55.2, cap:2100, tanks:46, berths:4, occ:"68%", products:["Crude","Diesel","Gasoline"], op:"Staatsolie", size:"md", type:"port" },
@@ -2076,18 +2076,18 @@ const terminals = [
   { id:301, name:"PSO Karachi Port", country:"Pakistan", city:"Karachi", lat:24.85, lng:66.98, cap:6400, tanks:116, berths:10, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Pakistan State Oil Company Limited", size:"xl", type:"port" },
   { id:302, name:"PARCO Port Qasim", country:"Pakistan", city:"Port Qasim", lat:24.75, lng:67.35, cap:4800, tanks:90, berths:8, occ:"80%", products:["Crude","Diesel","Gasoline"], op:"Pak-Arab Refinery Limited", size:"lg", type:"port" },
   { id:303, name:"PSO Mahmood Kot Depot", country:"Pakistan", city:"Mahmood Kot", lat:30.55, lng:71.1, cap:2600, tanks:54, berths:0, occ:"73%", products:["Diesel","Gasoline","LPG"], op:"Pakistan State Oil Company Limited", size:"md", type:"inland" },
-  { id:304, name:"Abadan Refinery", country:"Iran", city:"Abadan", lat:30.35, lng:48.28, cap:5200, tanks:96, berths:8, occ:"83%", products:["Crude","Diesel","Gasoline"], op:"National Iranian Oil Company", size:"lg", type:"port" },
+  { id:304, name:"Abadan Refinery", country:"Iran", city:"Abadan", lat:30.35, lng:48.28, cap:5200, tanks:96, berths:8, occ:"83%", products:["Crude","Diesel","Gasoline"], op:"National Iranian Oil Company", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:305, name:"NIOC Tehran Depot", country:"Iran", city:"Tehran", lat:35.69, lng:51.39, cap:3100, tanks:62, berths:0, occ:"75%", products:["Diesel","Gasoline","LPG"], op:"National Iranian Oil Company", size:"md", type:"inland" },
   { id:306, name:"Gazprom Neft Omsk Depot", country:"Russia", city:"Omsk", lat:54.99, lng:73.37, cap:6800, tanks:124, berths:0, occ:"85%", products:["Crude","Diesel","Gasoline"], op:"Gazprom Neft", size:"xl", type:"inland" },
-  { id:307, name:"Angarsk Refinery", country:"Russia", city:"Angarsk", lat:52.54, lng:103.89, cap:5600, tanks:102, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"PJSC Rosneft Oil Company", size:"lg", type:"inland" },
-  { id:308, name:"Ryazan Refinery", country:"Russia", city:"Ryazan", lat:54.63, lng:39.74, cap:4200, tanks:80, berths:0, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"PJSC Rosneft Oil Company", size:"lg", type:"inland" },
-  { id:309, name:"Lanzhou Refinery", country:"China", city:"Lanzhou", lat:36.06, lng:103.83, cap:4600, tanks:86, berths:0, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"PetroChina", size:"lg", type:"inland" },
-  { id:310, name:"Urumqi Refinery", country:"China", city:"Urumqi", lat:43.83, lng:87.62, cap:3800, tanks:74, berths:0, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"PetroChina", size:"lg", type:"inland" },
+  { id:307, name:"Angarsk Refinery", country:"Russia", city:"Angarsk", lat:52.54, lng:103.89, cap:5600, tanks:102, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"PJSC Rosneft Oil Company", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:308, name:"Ryazan Refinery", country:"Russia", city:"Ryazan", lat:54.63, lng:39.74, cap:4200, tanks:80, berths:0, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"PJSC Rosneft Oil Company", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:309, name:"Lanzhou Refinery", country:"China", city:"Lanzhou", lat:36.06, lng:103.83, cap:4600, tanks:86, berths:0, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"PetroChina", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:310, name:"Urumqi Refinery", country:"China", city:"Urumqi", lat:43.83, lng:87.62, cap:3800, tanks:74, berths:0, occ:"76%", products:["Crude","Diesel","Gasoline"], op:"PetroChina", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:311, name:"PetroChina Chengdu Depot", country:"China", city:"Chengdu", lat:30.57, lng:104.07, cap:3400, tanks:68, berths:0, occ:"74%", products:["Diesel","Gasoline","LPG"], op:"PetroChina", size:"md", type:"inland" },
   { id:312, name:"Varo Energy Cressier", country:"Switzerland", city:"Cressier", lat:47.07, lng:7.0, cap:2100, tanks:46, berths:0, occ:"71%", products:["Diesel","Gasoline","Jet"], op:"Varo Energy", size:"md", type:"inland" },
-  { id:313, name:"Schwechat Refinery", country:"Austria", city:"Schwechat", lat:48.14, lng:16.48, cap:3800, tanks:74, berths:0, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"OMV Aktiengesellschaft", size:"lg", type:"inland" },
+  { id:313, name:"Schwechat Refinery", country:"Austria", city:"Schwechat", lat:48.14, lng:16.48, cap:3800, tanks:74, berths:0, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"OMV Aktiengesellschaft", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:314, name:"MOL Szazhalombatta Depot", country:"Hungary", city:"Szazhalombatta", lat:47.33, lng:18.96, cap:3500, tanks:68, berths:0, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"MOL Magyar Olaj- és Gázipari Nyrt.", size:"lg", type:"inland" },
-  { id:315, name:"Litvinov Refinery", country:"Czech Republic", city:"Litvinov", lat:50.6, lng:13.62, cap:2900, tanks:58, berths:0, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Orlen Unipetrol", size:"md", type:"inland" },
+  { id:315, name:"Litvinov Refinery", country:"Czech Republic", city:"Litvinov", lat:50.6, lng:13.62, cap:2900, tanks:58, berths:0, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"Orlen Unipetrol", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:316, name:"Slovnaft Bratislava Depot", country:"Slovakia", city:"Bratislava", lat:48.15, lng:17.11, cap:2600, tanks:54, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"Slovnaft", size:"md", type:"inland" },
   { id:317, name:"NIS Pancevo Depot", country:"Serbia", city:"Pancevo", lat:44.87, lng:20.64, cap:2400, tanks:50, berths:0, occ:"70%", products:["Crude","Diesel","Gasoline"], op:"Naftna Industrija Srbije a.d.", size:"md", type:"inland" },
   { id:318, name:"Petrol Ljubljana Depot", country:"Slovenia", city:"Ljubljana", lat:46.06, lng:14.51, cap:1700, tanks:40, berths:0, occ:"66%", products:["Diesel","Gasoline"], op:"Petrol", size:"md", type:"inland" },
@@ -2106,7 +2106,7 @@ const terminals = [
   { id:331, name:"SOMO Baghdad Depot", country:"Iraq", city:"Baghdad", lat:33.31, lng:44.36, cap:4400, tanks:84, berths:0, occ:"81%", products:["Diesel","Gasoline","LPG"], op:"State Organization for Marketing of Oil", size:"lg", type:"inland" },
   { id:332, name:"Kirkuk Oil Field Terminal", country:"Iraq", city:"Kirkuk", lat:35.47, lng:44.39, cap:3600, tanks:70, berths:0, occ:"78%", products:["Crude","Diesel"], op:"North Oil Company", size:"md", type:"inland" },
   { id:333, name:"Yemen Petroleum Sanaa Depot", country:"Yemen", city:"Sanaa", lat:15.37, lng:44.19, cap:1400, tanks:34, berths:0, occ:"58%", products:["Diesel","Gasoline"], op:"Yemen Petroleum", size:"md", type:"inland" },
-  { id:334, name:"Isfahan Refinery", country:"Iran", city:"Isfahan", lat:32.65, lng:51.68, cap:3700, tanks:72, berths:0, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"National Iranian Oil Company", size:"lg", type:"inland" },
+  { id:334, name:"Isfahan Refinery", country:"Iran", city:"Isfahan", lat:32.65, lng:51.68, cap:3700, tanks:72, berths:0, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"National Iranian Oil Company", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:335, name:"Total CAR Bangui Depot", country:"Central African Republic", city:"Bangui", lat:4.37, lng:18.55, cap:900, tanks:24, berths:0, occ:"55%", products:["Diesel","Gasoline"], op:"Total CAR", size:"md", type:"inland" },
   { id:336, name:"SONIDEP Niamey Depot", country:"Niger", city:"Niamey", lat:13.51, lng:2.11, cap:1300, tanks:32, berths:0, occ:"61%", products:["Diesel","Gasoline"], op:"Société Nigérienne des Produits Pétroliers", size:"md", type:"inland" },
   { id:337, name:"Nilepet Juba Depot", country:"South Sudan", city:"Juba", lat:4.85, lng:31.58, cap:1900, tanks:44, berths:0, occ:"68%", products:["Crude","Diesel"], op:"Nilepet", size:"md", type:"inland" },
@@ -2117,16 +2117,16 @@ const terminals = [
   { id:342, name:"SCH Comores Moroni", country:"Comoros", city:"Moroni", lat:-11.7, lng:43.26, cap:700, tanks:20, berths:3, occ:"56%", products:["Diesel","Gasoline"], op:"SCH Comores", size:"md", type:"port" },
   { id:343, name:"Petromar Bissau", country:"Guinea-Bissau", city:"Bissau", lat:11.86, lng:-15.6, cap:950, tanks:24, berths:3, occ:"58%", products:["Diesel","Gasoline"], op:"Petromar", size:"md", type:"port" },
   { id:344, name:"GNPC Takoradi", country:"Ghana", city:"Takoradi", lat:4.9, lng:-1.76, cap:2600, tanks:52, berths:5, occ:"73%", products:["Crude","Diesel","Gasoline"], op:"GNPC", size:"md", type:"port" },
-  { id:345, name:"Cabinda Refinery", country:"Angola", city:"Cabinda", lat:-5.55, lng:12.2, cap:4800, tanks:88, berths:7, occ:"83%", products:["Crude"], op:"Sonangol", size:"lg", type:"port" },
+  { id:345, name:"Cabinda Refinery", country:"Angola", city:"Cabinda", lat:-5.55, lng:12.2, cap:4800, tanks:88, berths:7, occ:"83%", products:["Crude"], op:"Sonangol", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:346, name:"Cobil Kinshasa Depot", country:"DRC", city:"Kinshasa", lat:-4.44, lng:15.27, cap:2100, tanks:46, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"Cobil", size:"md", type:"inland" },
   { id:347, name:"TIPER Zanzibar", country:"Tanzania", city:"Zanzibar", lat:-6.16, lng:39.2, cap:1600, tanks:38, berths:4, occ:"64%", products:["Diesel","Gasoline"], op:"Tanzania International Petroleum Reserves Limited", size:"md", type:"port" },
   { id:348, name:"Ampol Brisbane", country:"Australia", city:"Brisbane", lat:-27.47, lng:153.03, cap:2900, tanks:58, berths:5, occ:"77%", products:["Diesel","Gasoline","Jet"], op:"Ampol", size:"md", type:"port" },
   { id:349, name:"Vopak Darwin", country:"Australia", city:"Darwin", lat:-12.46, lng:130.84, cap:2100, tanks:44, berths:4, occ:"69%", products:["Diesel","Gasoline"], op:"Koninklijke Vopak N.V.", size:"md", type:"port" },
   { id:350, name:"Santos Moomba Depot", country:"Australia", city:"Moomba", lat:-28.1, lng:140.2, cap:3400, tanks:68, berths:0, occ:"81%", products:["Crude","Condensate","LPG"], op:"Santos", size:"lg", type:"inland" },
   { id:351, name:"Z Energy Lyttelton", country:"New Zealand", city:"Christchurch", lat:-43.61, lng:172.72, cap:1900, tanks:42, berths:4, occ:"71%", products:["Diesel","Gasoline"], op:"Z Energy", size:"md", type:"port" },
-  { id:352, name:"Balikpapan Refinery", country:"Indonesia", city:"Balikpapan", lat:-1.27, lng:116.83, cap:4900, tanks:90, berths:8, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"PT Pertamina", size:"lg", type:"port" },
+  { id:352, name:"Balikpapan Refinery", country:"Indonesia", city:"Balikpapan", lat:-1.27, lng:116.83, cap:4900, tanks:90, berths:8, occ:"82%", products:["Crude","Gasoline","Diesel"], op:"PT Pertamina", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:353, name:"Pertamina Surabaya", country:"Indonesia", city:"Surabaya", lat:-7.21, lng:112.73, cap:4100, tanks:78, berths:7, occ:"78%", products:["Diesel","Gasoline","LPG"], op:"PT Pertamina", size:"lg", type:"port" },
-  { id:354, name:"Melaka Refinery", country:"Malaysia", city:"Melaka", lat:2.19, lng:102.25, cap:5300, tanks:96, berths:8, occ:"85%", products:["Crude","Gasoline","Diesel"], op:"Petronas", size:"lg", type:"port" },
+  { id:354, name:"Melaka Refinery", country:"Malaysia", city:"Melaka", lat:2.19, lng:102.25, cap:5300, tanks:96, berths:8, occ:"85%", products:["Crude","Gasoline","Diesel"], op:"Petronas", size:"lg", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:355, name:"Shell Banyan Terminal", country:"Singapore", city:"Pulau Bukom", lat:1.24, lng:103.77, cap:5900, tanks:106, berths:9, occ:"91%", products:["Crude","Chemicals","Gasoline"], op:"Shell", size:"xl", type:"port" },
   { id:356, name:"Hyundai Oilbank Incheon", country:"South Korea", city:"Incheon", lat:37.46, lng:126.63, cap:4600, tanks:86, berths:7, occ:"79%", products:["Crude","Gasoline","Diesel"], op:"Hyundai Oilbank", size:"lg", type:"port" },
   { id:357, name:"Cosmo Oil Osaka", country:"Japan", city:"Osaka", lat:34.65, lng:135.43, cap:3700, tanks:72, berths:6, occ:"77%", products:["Crude","Gasoline","Diesel"], op:"Cosmo Oil", size:"lg", type:"port" },
@@ -2151,7 +2151,7 @@ const terminals = [
   { id:376, name:"IOCL Dimapur Depot", country:"India", city:"Dimapur, Nagaland", lat:25.9, lng:93.73, cap:1300, tanks:32, berths:0, occ:"62%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:377, name:"IOCL Naharlagun Depot", country:"India", city:"Naharlagun, Arunachal Pradesh", lat:27.1, lng:93.7, cap:900, tanks:24, berths:0, occ:"57%", products:["Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:378, name:"IOCL Rangpo Depot", country:"India", city:"Rangpo, Sikkim", lat:27.15, lng:88.53, cap:800, tanks:22, berths:0, occ:"55%", products:["Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
-  { id:379, name:"Turkmenbashi Refinery", country:"Turkmenistan", city:"Turkmenbashi", lat:40.02, lng:52.96, cap:3300, tanks:64, berths:6, occ:"75%", products:["Crude","Diesel"], op:"Turkmennebit", size:"md", type:"port" },
+  { id:379, name:"Turkmenbashi Refinery", country:"Turkmenistan", city:"Turkmenbashi", lat:40.02, lng:52.96, cap:3300, tanks:64, berths:6, occ:"75%", products:["Crude","Diesel"], op:"Turkmennebit", size:"md", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:380, name:"Uzbekneftegaz Bukhara Depot", country:"Uzbekistan", city:"Bukhara", lat:39.77, lng:64.42, cap:2800, tanks:58, berths:0, occ:"73%", products:["Crude","Diesel","Gasoline"], op:"Uzbekneftegaz", size:"md", type:"inland" },
   { id:381, name:"KyrgyzNefteGaz Bishkek Depot", country:"Kyrgyzstan", city:"Bishkek", lat:42.87, lng:74.59, cap:1400, tanks:34, berths:0, occ:"61%", products:["Diesel","Gasoline"], op:"KyrgyzNefteGaz", size:"md", type:"inland" },
   { id:382, name:"Syrian Petroleum Baniyas", country:"Syria", city:"Baniyas", lat:35.18, lng:35.95, cap:3600, tanks:70, berths:6, occ:"71%", products:["Crude","Diesel","Gasoline"], op:"Syrian Petroleum", size:"md", type:"port" },
@@ -2159,7 +2159,7 @@ const terminals = [
   { id:384, name:"JOPetrol Zarqa Depot", country:"Jordan", city:"Zarqa", lat:32.07, lng:36.09, cap:2700, tanks:54, berths:0, occ:"73%", products:["Crude","Diesel","Gasoline"], op:"JOPetrol", size:"md", type:"inland" },
   { id:385, name:"Lebanon Petroleum Beirut", country:"Lebanon", city:"Beirut", lat:33.9, lng:35.51, cap:3400, tanks:66, berths:6, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"Lebanon Petroleum", size:"md", type:"port" },
   { id:386, name:"PNHZ Pavlodar Depot", country:"Kazakhstan", city:"Pavlodar", lat:52.29, lng:76.97, cap:3100, tanks:62, berths:0, occ:"74%", products:["Crude","Diesel","Gasoline"], op:"PNHZ", size:"md", type:"inland" },
-  { id:387, name:"Baton Rouge Refinery", country:"USA", city:"Baton Rouge LA", lat:30.45, lng:-91.19, cap:7800, tanks:140, berths:0, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Exxon Mobil Corporation", size:"xl", type:"inland" },
+  { id:387, name:"Baton Rouge Refinery", country:"USA", city:"Baton Rouge LA", lat:30.45, lng:-91.19, cap:7800, tanks:140, berths:0, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"Exxon Mobil Corporation", size:"xl", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:388, name:"BP Chicago Depot", country:"USA", city:"Chicago IL", lat:41.85, lng:-87.65, cap:4600, tanks:88, berths:0, occ:"79%", products:["Diesel","Gasoline","Jet"], op:"BP p.l.c.", size:"lg", type:"inland" },
   { id:389, name:"Federated Co-op Regina Depot", country:"Canada", city:"Regina", lat:50.45, lng:-104.62, cap:3300, tanks:66, berths:0, occ:"75%", products:["Crude","Diesel","Gasoline"], op:"Federated Co-op", size:"md", type:"inland" },
   { id:390, name:"Imperial Oil Sarnia Depot", country:"Canada", city:"Sarnia", lat:42.98, lng:-82.4, cap:4100, tanks:80, berths:0, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Imperial Oil", size:"lg", type:"inland" },
@@ -2195,7 +2195,7 @@ const terminals = [
   { id:420, name:"IOCL Salaya Depot", country:"India", city:"Salaya, Gujarat", lat:22.32, lng:69.6, cap:3400, tanks:66, berths:0, occ:"78%", products:["Crude"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:421, name:"IOCL Viramgam Depot", country:"India", city:"Viramgam, Gujarat", lat:23.12, lng:72.04, cap:2600, tanks:54, berths:0, occ:"73%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:422, name:"IOCL Loni Depot", country:"India", city:"Loni, Uttar Pradesh", lat:28.75, lng:77.29, cap:3100, tanks:62, berths:0, occ:"76%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
-  { id:423, name:"Koyali Refinery", country:"India", city:"Koyali, Gujarat", lat:22.35, lng:73.18, cap:4600, tanks:88, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"lg", type:"inland" },
+  { id:423, name:"Koyali Refinery", country:"India", city:"Koyali, Gujarat", lat:22.35, lng:73.18, cap:4600, tanks:88, berths:0, occ:"82%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:424, name:"GAIL Vijaipur Terminal", country:"India", city:"Vijaipur, Madhya Pradesh", lat:24.1, lng:77.75, cap:2900, tanks:58, berths:0, occ:"74%", products:["LNG","LPG"], op:"GAIL (India) Limited", size:"md", type:"inland" },
   { id:425, name:"GAIL Auraiya Terminal", country:"India", city:"Auraiya, Uttar Pradesh", lat:26.47, lng:79.53, cap:2200, tanks:46, berths:0, occ:"69%", products:["LNG"], op:"GAIL (India) Limited", size:"md", type:"inland" },
   { id:426, name:"HPCL Secunderabad Depot", country:"India", city:"Secunderabad, Telangana", lat:17.44, lng:78.5, cap:2400, tanks:50, berths:0, occ:"71%", products:["Diesel","Gasoline"], op:"Hindustan Petroleum Corporation Limited", size:"md", type:"inland" },
@@ -2206,7 +2206,7 @@ const terminals = [
   { id:431, name:"IOCL Ranchi Terminal", country:"India", city:"Ranchi, Jharkhand", lat:23.34, lng:85.31, cap:2800, tanks:56, berths:0, occ:"73%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:432, name:"IOCL Raipur Terminal", country:"India", city:"Raipur, Chhattisgarh", lat:21.25, lng:81.63, cap:3000, tanks:60, berths:0, occ:"75%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:433, name:"IOCL Patna Terminal", country:"India", city:"Patna, Bihar", lat:25.59, lng:85.14, cap:3300, tanks:64, berths:0, occ:"77%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"lg", type:"inland" },
-  { id:434, name:"Barauni Refinery", country:"India", city:"Barauni, Bihar", lat:25.47, lng:86.02, cap:5200, tanks:94, berths:0, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"lg", type:"inland" },
+  { id:434, name:"Barauni Refinery", country:"India", city:"Barauni, Bihar", lat:25.47, lng:86.02, cap:5200, tanks:94, berths:0, occ:"84%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"lg", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:435, name:"NRL Siliguri Terminal", country:"India", city:"Siliguri, West Bengal", lat:26.73, lng:88.43, cap:2100, tanks:46, berths:0, occ:"70%", products:["Diesel","Gasoline"], op:"Numaligarh Refinery Limited", size:"md", type:"inland" },
   { id:436, name:"IMC Pipavav Terminal", country:"India", city:"Pipavav, Gujarat", lat:20.92, lng:71.51, cap:3600, tanks:70, berths:6, occ:"75%", products:["Chemicals","Diesel","Gasoline"], op:"IMC Limited", size:"md", type:"port" },
   { id:437, name:"IMC Dighi Terminal", country:"India", city:"Dighi, Maharashtra", lat:18.2, lng:72.94, cap:2800, tanks:56, berths:5, occ:"71%", products:["Chemicals","Diesel"], op:"IMC Limited", size:"md", type:"port" },
@@ -2478,7 +2478,7 @@ const terminals = [
   { id:703, name:"LLC Nord Trans Bunker", country:"Russia", city:"Vladivostok", lat:43.12, lng:131.9, cap:2500, tanks:50, berths:5, occ:"70%", products:["Crude","Gasoline","LNG","Fuel Oil"], op:"Nord Trans Bunker", size:"md", type:"port" },
   { id:704, name:"Wangjiagou Liquids Storage Terminal", country:"China", city:"Korla, Xinjiang", lat:41.73, lng:86.13, cap:3200, tanks:62, berths:0, occ:"72%", products:["Crude"], op:"PetroChina", size:"md", type:"inland", yearCommissioned:2009, connectivity:["Pipeline","Road"] },
   { id:705, name:"Khorgos Terminal", country:"China", city:"Khorgos, Xinjiang", lat:44.2, lng:80.42, cap:2600, tanks:52, berths:0, occ:"69%", products:["LNG"], op:"PetroChina", size:"md", type:"inland" },
-  { id:706, name:"Dushanzi Refinery", country:"China", city:"Dushanzi, Xinjiang", lat:44.32, lng:84.87, cap:3600, tanks:68, berths:0, occ:"75%", products:["Crude","Diesel","Gasoline"], op:"PetroChina", size:"md", type:"inland" },
+  { id:706, name:"Dushanzi Refinery", country:"China", city:"Dushanzi, Xinjiang", lat:44.32, lng:84.87, cap:3600, tanks:68, berths:0, occ:"75%", products:["Crude","Diesel","Gasoline"], op:"PetroChina", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:707, name:"Shanshan Storage Facility", country:"China", city:"Shanshan, Xinjiang", lat:42.87, lng:90.21, cap:1900, tanks:42, berths:0, occ:"64%", products:["LNG"], op:"PetroChina", size:"md", type:"inland" },
   { id:708, name:"Huineng LNG Terminal", country:"China", city:"Ordos, Inner Mongolia", lat:39.35, lng:109.7, cap:2700, tanks:54, berths:0, occ:"70%", products:["LNG"], op:"Huineng Coal Chemical", size:"md", type:"inland" },
   { id:709, name:"China Railway Logistics Xilinhot", country:"China", city:"Xilinhot, Inner Mongolia", lat:43.97, lng:116.1, cap:1600, tanks:36, berths:0, occ:"60%", products:["Chemicals"], op:"China Railway Logistics", size:"md", type:"inland" },
@@ -2487,10 +2487,10 @@ const terminals = [
   { id:712, name:"IOCL Tinsukia Depot", country:"India", city:"Tinsukia, Assam", lat:27.49, lng:95.36, cap:1600, tanks:36, berths:0, occ:"65%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:713, name:"IOCL Doimukh Depot", country:"India", city:"Doimukh, Arunachal Pradesh", lat:27.15, lng:93.68, cap:900, tanks:22, berths:0, occ:"55%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:714, name:"IOCL Sekerkote Terminal", country:"India", city:"Sekerkote, Tripura", lat:23.75, lng:91.3, cap:2200, tanks:46, berths:0, occ:"70%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
-  { id:715, name:"Haldia Refinery", country:"India", city:"Haldia, West Bengal", lat:22.07, lng:88.15, cap:3800, tanks:72, berths:6, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"port" },
+  { id:715, name:"Haldia Refinery", country:"India", city:"Haldia, West Bengal", lat:22.07, lng:88.15, cap:3800, tanks:72, berths:6, occ:"78%", products:["Crude","Diesel","Gasoline"], op:"Indian Oil Corporation Limited", size:"md", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:716, name:"IOCL Siliguri Depot", country:"India", city:"Siliguri, West Bengal", lat:26.71, lng:88.43, cap:1900, tanks:42, berths:0, occ:"67%", products:["Diesel","Gasoline","LPG"], op:"Indian Oil Corporation Limited", size:"md", type:"inland" },
   { id:717, name:"Jugopetrol Kotor Terminal", country:"Montenegro", city:"Kotor", lat:42.42, lng:18.77, cap:1400, tanks:32, berths:4, occ:"64%", products:["Diesel","Gasoline"], op:"Jugopetrol AD Kotor", size:"md", type:"port" },
-  { id:718, name:"Mozyr Oil Refinery Terminal", country:"Belarus", city:"Mozyr", lat:52.05, lng:29.25, cap:3600, tanks:68, berths:0, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"Mozyr NPZ", size:"md", type:"inland" },
+  { id:718, name:"Mozyr Oil Refinery Terminal", country:"Belarus", city:"Mozyr", lat:52.05, lng:29.25, cap:3600, tanks:68, berths:0, occ:"77%", products:["Crude","Diesel","Gasoline"], op:"Mozyr NPZ", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:719, name:"Pivdenny Oil Terminal", country:"Ukraine", city:"Yuzhne", lat:46.62, lng:31.15, cap:2900, tanks:58, berths:5, occ:"71%", products:["Crude","Diesel"], op:"Pivdenny", size:"md", type:"port" },
   { id:720, name:"Giurgiulesti Oil Terminal", country:"Moldova", city:"Giurgiulesti", lat:45.47, lng:28.18, cap:1200, tanks:28, berths:3, occ:"60%", products:["Diesel","Gasoline"], op:"Giurgiulesti International Free Port", size:"md", type:"port" },
   { id:721, name:"Durres Oil Terminal", country:"Albania", city:"Durres", lat:41.31, lng:19.45, cap:1700, tanks:38, berths:4, occ:"66%", products:["Diesel","Gasoline"], op:"Albpetrol", size:"md", type:"port" },
@@ -2506,8 +2506,8 @@ const terminals = [
   { id:731, name:"Sihanoukville Port Terminal", country:"Cambodia", city:"Sihanoukville", lat:10.63, lng:103.52, cap:1800, tanks:40, berths:4, occ:"67%", products:["Diesel","Gasoline"], op:"Sokimex", size:"md", type:"port" },
   { id:732, name:"PNG LNG Caution Bay", country:"Papua New Guinea", city:"Port Moresby", lat:-9.32, lng:147.09, cap:4600, tanks:58, berths:2, occ:"80%", products:["LNG"], op:"Exxon Mobil Corporation", size:"lg", type:"port" },
   { id:733, name:"Suva Fuel Terminal", country:"Fiji", city:"Suva", lat:-18.14, lng:178.44, cap:1100, tanks:26, berths:3, occ:"57%", products:["Diesel","Gasoline"], op:"Fiji Gas / Total Fiji", size:"md", type:"port" },
-  { id:734, name:"Bosanski Brod Refinery", country:"Bosnia and Herzegovina", city:"Bosanski Brod", lat:45.14, lng:17.98, cap:2600, tanks:52, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"NIS / Bosanski Brod Rafinerija", size:"md", type:"inland" },
-  { id:735, name:"OKTA Skopje Refinery", country:"North Macedonia", city:"Skopje", lat:41.98, lng:21.6, cap:2000, tanks:44, berths:0, occ:"66%", products:["Diesel","Gasoline"], op:"OKTA Crude Oil Refinery AD Skopje", size:"md", type:"inland" },
+  { id:734, name:"Bosanski Brod Refinery", country:"Bosnia and Herzegovina", city:"Bosanski Brod", lat:45.14, lng:17.98, cap:2600, tanks:52, berths:0, occ:"72%", products:["Crude","Diesel","Gasoline"], op:"NIS / Bosanski Brod Rafinerija", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:735, name:"OKTA Skopje Refinery", country:"North Macedonia", city:"Skopje", lat:41.98, lng:21.6, cap:2000, tanks:44, berths:0, occ:"66%", products:["Diesel","Gasoline"], op:"OKTA Crude Oil Refinery AD Skopje", size:"md", type:"inland", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:736, name:"Reykjavik Fuel Terminal", country:"Iceland", city:"Reykjavik", lat:64.15, lng:-21.9, cap:1400, tanks:32, berths:4, occ:"61%", products:["Diesel","Gasoline"], op:"N1 / Skeljungur", size:"md", type:"port" },
   { id:737, name:"RECOPE Puerto Moin", country:"Costa Rica", city:"Puerto Moin", lat:9.98, lng:-83.05, cap:1900, tanks:40, berths:4, occ:"68%", products:["Diesel","Gasoline"], op:"Refinadora Costarricense de Petróleo, S.A.", size:"md", type:"port" },
   { id:738, name:"Puerto Quetzal Fuel Terminal", country:"Guatemala", city:"Puerto Quetzal", lat:13.93, lng:-90.79, cap:2100, tanks:44, berths:5, occ:"70%", products:["Diesel","Gasoline"], op:"Puma Energy Holdings Pte. Ltd.", size:"md", type:"port" },
@@ -2519,8 +2519,8 @@ const terminals = [
   { id:744, name:"Nampo Oil Terminal", country:"North Korea", city:"Nampo", lat:38.74, lng:125.41, cap:2200, tanks:46, berths:4, occ:"69%", products:["Crude","Diesel"], op:"Korea Oil Industry Group", size:"md", type:"port" },
   { id:745, name:"Sangachal Terminal", country:"Azerbaijan", city:"Garadakh", lat:39.9, lng:49.4, cap:8600, tanks:120, berths:8, occ:"85%", products:["Crude","Diesel"], op:"BP Azerbaijan", size:"xl", type:"port" },
   { id:746, name:"Baku Oil Terminal", country:"Azerbaijan", city:"Baku", lat:40.36, lng:49.85, cap:1300, tanks:15, berths:4, occ:"70%", products:["Crude","Diesel"], op:"Azertrans LLC", size:"md", type:"port" },
-  { id:747, name:"Heydar Aliyev Baku Oil Refinery", country:"Azerbaijan", city:"Baku", lat:40.4, lng:49.85, cap:3800, tanks:74, berths:5, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"State Oil Company of the Azerbaijan Republic", size:"md", type:"port" },
-  { id:748, name:"STAR Refinery", country:"Turkey", city:"Aliaga", lat:38.79, lng:26.96, cap:9600, tanks:168, berths:10, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"STAR Rafineri A.S. (SOCAR Turkey)", size:"xl", type:"port" },
+  { id:747, name:"Heydar Aliyev Baku Oil Refinery", country:"Azerbaijan", city:"Baku", lat:40.4, lng:49.85, cap:3800, tanks:74, berths:5, occ:"79%", products:["Crude","Diesel","Gasoline"], op:"State Oil Company of the Azerbaijan Republic", size:"md", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
+  { id:748, name:"STAR Refinery", country:"Turkey", city:"Aliaga", lat:38.79, lng:26.96, cap:9600, tanks:168, berths:10, occ:"86%", products:["Crude","Diesel","Gasoline"], op:"STAR Rafineri A.S. (SOCAR Turkey)", size:"xl", type:"port", facilityClass:["process"], processType:["refineries"], primaryClass:"process" },
   { id:749, name:"Kulevi Oil Terminal", country:"Georgia", city:"Kulevi", lat:42.23, lng:41.73, cap:7100, tanks:130, berths:8, occ:"81%", products:["Crude","Diesel"], op:"SOCAR Georgia Petroleum", size:"xl", type:"port" }
 ];
 
@@ -2553,6 +2553,9 @@ function normalizeTerminal(t) {
       claimStatus: 'unclaimed', // unclaimed | pending | owned
       access: null,           // captive | independent | null (not yet specified). JV is ownership metadata, not a category — see ownership model.
       ownershipStructure: null, // sole | jv | null — orthogonal to access (a JV can be independent OR captive)
+      facilityClass: ["storage"], // string[] of storage|process — master L1: storage-terminals / process-industries. A facility can be both (e.g. Ras Tanura).
+      processType: [],       // string[] of master Process-Industries subcategory slugs: refineries|petrochemicals|chemicals — only meaningful when facilityClass includes "process"
+      primaryClass: "storage", // storage|process — display/colour tie-break only; truth + filtering use facilityClass[]
       connectivity: [],       // e.g. ['Pipeline','Rail','Road'] — inland transport modes; marine access is implied by type==='port'
       yearCommissioned: null, // e.g. 2009 | null (not yet specified)
       tankType: null,         // aboveground | cavern | null (not yet specified)
@@ -3417,6 +3420,26 @@ function ownershipStructureLabel(os) {
   return { sole: 'Single Owner', jv: 'Joint Venture' }[os] || 'Not specified';
 }
 
+const PROCESS_TYPE_LABELS = { refineries: 'Refinery', petrochemicals: 'Petrochemical Plant', chemicals: 'Chemical Plant' };
+const FACILITY_CLASS_LABELS = { storage: 'Storage Terminal', process: 'Process Facility' };
+
+// Composite role label for a terminal, e.g. "Storage Terminal", "Refinery",
+// or "Refinery · Export Terminal" for a genuinely dual-role site like Ras Tanura.
+// Truth lives in the facilityClass[]/processType[] arrays; this just renders them.
+function facilityRoleLabel(t) {
+  const classes = t.facilityClass && t.facilityClass.length ? t.facilityClass : ['storage'];
+  const parts = [];
+  if (classes.includes('process') && t.processType && t.processType.length) {
+    parts.push(t.processType.map(p => PROCESS_TYPE_LABELS[p] || p).join(' + '));
+  } else if (classes.includes('process')) {
+    parts.push('Process Facility');
+  }
+  if (classes.includes('storage')) {
+    parts.push('Storage Terminal');
+  }
+  return parts.length ? parts.join(' · ') : 'Storage Terminal';
+}
+
 // Friendly label for a terminal's tank/storage construction type.
 function tankTypeLabel(tankType) {
   return { aboveground: 'Aboveground', cavern: 'Underground Cavern' }[tankType] || 'Not specified';
@@ -3436,6 +3459,7 @@ function viewFull() {
   set('fs-berths', t.berths != null ? t.berths : '—');
   set('fs-access', accessLabel(t.access));
   set('fs-ownership', ownershipStructureLabel(t.ownershipStructure));
+  set('fs-facilityclass', facilityRoleLabel(t));
   set('fs-connectivity', (t.connectivity && t.connectivity.length) ? t.connectivity.join(', ') : '—');
   set('fs-year', t.yearCommissioned != null && t.yearCommissioned !== '' ? t.yearCommissioned : '—');
   set('fs-tanktype', tankTypeLabel(t.tankType));
@@ -5622,6 +5646,7 @@ loadScript(
       <div class="fs-stat"><div class="fs-stat-label">Berths</div><div class="fs-stat-val" id="fs-berths">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Ownership Type</div><div class="fs-stat-val" id="fs-access" style="font-size:14px;">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Ownership Structure</div><div class="fs-stat-val" id="fs-ownership" style="font-size:14px;">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Facility Class</div><div class="fs-stat-val" id="fs-facilityclass" style="font-size:14px;">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Connectivity</div><div class="fs-stat-val" id="fs-connectivity" style="font-size:14px;">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Commissioning Year</div><div class="fs-stat-val" id="fs-year">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Storage Type</div><div class="fs-stat-val" id="fs-tanktype" style="font-size:14px;">—</div></div>
@@ -6129,6 +6154,16 @@ loadScript(
                 <option value="">— Not specified —</option>
                 <option value="sole">Single Owner</option>
                 <option value="jv">Joint Venture</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-form-grid three">
+            <div class="admin-field"><label>Facility Class (comma-separated: storage, process)</label><input type="text" id="nt-facilityclass" placeholder="storage, process"></div>
+            <div class="admin-field"><label>Process Type (comma-separated: refineries, petrochemicals, chemicals)</label><input type="text" id="nt-processtype" placeholder="refineries, petrochemicals"></div>
+            <div class="admin-field"><label>Primary Class (display/colour only)</label>
+              <select id="nt-primaryclass">
+                <option value="storage">Storage</option>
+                <option value="process">Process</option>
               </select>
             </div>
           </div>
@@ -7497,6 +7532,9 @@ async function addTerminalFromForm() {
   const type = document.getElementById('nt-type') ? document.getElementById('nt-type').value : 'port';
   const access = document.getElementById('nt-access') ? (document.getElementById('nt-access').value || null) : null;
   const ownershipStructure = document.getElementById('nt-ownership') ? (document.getElementById('nt-ownership').value || null) : null;
+  const facilityClass = document.getElementById('nt-facilityclass') ? document.getElementById('nt-facilityclass').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const processType = document.getElementById('nt-processtype') ? document.getElementById('nt-processtype').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const primaryClass = document.getElementById('nt-primaryclass') ? document.getElementById('nt-primaryclass').value : 'storage';
   const connectivity = document.getElementById('nt-connectivity') ? document.getElementById('nt-connectivity').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
   const yearCommissioned = document.getElementById('nt-year') && document.getElementById('nt-year').value.trim() !== '' ? parseInt(document.getElementById('nt-year').value) || null : null;
   const tankType = document.getElementById('nt-tanktype') ? (document.getElementById('nt-tanktype').value || null) : null;
@@ -7506,7 +7544,9 @@ async function addTerminalFromForm() {
     // Update existing terminal (preserves metrics/ownership).
     const t = findTerminalById(editingTerminalId);
     if (t) {
-      Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure, connectivity, yearCommissioned, tankType,
+      Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure,
+        facilityClass: facilityClass.length ? facilityClass : ['storage'], processType, primaryClass,
+        connectivity, yearCommissioned, tankType,
         products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
       await TerminalStore.save(t);
       refreshMapMarkers(filteredTerminals());
@@ -7522,7 +7562,9 @@ async function addTerminalFromForm() {
   }
 
   const nextId = terminals.reduce((m,t)=>Math.max(m, t.id||0), 0) + 1;
-  const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure, connectivity, yearCommissioned, tankType, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
+  const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure,
+    facilityClass: facilityClass.length ? facilityClass : ['storage'], processType, primaryClass,
+    connectivity, yearCommissioned, tankType, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
   terminals.push(newT);
   await TerminalStore.save(newT);
   addMarker(newT);
@@ -7567,6 +7609,9 @@ function editTerminalForm(id) {
   document.getElementById('nt-products').value = t.products.join(', ');
   if (document.getElementById('nt-access')) document.getElementById('nt-access').value = t.access || '';
   if (document.getElementById('nt-ownership')) document.getElementById('nt-ownership').value = t.ownershipStructure || '';
+  if (document.getElementById('nt-facilityclass')) document.getElementById('nt-facilityclass').value = (t.facilityClass || ['storage']).join(', ');
+  if (document.getElementById('nt-processtype')) document.getElementById('nt-processtype').value = (t.processType || []).join(', ');
+  if (document.getElementById('nt-primaryclass')) document.getElementById('nt-primaryclass').value = t.primaryClass || 'storage';
   if (document.getElementById('nt-connectivity')) document.getElementById('nt-connectivity').value = (t.connectivity || []).join(', ');
   if (document.getElementById('nt-year')) document.getElementById('nt-year').value = t.yearCommissioned != null ? t.yearCommissioned : '';
   if (document.getElementById('nt-tanktype')) document.getElementById('nt-tanktype').value = t.tankType || '';
@@ -7575,7 +7620,7 @@ function editTerminalForm(id) {
 
 function clearTerminalForm() {
   editingTerminalId = null;
-  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes','nt-search','nt-connectivity','nt-year'].forEach(id => {
+  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes','nt-search','nt-connectivity','nt-year','nt-facilityclass','nt-processtype'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -7583,6 +7628,8 @@ function clearTerminalForm() {
   if (accessEl) accessEl.value = '';
   const ownershipEl = document.getElementById('nt-ownership');
   if (ownershipEl) ownershipEl.value = '';
+  const primaryClassEl = document.getElementById('nt-primaryclass');
+  if (primaryClassEl) primaryClassEl.value = 'storage';
   const tankTypeEl = document.getElementById('nt-tanktype');
   if (tankTypeEl) tankTypeEl.value = '';
 }
