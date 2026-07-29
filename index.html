@@ -2556,6 +2556,7 @@ function normalizeTerminal(t) {
       facilityClass: ["storage"], // string[] of storage|process — master L1: storage-terminals / process-industries. A facility can be both (e.g. Ras Tanura).
       processType: [],       // string[] of master Process-Industries subcategory slugs: refineries|petrochemicals|chemicals — only meaningful when facilityClass includes "process"
       primaryClass: "storage", // storage|process — display/colour tie-break only; truth + filtering use facilityClass[]
+      placeId: null,          // Google Place ID for this facility, if known — used to open the exact Google Maps listing instead of a bare lat/lng pin
       connectivity: [],       // e.g. ['Pipeline','Rail','Road'] — inland transport modes; marine access is implied by type==='port'
       yearCommissioned: null, // e.g. 2009 | null (not yet specified)
       tankType: null,         // aboveground | cavern | null (not yet specified)
@@ -5669,6 +5670,7 @@ loadScript(
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="popup-btn" style="flex:1;min-width:140px;" onclick="factSheetLocate()" id="fs-locate-btn">📍 Show on Map</button>
+      <button class="popup-btn" style="flex:1;min-width:140px;background:none;border:1px solid var(--border);color:var(--text-muted);" onclick="openFactSheetInGoogleMaps()">🗺 Google Maps</button>
       <button class="popup-btn" style="flex:1;min-width:140px;background:none;border:1px solid var(--border);color:var(--text-muted);" onclick="closeFactSheet()">Close</button>
     </div>
   </div>
@@ -6196,6 +6198,12 @@ loadScript(
             </div>
             <div class="admin-field"><label>Latitude</label><input type="text" id="nt-lat" placeholder="51.92"></div>
             <div class="admin-field"><label>Longitude</label><input type="text" id="nt-lng" placeholder="4.47"></div>
+          </div>
+          <div class="admin-form-grid">
+            <div class="admin-field"><label>Google Place ID <span style="color:var(--text-dim);font-weight:normal;">(optional)</span></label><input type="text" id="nt-placeid" placeholder="ChIJ..."></div>
+            <div class="admin-field" style="display:flex;align-items:flex-end;">
+              <button type="button" class="btn-admin" style="width:100%;" onclick="resolveTerminalMap()">🗺 Resolve Map</button>
+            </div>
           </div>
         </div>
         <div class="admin-card">
@@ -7517,6 +7525,40 @@ function renderTerminalDataTable() {
 
 let editingTerminalId = null;
 
+// Opens Google Maps for the terminal currently shown in the fact sheet: the
+// exact listing if a Place ID has been recorded, otherwise a plain lat/lng pin.
+function openFactSheetInGoogleMaps() {
+  const t = selectedTerminal;
+  if (!t) return;
+  let url;
+  if (t.placeId) {
+    url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(t.name) + '&query_place_id=' + encodeURIComponent(t.placeId);
+  } else {
+    url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(t.lat + ',' + t.lng);
+  }
+  window.open(url, '_blank', 'noopener');
+}
+
+// Opens Google Maps for this terminal: the exact listing if a Place ID is
+// entered, otherwise a plain pin at whatever lat/lng is currently in the form
+// (so this works even mid-edit, before the terminal has been saved).
+function resolveTerminalMap() {
+  const placeId = (document.getElementById('nt-placeid')?.value || '').trim();
+  const name = (document.getElementById('nt-name')?.value || 'Google Maps').trim();
+  const lat = document.getElementById('nt-lat')?.value;
+  const lng = document.getElementById('nt-lng')?.value;
+  let url;
+  if (placeId) {
+    url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(name) + '&query_place_id=' + encodeURIComponent(placeId);
+  } else if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+    url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(lat + ',' + lng);
+  } else {
+    toast('Enter a Place ID or a latitude/longitude first.', 'error');
+    return;
+  }
+  window.open(url, '_blank', 'noopener');
+}
+
 async function addTerminalFromForm() {
   const name = document.getElementById('nt-name').value.trim();
   const op = document.getElementById('nt-op').value.trim();
@@ -7535,6 +7577,7 @@ async function addTerminalFromForm() {
   const facilityClass = document.getElementById('nt-facilityclass') ? document.getElementById('nt-facilityclass').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
   const processType = document.getElementById('nt-processtype') ? document.getElementById('nt-processtype').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
   const primaryClass = document.getElementById('nt-primaryclass') ? document.getElementById('nt-primaryclass').value : 'storage';
+  const placeId = document.getElementById('nt-placeid') ? (document.getElementById('nt-placeid').value.trim() || null) : null;
   const connectivity = document.getElementById('nt-connectivity') ? document.getElementById('nt-connectivity').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
   const yearCommissioned = document.getElementById('nt-year') && document.getElementById('nt-year').value.trim() !== '' ? parseInt(document.getElementById('nt-year').value) || null : null;
   const tankType = document.getElementById('nt-tanktype') ? (document.getElementById('nt-tanktype').value || null) : null;
@@ -7545,7 +7588,7 @@ async function addTerminalFromForm() {
     const t = findTerminalById(editingTerminalId);
     if (t) {
       Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure,
-        facilityClass: facilityClass.length ? facilityClass : ['storage'], processType, primaryClass,
+        facilityClass: facilityClass.length ? facilityClass : ['storage'], processType, primaryClass, placeId,
         connectivity, yearCommissioned, tankType,
         products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
       await TerminalStore.save(t);
@@ -7563,7 +7606,7 @@ async function addTerminalFromForm() {
 
   const nextId = terminals.reduce((m,t)=>Math.max(m, t.id||0), 0) + 1;
   const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure,
-    facilityClass: facilityClass.length ? facilityClass : ['storage'], processType, primaryClass,
+    facilityClass: facilityClass.length ? facilityClass : ['storage'], processType, primaryClass, placeId,
     connectivity, yearCommissioned, tankType, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
   terminals.push(newT);
   await TerminalStore.save(newT);
@@ -7612,6 +7655,7 @@ function editTerminalForm(id) {
   if (document.getElementById('nt-facilityclass')) document.getElementById('nt-facilityclass').value = (t.facilityClass || ['storage']).join(', ');
   if (document.getElementById('nt-processtype')) document.getElementById('nt-processtype').value = (t.processType || []).join(', ');
   if (document.getElementById('nt-primaryclass')) document.getElementById('nt-primaryclass').value = t.primaryClass || 'storage';
+  if (document.getElementById('nt-placeid')) document.getElementById('nt-placeid').value = t.placeId || '';
   if (document.getElementById('nt-connectivity')) document.getElementById('nt-connectivity').value = (t.connectivity || []).join(', ');
   if (document.getElementById('nt-year')) document.getElementById('nt-year').value = t.yearCommissioned != null ? t.yearCommissioned : '';
   if (document.getElementById('nt-tanktype')) document.getElementById('nt-tanktype').value = t.tankType || '';
@@ -7620,7 +7664,7 @@ function editTerminalForm(id) {
 
 function clearTerminalForm() {
   editingTerminalId = null;
-  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes','nt-search','nt-connectivity','nt-year','nt-facilityclass','nt-processtype'].forEach(id => {
+  ['nt-name','nt-op','nt-city','nt-country','nt-lat','nt-lng','nt-cap','nt-tanks','nt-berths','nt-occ','nt-products','nt-notes','nt-search','nt-connectivity','nt-year','nt-facilityclass','nt-processtype','nt-placeid'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
