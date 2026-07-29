@@ -2551,7 +2551,7 @@ function normalizeTerminal(t) {
       metrics: blankMetrics(),
       ownerId: null,          // uid of validated owner (null = unclaimed)
       claimStatus: 'unclaimed', // unclaimed | pending | owned
-      access: null,           // captive | independent | jv | null (not yet specified)
+      access: null,           // captive | independent | null (not yet specified). JV is ownership metadata, not a category — see ownership model.
       connectivity: [],       // e.g. ['Pipeline','Rail','Road'] — inland transport modes; marine access is implied by type==='port'
       yearCommissioned: null, // e.g. 2009 | null (not yet specified)
       tankType: null,         // aboveground | cavern | null (not yet specified)
@@ -3406,7 +3406,7 @@ function toggleShipLayerOnMap() {
 // Friendly label for a terminal's ownership/access type. Centralized so the
 // fact sheet, admin table, etc. all describe the same value the same way.
 function accessLabel(access) {
-  return { captive: 'Captive', independent: 'Independent', jv: 'Joint Venture' }[access] || 'Not specified';
+  return { captive: 'Captive', independent: 'Independent' }[access] || 'Not specified';
 }
 
 // Friendly label for a terminal's tank/storage construction type.
@@ -6112,7 +6112,6 @@ loadScript(
                 <option value="">— Not specified —</option>
                 <option value="captive">Captive</option>
                 <option value="independent">Independent</option>
-                <option value="jv">Joint Venture</option>
               </select>
             </div>
           </div>
