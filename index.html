@@ -2552,6 +2552,7 @@ function normalizeTerminal(t) {
       ownerId: null,          // uid of validated owner (null = unclaimed)
       claimStatus: 'unclaimed', // unclaimed | pending | owned
       access: null,           // captive | independent | null (not yet specified). JV is ownership metadata, not a category — see ownership model.
+      ownershipStructure: null, // sole | jv | null — orthogonal to access (a JV can be independent OR captive)
       connectivity: [],       // e.g. ['Pipeline','Rail','Road'] — inland transport modes; marine access is implied by type==='port'
       yearCommissioned: null, // e.g. 2009 | null (not yet specified)
       tankType: null,         // aboveground | cavern | null (not yet specified)
@@ -3409,6 +3410,13 @@ function accessLabel(access) {
   return { captive: 'Captive', independent: 'Independent' }[access] || 'Not specified';
 }
 
+// Friendly label for a terminal's ownership structure. This is ORTHOGONAL to
+// access (captive/independent): a joint venture can itself be commercially
+// independent or captive, so it is captured as separate metadata, not a category.
+function ownershipStructureLabel(os) {
+  return { sole: 'Single Owner', jv: 'Joint Venture' }[os] || 'Not specified';
+}
+
 // Friendly label for a terminal's tank/storage construction type.
 function tankTypeLabel(tankType) {
   return { aboveground: 'Aboveground', cavern: 'Underground Cavern' }[tankType] || 'Not specified';
@@ -3427,6 +3435,7 @@ function viewFull() {
   set('fs-tanks', t.tanks != null ? t.tanks : '—');
   set('fs-berths', t.berths != null ? t.berths : '—');
   set('fs-access', accessLabel(t.access));
+  set('fs-ownership', ownershipStructureLabel(t.ownershipStructure));
   set('fs-connectivity', (t.connectivity && t.connectivity.length) ? t.connectivity.join(', ') : '—');
   set('fs-year', t.yearCommissioned != null && t.yearCommissioned !== '' ? t.yearCommissioned : '—');
   set('fs-tanktype', tankTypeLabel(t.tankType));
@@ -5612,6 +5621,7 @@ loadScript(
       <div class="fs-stat"><div class="fs-stat-label">Tanks</div><div class="fs-stat-val" id="fs-tanks">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Berths</div><div class="fs-stat-val" id="fs-berths">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Ownership Type</div><div class="fs-stat-val" id="fs-access" style="font-size:14px;">—</div></div>
+      <div class="fs-stat"><div class="fs-stat-label">Ownership Structure</div><div class="fs-stat-val" id="fs-ownership" style="font-size:14px;">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Connectivity</div><div class="fs-stat-val" id="fs-connectivity" style="font-size:14px;">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Commissioning Year</div><div class="fs-stat-val" id="fs-year">—</div></div>
       <div class="fs-stat"><div class="fs-stat-label">Storage Type</div><div class="fs-stat-val" id="fs-tanktype" style="font-size:14px;">—</div></div>
@@ -6112,6 +6122,13 @@ loadScript(
                 <option value="">— Not specified —</option>
                 <option value="captive">Captive</option>
                 <option value="independent">Independent</option>
+              </select>
+            </div>
+            <div class="admin-field"><label>Ownership Structure</label>
+              <select id="nt-ownership">
+                <option value="">— Not specified —</option>
+                <option value="sole">Single Owner</option>
+                <option value="jv">Joint Venture</option>
               </select>
             </div>
           </div>
@@ -7479,6 +7496,7 @@ async function addTerminalFromForm() {
   const prods = document.getElementById('nt-products').value.split(',').map(s=>s.trim()).filter(Boolean);
   const type = document.getElementById('nt-type') ? document.getElementById('nt-type').value : 'port';
   const access = document.getElementById('nt-access') ? (document.getElementById('nt-access').value || null) : null;
+  const ownershipStructure = document.getElementById('nt-ownership') ? (document.getElementById('nt-ownership').value || null) : null;
   const connectivity = document.getElementById('nt-connectivity') ? document.getElementById('nt-connectivity').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
   const yearCommissioned = document.getElementById('nt-year') && document.getElementById('nt-year').value.trim() !== '' ? parseInt(document.getElementById('nt-year').value) || null : null;
   const tankType = document.getElementById('nt-tanktype') ? (document.getElementById('nt-tanktype').value || null) : null;
@@ -7488,7 +7506,7 @@ async function addTerminalFromForm() {
     // Update existing terminal (preserves metrics/ownership).
     const t = findTerminalById(editingTerminalId);
     if (t) {
-      Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, connectivity, yearCommissioned, tankType,
+      Object.assign(t, { name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure, connectivity, yearCommissioned, tankType,
         products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
       await TerminalStore.save(t);
       refreshMapMarkers(filteredTerminals());
@@ -7504,7 +7522,7 @@ async function addTerminalFromForm() {
   }
 
   const nextId = terminals.reduce((m,t)=>Math.max(m, t.id||0), 0) + 1;
-  const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, connectivity, yearCommissioned, tankType, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
+  const newT = normalizeTerminal({ id: nextId, name, op, city, country, lat, lng, cap, tanks: tanksN, berths, occ, access, ownershipStructure, connectivity, yearCommissioned, tankType, products: prods.length ? prods : ['Crude'], size: cap>8000?'xl':cap>4000?'lg':'md', type });
   terminals.push(newT);
   await TerminalStore.save(newT);
   addMarker(newT);
@@ -7548,6 +7566,7 @@ function editTerminalForm(id) {
   document.getElementById('nt-occ').value = t.occ;
   document.getElementById('nt-products').value = t.products.join(', ');
   if (document.getElementById('nt-access')) document.getElementById('nt-access').value = t.access || '';
+  if (document.getElementById('nt-ownership')) document.getElementById('nt-ownership').value = t.ownershipStructure || '';
   if (document.getElementById('nt-connectivity')) document.getElementById('nt-connectivity').value = (t.connectivity || []).join(', ');
   if (document.getElementById('nt-year')) document.getElementById('nt-year').value = t.yearCommissioned != null ? t.yearCommissioned : '';
   if (document.getElementById('nt-tanktype')) document.getElementById('nt-tanktype').value = t.tankType || '';
@@ -7562,6 +7581,8 @@ function clearTerminalForm() {
   });
   const accessEl = document.getElementById('nt-access');
   if (accessEl) accessEl.value = '';
+  const ownershipEl = document.getElementById('nt-ownership');
+  if (ownershipEl) ownershipEl.value = '';
   const tankTypeEl = document.getElementById('nt-tanktype');
   if (tankTypeEl) tankTypeEl.value = '';
 }
