@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#111a14">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32-v2.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16-v2.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon-v2.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Renewonomics">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="description" content="Renewonomics Global Impact — live CO₂ data, renewable energy statistics, EV adoption milestones and the real-time environmental impact of the clean energy transition.">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph + Twitter Card defaults — these are what LinkedIn, Facebook,
+     Twitter, Slack etc. show when someone shares an Impact post URL. They
+     can't be customized per-post on this static page (would require server
+     rendering), so they default to the Renewonomics brand card. Crawlers
+     fetch the static HTML, which contains these tags before any JS runs. -->
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Renewonomics">
+<meta property="og:title" content="Renewonomics — Clean energy news, real impact">
+<meta property="og:description" content="Curated coverage of solar, wind, hydrogen, nuclear, recycling and the global clean energy transition.">
+<meta property="og:url" content="https://renewonomics.org/impact.html">
+<meta property="og:image" content="https://renewonomics.org/logo-icon-1024.png">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="1024">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Renewonomics — Clean energy news, real impact">
+<meta name="twitter:description" content="Curated coverage of solar, wind, hydrogen, nuclear, recycling and the global clean energy transition.">
+<meta name="twitter:image" content="https://renewonomics.org/logo-icon-1024.png">
+
+<title>Renewonomics — Global Impact Dashboard</title>
+<!-- Google AdSense: TO ENABLE, replace ca-pub-REPLACE_ME with your real Publisher ID, then uncomment this block.
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-REPLACE_ME" crossorigin="anonymous"></script>
+-->
+<!-- Fonts: preconnect + non-blocking load (was render-blocking ~1.8s) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap"></noscript>
+<style>
+  :root {
+    --green: #1a7a4a;
+    --lime: #b5e853;
+    --cream: #f5f0e8;
+    --bark: #3d2b1f;
+    --sand: #e8dcc8;
+    --sky: #d4eee2;
+    --accent: #ff5c35;
+    --dark: #111a14;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--cream);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(17, 26, 20, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(181, 232, 83, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 56px;
+  }
+
+  .logo { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .logo-icon { width: 32px; height: 32px; display: block; }
+  .logo-text { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900; letter-spacing: -0.5px; color: var(--cream); }
+  .logo-text span { color: var(--lime); }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+
+  .content { padding-top: 72px; padding-bottom: 80px; max-width: 480px; margin: 0 auto; }
+
+  .page-header {
+    padding: 0 20px 20px;
+    animation: fadeUp 0.3s ease both;
+  }
+  .page-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--cream);
+    margin-bottom: 4px;
+  }
+  .page-subtitle {
+    font-size: 13px;
+    color: rgba(245, 240, 232, 0.5);
+    line-height: 1.5;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-stat {
+    margin: 0 16px 20px;
+    background: linear-gradient(160deg, #0d3320 0%, #1a7a4a 100%);
+    border: 1px solid rgba(181, 232, 83, 0.2);
+    border-radius: 20px;
+    padding: 24px 20px;
+    text-align: center;
+    animation: fadeUp 0.4s ease both;
+  }
+  .hero-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--lime);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .hero-label::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--lime);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+  .hero-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--lime);
+    line-height: 1.1;
+  }
+  .hero-unit {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    color: rgba(181, 232, 83, 0.6);
+    margin-top: 4px;
+  }
+  .hero-context {
+    font-size: 12px;
+    color: rgba(245, 240, 232, 0.5);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 8px 20px 16px; }
+  .divider-line { flex: 1; height: 1px; background: rgba(181, 232, 83, 0.12); }
+  .divider-text { font-family: 'Space Mono', monospace; font-size: 9px; color: rgba(181, 232, 83, 0.4); text-transform: uppercase; letter-spacing: 2px; white-space: nowrap; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 0 16px 20px;
+  }
+  .stat-card {
+    background: #1c2a21;
+    border: 1px solid rgba(181, 232, 83, 0.08);
+    border-radius: 16px;
+    padding: 18px 16px;
+    animation: fadeUp 0.4s ease both;
+  }
+  .stat-card:nth-child(1) { animation-delay: 0.05s; }
+  .stat-card:nth-child(2) { animation-delay: 0.1s; }
+  .stat-card:nth-child(3) { animation-delay: 0.15s; }
+  .stat-card:nth-child(4) { animation-delay: 0.2s; }
+  .stat-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .stat-card-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--lime);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-card-label {
+    font-size: 11px;
+    color: rgba(245, 240, 232, 0.5);
+    line-height: 1.3;
+  }
+  .stat-card-change {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--lime);
+    margin-top: 8px;
+  }
+
+  .progress-section {
+    margin: 0 16px 20px;
+    animation: fadeUp 0.4s ease both;
+    animation-delay: 0.25s;
+  }
+  .progress-card {
+    background: #1c2a21;
+    border: 1px solid rgba(181, 232, 83, 0.08);
+    border-radius: 16px;
+    padding: 18px 16px;
+    margin-bottom: 12px;
+  }
+  .progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .progress-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--cream);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .progress-percent {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--lime);
+    font-weight: 700;
+  }
+  .progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(181, 232, 83, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease;
+  }
+  .progress-bar-fill.solar { background: linear-gradient(90deg, #ffd600, #ffab00); }
+  .progress-bar-fill.wind { background: linear-gradient(90deg, #64b5f6, #1e88e5); }
+  .progress-bar-fill.hydro { background: linear-gradient(90deg, #26c6da, #0097a7); }
+  .progress-bar-fill.ev { background: linear-gradient(90deg, #ce93d8, #8e24aa); }
+  .progress-detail {
+    font-size: 11px;
+    color: rgba(245, 240, 232, 0.4);
+  }
+
+  .milestone-section {
+    margin: 0 16px 20px;
+    animation: fadeUp 0.4s ease both;
+    animation-delay: 0.3s;
+  }
+  .milestone-card {
+    background: linear-gradient(90deg, rgba(26, 122, 74, 0.15) 0%, rgba(181, 232, 83, 0.08) 100%);
+    border: 1px solid rgba(181, 232, 83, 0.15);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .milestone-icon { font-size: 32px; }
+  .milestone-text { flex: 1; }
+  .milestone-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--cream);
+    margin-bottom: 3px;
+  }
+  .milestone-desc {
+    font-size: 12px;
+    color: rgba(245, 240, 232, 0.5);
+    line-height: 1.4;
+  }
+  .milestone-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--lime);
+    background: rgba(181, 232, 83, 0.12);
+    border: 1px solid rgba(181, 232, 83, 0.2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(17, 26, 20, 0.97); border-top: 1px solid rgba(181, 232, 83, 0.1); display: flex; justify-content: space-around; padding: 10px 0 18px; z-index: 100; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 16px; text-decoration: none; }
+  .nav-icon { font-size: 22px; line-height: 1; }
+  .nav-label { font-family: 'Space Mono', monospace; font-size: 9px; color: rgba(245, 240, 232, 0.35); text-transform: uppercase; letter-spacing: 0.5px; }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 0 6px var(--lime)); }
+  .nav-item.active .nav-label { color: var(--lime); }
+
+  .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1c2a21; border: 1px solid rgba(181,232,83,0.15); border-radius: 12px; padding: 12px 20px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--lime); letter-spacing: 0.5px; opacity: 0; transition: all 0.3s; z-index: 999; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .page-footer { text-align:center; padding: 4px 0 100px; font-family:'Space Mono',monospace; font-size:9px; color:rgba(245,240,232,0.18); letter-spacing:1px; }
+  .page-footer a { color:rgba(181,232,83,0.3); text-decoration:none; }
+  .page-footer a:hover { color:rgba(181,232,83,0.6); }
+
+  /* IMPACT BLOG POSTS (list + detail) */
+  .impact-posts-wrap { margin: 16px 0 8px; }
+  .impact-posts-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .impact-posts-head .section-divider { flex:1; margin:0; }
+  .impact-posts-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+  .ipost-card {
+    background: var(--card, #1a2820); border: 1px solid rgba(181,232,83,0.1);
+    border-radius: 14px; overflow: hidden; cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    display: flex; flex-direction: column;
+  }
+  .ipost-card:hover { transform: translateY(-2px); border-color: rgba(181,232,83,0.3); }
+  .ipost-card.featured { border-color: rgba(181,232,83,0.35); }
+  .ipost-card-img {
+    width: 100%; aspect-ratio: 16/9; background: var(--card, #1a2820);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    padding: 10px; box-sizing: border-box;
+  }
+  .ipost-card-img img {
+    max-width:100%; max-height:100%; width:auto; height:auto;
+    object-fit: contain; display:block; border-radius:5px;
+  }
+  .ipost-card-img .ipost-card-placeholder { font-size: 36px; opacity: 0.4; }
+  .ipost-card-body { padding: 14px 16px 16px; display:flex; flex-direction:column; gap:6px; flex:1; }
+  .ipost-card-meta {
+    font-family:'Space Mono',monospace; font-size:9px;
+    color:rgba(181,232,83,0.55); text-transform:uppercase; letter-spacing:1px;
+    display:flex; gap:8px; align-items:center;
+  }
+  .ipost-card-meta .ipost-featured-badge {
+    background: rgba(181,232,83,0.15); color: #b5e853; padding: 2px 6px;
+    border-radius: 4px; letter-spacing: 0.5px; font-size: 8px;
+  }
+  .ipost-card-title { font-size: 16px; color: var(--cream, #f5f0e8); font-weight: 600; line-height: 1.3; }
+  .ipost-card-summary { font-size: 13px; color: rgba(245,240,232,0.65); line-height: 1.5; flex:1; }
+  .ipost-card-readmore {
+    font-family:'Space Mono',monospace; font-size:10px; color:#b5e853;
+    margin-top:6px; letter-spacing:1px; text-transform:uppercase;
+  }
+
+  /* Single-post detail page */
+  .post-back-link {
+    display:inline-block; font-family:'Space Mono',monospace; font-size:11px;
+    color:rgba(181,232,83,0.6); text-decoration:none; margin: 8px 0 20px;
+    letter-spacing:1px; text-transform:uppercase;
+  }
+  .post-back-link:hover { color:#b5e853; }
+  .post-hero-img {
+    width:100%; height:220px; border-radius:16px; overflow:hidden;
+    margin-bottom:20px; background: var(--card, #1a2820);
+    border: 1px solid rgba(181,232,83,0.12);
+    display:flex; align-items:center; justify-content:center;
+    padding:18px; box-sizing:border-box;
+  }
+  .post-hero-img img {
+    max-width:100%; max-height:100%; width:auto; height:auto;
+    object-fit:contain; display:block; border-radius:8px;
+  }
+  .post-meta-bar {
+    font-family:'Space Mono',monospace; font-size:10px;
+    color:rgba(181,232,83,0.55); text-transform:uppercase; letter-spacing:1.5px;
+    margin-bottom:12px; display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .post-title {
+    font-family:'Playfair Display',serif; font-size:clamp(26px, 5vw, 40px);
+    font-weight:700; color:var(--cream, #f5f0e8); line-height:1.2; margin-bottom: 20px;
+    overflow-wrap: break-word; word-break: break-word;
+  }
+  .post-summary {
+    font-size:17px; color:rgba(245,240,232,0.75); line-height:1.6;
+    padding: 16px 20px; background: rgba(181,232,83,0.06);
+    border-left: 3px solid #b5e853; border-radius: 8px; margin-bottom: 24px;
+    overflow-wrap: anywhere; word-break: break-word;
+  }
+  .post-body {
+    font-size: 16px;
+    line-height: 1.75;
+    color: rgba(245,240,232,0.88);
+    /* Force long unbreakable strings (URLs, "aaaa..." test text, etc.) to wrap
+       within the container instead of forcing horizontal overflow. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
+  .post-body p { margin-bottom: 18px; overflow-wrap: anywhere; }
+  .post-body a { color: #b5e853; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .post-body h2 { font-family:'Playfair Display',serif; font-size: 24px; margin: 28px 0 12px; color: var(--cream, #f5f0e8); overflow-wrap: break-word; }
+  .post-body h3 { font-family:'Playfair Display',serif; font-size: 19px; margin: 22px 0 10px; color: var(--cream, #f5f0e8); overflow-wrap: break-word; }
+  .post-body img { max-width:100%; height:auto; border-radius:10px; margin: 16px 0; }
+  .post-body pre { overflow-x: auto; max-width: 100%; }
+  .post-body strong { color: var(--cream, #f5f0e8); }
+  .post-body ul, .post-body ol { margin: 0 0 18px 24px; }
+  .post-body li { margin-bottom: 6px; overflow-wrap: anywhere; }
+  .post-body blockquote {
+    border-left: 3px solid rgba(181,232,83,0.4); padding: 4px 16px;
+    margin: 16px 0; color: rgba(245,240,232,0.75); font-style: italic;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── SHARE BAR ────────────────────────────────────────────────────────
+     Sticky share controls shown at the bottom of every Impact post detail.
+     Clicking a button opens the platform's share-intent dialog with the
+     post URL pre-populated; the user (logged into LinkedIn/Facebook in
+     their browser) chooses the audience (their feed, a company page they
+     manage, etc). This is the path that ships today without requiring the
+     LinkedIn/Meta API approvals for direct posting from the server. */
+  .share-bar {
+    margin: 36px 0 12px;
+    padding: 22px 20px;
+    background: rgba(181,232,83,0.04);
+    border: 1px solid rgba(181,232,83,0.15);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .share-bar-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--lime, #b5e853);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+  .share-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(245,240,232,0.15);
+    border-radius: 999px;
+    color: var(--cream, #f5f0e8);
+    text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+  .share-btn:hover {
+    background: rgba(181,232,83,0.08);
+    border-color: rgba(181,232,83,0.4);
+  }
+  .share-btn:active { transform: translateY(1px); }
+  .share-btn .share-icon { display: inline-flex; align-items: center; justify-content: center; }
+  .share-btn .share-icon svg { width: 16px; height: 16px; }
+  /* Brand-colored hover for each platform */
+  .share-btn.linkedin:hover  { border-color: #0a66c2; background: rgba(10,102,194,0.10); }
+  .share-btn.facebook:hover  { border-color: #1877f2; background: rgba(24,119,242,0.10); }
+  .share-btn.twitter:hover   { border-color: #1da1f2; background: rgba(29,161,242,0.10); }
+  .share-btn.whatsapp:hover  { border-color: #25d366; background: rgba(37,211,102,0.10); }
+  .share-btn.copied          { border-color: var(--lime, #b5e853); background: rgba(181,232,83,0.15); }
+
+  /* Compact share row near the top of the post (icons only) */
+  .share-row-top {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .share-row-top .share-btn {
+    padding: 6px 8px;
+    font-size: 0;
+  }
+  .share-row-top .share-btn .share-icon svg { width: 14px; height: 14px; }
+  .menu-wrap { position: relative; }
+  .menu-btn { font-size: 22px; line-height: 1; font-weight: 700; color: rgba(181,232,83,0.85); background: rgba(181,232,83,0.08); border: 1px solid rgba(181,232,83,0.3); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .menu-btn:hover, .menu-btn.open { background: var(--lime); color: var(--dark); border-color: var(--lime); }
+  .menu-dropdown { position: absolute; top: 42px; right: 0; background: rgba(20,31,23,0.98); backdrop-filter: blur(12px); border: 1px solid rgba(181,232,83,0.25); border-radius: 12px; padding: 6px; min-width: 180px; z-index: 200; box-shadow: 0 8px 28px rgba(0,0,0,0.5); display: none; flex-direction: column; gap: 2px; animation: menuIn 0.15s ease; }
+  .menu-dropdown.open { display: flex; }
+  @keyframes menuIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .menu-link { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--cream); text-decoration: none; padding: 10px 12px; border-radius: 8px; background: none; border: none; width: 100%; text-align: left; cursor: pointer; transition: background 0.15s; }
+  .menu-link:hover { background: rgba(181,232,83,0.12); }
+  .menu-link.current { color: var(--lime); background: rgba(181,232,83,0.08); }
+  .menu-ic { font-size: 15px; width: 18px; text-align: center; }
+  .menu-divider { height: 1px; background: rgba(181,232,83,0.15); margin: 4px 6px; }
+  .menu-logout { color: #ff8566; }
+  .menu-logout:hover { background: rgba(255,92,53,0.12); }
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo" onclick="window.location.href='feed.html'">
+    <img src="/icons/logo-mark.png" class="logo-icon" alt="Renewonomics logo">
+    <div class="logo-text">renew<span>onomics</span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="menu-wrap">
+      <button id="menu-btn" class="menu-btn" onclick="toggleMenu(event)" title="Menu" aria-label="Menu">⋮</button>
+      <div id="menu-dropdown" class="menu-dropdown">
+        <a class="menu-link" href="feed.html"><span class="menu-ic">🏠</span>Home</a>
+        <a class="menu-link" href="champions.html"><span class="menu-ic">🏆</span>Champions</a>
+        <a class="menu-link current" href="impact.html"><span class="menu-ic">📊</span>Impact</a>
+        <a class="menu-link" href="products.html"><span class="menu-ic">🛒</span>Market</a>
+        <a class="menu-link" href="profile.html"><span class="menu-ic">👤</span>Profile</a>
+        <a class="menu-link" id="menu-admin" href="admin.html" style="display:none;"><span class="menu-ic">⚙️</span>Admin</a>
+        <div class="menu-divider"></div>
+        <button class="menu-link menu-logout" onclick="logout()"><span class="menu-ic">🚪</span>Log out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="impact-main-view">
+
+  <div class="page-header">
+    <div class="page-title">Global Impact</div>
+    <div class="page-subtitle">Real-time environmental impact of the global shift to renewable energy</div>
+    <div id="stats-source-bar" style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(181,232,83,0.35);text-transform:uppercase;letter-spacing:1px;margin-top:8px;display:none;">
+      <span id="stats-updated-label"></span> · <span id="stats-source-label"></span>
+    </div>
+  </div>
+
+  <div class="hero-stat">
+    <div class="hero-label">CO₂ Avoided Today vs All-Fossil Baseline</div>
+    <div class="hero-number" id="co2counter">—</div>
+    <div class="hero-unit">tonnes of CO₂</div>
+    <div class="hero-context">Equivalent to taking <strong id="cars-equiv">—</strong> cars off the road for a year</div>
+  </div>
+
+  <div class="section-divider"><div class="divider-line"></div><div class="divider-text">By the Numbers</div><div class="divider-line"></div></div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-card-icon">☀️</div>
+      <div class="stat-card-value" id="solar-val">—</div>
+      <div class="stat-card-label">GW solar capacity installed globally</div>
+      <div class="stat-card-change" id="solar-year"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-icon">💨</div>
+      <div class="stat-card-value" id="wind-val">—</div>
+      <div class="stat-card-label">GW wind capacity installed globally</div>
+      <div class="stat-card-change" id="wind-year"></div>
+    </div>
+  </div>
+
+  <!-- IMPACT BLOG POSTS — admin-curated long-form content. -->
+  <!-- Renders nothing when there are no posts, so the page layout is unchanged on empty. -->
+  <div id="impact-posts-slot"></div>
+
+  <div class="section-divider"><div class="divider-line"></div><div class="divider-text">Energy Transition Progress</div><div class="divider-line"></div></div>
+
+  <div class="progress-section">
+    <div class="progress-card">
+      <div class="progress-header">
+        <div class="progress-title">☀️ Solar (of new capacity)</div>
+        <div class="progress-percent" id="solar-pct">—</div>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill solar" id="solar-bar" style="width:0%"></div></div>
+      <div class="progress-detail" id="solar-pct-detail">of new electricity generation capacity</div>
+    </div>
+    <div class="progress-card">
+      <div class="progress-header">
+        <div class="progress-title">💨 Wind (of electricity)</div>
+        <div class="progress-percent" id="wind-pct">—</div>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill wind" id="wind-bar" style="width:0%"></div></div>
+      <div class="progress-detail" id="wind-pct-detail">of global electricity generation</div>
+    </div>
+    <div class="progress-card">
+      <div class="progress-header">
+        <div class="progress-title">🌊 Hydroelectric</div>
+        <div class="progress-percent" id="hydro-pct">—</div>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill hydro" id="hydro-bar" style="width:0%"></div></div>
+      <div class="progress-detail">of global electricity supply</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Post detail view — shown when URL has ?post=slug, hidden otherwise -->
+<div class="content" id="impact-post-view" style="display:none;">
+  <a href="impact.html" class="post-back-link" onclick="event.preventDefault(); showImpactList();">← Back to Impact</a>
+  <div id="post-detail-slot"></div>
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item" onclick="window.location.href='feed.html'"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+  <div class="nav-item" onclick="window.location.href='champions.html'"><div class="nav-icon">🏆</div><div class="nav-label">Champions</div></div>
+  <div class="nav-item active"><div class="nav-icon">📊</div><div class="nav-label">Impact</div></div>
+  <div class="nav-item" id="nav-market" onclick="window.location.href='products.html'"><div class="nav-icon">🛒</div><div class="nav-label">Market</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="page-footer"><a href="privacy.html">Privacy Policy</a> · © 2026 Renewonomics</div>
+
+<script>
+  // ── AUTH GUARD ─────────────────────────────────────
+  if (!sessionStorage.getItem('rw_logged_in')) {
+    window.location.href = 'login.html';
+  }
+
+  // ── READING HISTORY (shared scheme with feed.html) ──────────────
+  // Same localStorage keys as feed.html so the Profile page's "Articles
+  // Read" badge counter (first-read, on-a-roll, avid-reader) counts Impact
+  // posts too, not just RSS feed articles. Impact posts have no like button,
+  // so only read-tracking is wired up here. IDs are prefixed 'impact:' so
+  // they can never collide with the SHA-256 hash IDs used for RSS articles.
+  const READ_KEY = 'rw_read_articles';
+
+  function _getIdSet(key) {
+    try {
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      return new Set(Array.isArray(arr) ? arr : []);
+    } catch { return new Set(); }
+  }
+  function _addToIdSet(key, id) {
+    if (!id) return false;
+    const set = _getIdSet(key);
+    if (set.has(id)) return false;
+    set.add(id);
+    try { localStorage.setItem(key, JSON.stringify([...set])); } catch {}
+    return true;
+  }
+  function _trackOnServer(action, id) {
+    const tok = localStorage.getItem('rw_session_token');
+    if (!tok) return;
+    fetch('/.netlify/functions/api/me/stats/track', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
+      body: JSON.stringify({ action, id }),
+    }).catch(() => {});
+  }
+  function markArticleRead(id) {
+    if (_addToIdSet(READ_KEY, id)) _trackOnServer('read', id);
+  }
+
+  // Show user greeting + admin nav
+  window.addEventListener('DOMContentLoaded', () => {
+    const name = sessionStorage.getItem('rw_user_name');
+    const greet = document.getElementById('user-greeting');
+    if (name && greet) {
+      greet.textContent = 'Hi, ' + name;
+      greet.style.display = 'block';
+    }
+    if (sessionStorage.getItem('rw_role') === 'admin') {
+      const gear = document.getElementById('topbar-admin');
+      if (gear) gear.style.display = '';
+    }
+  });
+
+  async function logout() {
+    try {
+      const tok = localStorage.getItem('rw_session_token');
+      if (tok) {
+        await fetch('/.netlify/functions/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + tok }
+        });
+      }
+    } catch {}
+    localStorage.removeItem('rw_session_token');
+    localStorage.removeItem('rw_user');
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+  }
+
+  const API_BASE = '/.netlify/functions/api';
+
+  function animateTo(el, target, duration, fmt) {
+    if (!el || isNaN(target)) return;
+    fmt = fmt || function(v) { return v.toLocaleString(); };
+    var start = performance.now();
+    function tick(now) {
+      var t = Math.min((now - start) / duration, 1);
+      var ease = 1 - Math.pow(1 - t, 3);
+      el.textContent = fmt(Math.round(target * ease));
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  var co2Base = 0;
+  function startCO2Ticker() {
+    setInterval(function() {
+      co2Base += Math.floor(Math.random() * 500 + 150);
+      var el = document.getElementById('co2counter');
+      if (el) el.textContent = (co2Base / 1000000).toFixed(1) + 'M';
+      var carsEl = document.getElementById('cars-equiv');
+      if (carsEl) carsEl.textContent = Math.floor(co2Base / 4.6).toLocaleString();
+    }, 3000);
+  }
+
+  function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+  function setBar(pctId, barId, pct) {
+    var v = Math.min(100, Math.max(0, Math.round(pct * 10) / 10));
+    set(pctId, v + '%');
+    setTimeout(function() { var bar = document.getElementById(barId); if (bar) bar.style.width = v + '%'; }, 400);
+  }
+
+  function timeAgo(iso) {
+    if (!iso) return 'recently';
+    var diff = (Date.now() - new Date(iso)) / 1000;
+    if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
+  function renderStats(s) {
+    s = s || {};
+    co2Base = (s.co2 && s.co2.avoidedToday) || 4200000;
+    animateTo(document.getElementById('co2counter'), co2Base,     1400, function(v) { return (v/1000000).toFixed(1)+'M'; });
+    animateTo(document.getElementById('cars-equiv'), Math.floor(co2Base/4.6), 1400);
+    animateTo(document.getElementById('solar-val'), (s.solar && s.solar.gw)  || 1419, 1200);
+    set('solar-year', (s.solar && s.solar.year) ? 'Data: '+s.solar.year+((s.solar.live)?' · live':' · ref') : '');
+    animateTo(document.getElementById('wind-val'),  (s.wind && s.wind.gw)   || 1017, 1200);
+    set('wind-year',  (s.wind  && s.wind.year)  ? 'Data: '+s.wind.year +((s.wind.live) ?' · live':' · ref') : '');
+
+    var renewPct = (s.renewables && s.renewables.pct) || 29.4;
+    var windPct  = (s.wind_pct   && s.wind_pct.pct)   || 7.8;
+    var hydroPct = (s.hydro      && s.hydro.pct)       || 15.2;
+    var solarPct = Math.max(0, renewPct - windPct - hydroPct);
+    setBar('solar-pct','solar-bar', solarPct);
+    set('solar-pct-detail','of global electricity generation'+(s.renewables&&s.renewables.year?' ('+s.renewables.year+')':''));
+    setBar('wind-pct', 'wind-bar',  windPct);
+    set('wind-pct-detail','of global electricity generation'+(s.wind_pct&&s.wind_pct.year?' ('+s.wind_pct.year+')':''));
+    setBar('hydro-pct','hydro-bar', hydroPct);
+
+    var srcBar = document.getElementById('stats-source-bar');
+    if (srcBar) {
+      var live = [s.solar&&s.solar.live, s.wind&&s.wind.live, s.renewables&&s.renewables.live].filter(Boolean).length;
+      // Honest labelling: show when stats were last refreshed, and whether the
+      // figures are live (pulled from APIs) or reference values (static fallback).
+      set('stats-updated-label', s.updatedAt ? 'Updated '+timeAgo(s.updatedAt) : 'Reference data');
+      set('stats-source-label', live > 0
+        ? 'Sources: World Bank · Our World in Data · IRENA'
+        : 'Reference data — World Bank · IRENA · IEA');
+      srcBar.style.display = 'block';
+    }
+    startCO2Ticker();
+  }
+
+  window.addEventListener('DOMContentLoaded', async function() {
+    try {
+      var res = await fetch(API_BASE+'/stats', { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      renderStats(await res.json());
+    } catch(e) {
+      console.warn('[impact] Stats API unavailable, using fallback:', e.message);
+      renderStats({});
+    }
+    // After stats, render blog posts (list or single detail view based on URL)
+    initImpactPosts();
+  });
+
+  // ── IMPACT BLOG POSTS ─────────────────────────────────────────────────
+  // URL schema:
+  //   /impact.html            → list view (blog cards between stats and progress)
+  //   /impact.html?post=slug  → detail view (full post page, list hidden)
+
+  async function initImpactPosts() {
+    const params = new URLSearchParams(window.location.search);
+    const slug   = params.get('post');
+    if (slug) {
+      await renderPostDetail(slug);
+    } else {
+      await renderPostList();
+    }
+  }
+
+  function showImpactList() {
+    // Remove ?post= from URL and swap views
+    history.pushState({}, '', 'impact.html');
+    document.getElementById('impact-post-view').style.display = 'none';
+    document.getElementById('impact-main-view').style.display = '';
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  function showImpactDetail(slug) {
+    history.pushState({}, '', 'impact.html?post=' + encodeURIComponent(slug));
+    document.getElementById('impact-main-view').style.display = 'none';
+    document.getElementById('impact-post-view').style.display = '';
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    // Actually fetch + render the post content. Without this, the detail view
+    // would be empty until a manual page refresh.
+    renderPostDetail(slug);
+  }
+
+  async function renderPostList() {
+    const slot = document.getElementById('impact-posts-slot');
+    if (!slot) return;
+    let posts = [];
+    try {
+      const r = await fetch(API_BASE + '/impact/posts');
+      if (r.ok) posts = await r.json();
+    } catch {}
+    if (!Array.isArray(posts) || !posts.length) {
+      // No posts → render nothing. Page flows naturally from stats to progress section.
+      slot.innerHTML = '';
+      return;
+    }
+    slot.innerHTML = `
+      <div class="impact-posts-wrap">
+        <div class="section-divider"><div class="divider-line"></div><div class="divider-text">Featured Insights</div><div class="divider-line"></div></div>
+        <div class="impact-posts-grid">
+          ${posts.map(p => postCardHtml(p)).join('')}
+        </div>
+      </div>`;
+  }
+
+  function postCardHtml(p) {
+    const imgHtml = p.img
+      ? `<img src="${escapeHtml(p.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='<span class=\\'ipost-card-placeholder\\'>📰</span>';">`
+      : `<span class="ipost-card-placeholder">📰</span>`;
+    const date = formatRelativeDate(p.pubDate);
+    const featuredBadge = p.featured ? '<span class="ipost-featured-badge">★ Featured</span>' : '';
+    return `
+      <div class="ipost-card ${p.featured ? 'featured' : ''}" onclick="showImpactDetail('${escapeHtml(p.slug)}')">
+        <div class="ipost-card-img">${imgHtml}</div>
+        <div class="ipost-card-body">
+          <div class="ipost-card-meta">
+            ${featuredBadge}
+            <span>${escapeHtml(date)}</span>
+            ${p.author ? `<span>· ${escapeHtml(p.author)}</span>` : ''}
+          </div>
+          <div class="ipost-card-title">${escapeHtml(p.title)}</div>
+          <div class="ipost-card-summary">${escapeHtml(p.summary || '')}</div>
+          <div class="ipost-card-readmore">Read more →</div>
+        </div>
+      </div>`;
+  }
+
+  async function renderPostDetail(slug) {
+    // Switch to detail view
+    document.getElementById('impact-main-view').style.display = 'none';
+    const detailView = document.getElementById('impact-post-view');
+    detailView.style.display = '';
+    const slot = document.getElementById('post-detail-slot');
+    slot.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(245,240,232,0.4);">Loading…</div>';
+    let post = null;
+    try {
+      const r = await fetch(API_BASE + '/impact/posts/' + encodeURIComponent(slug));
+      if (r.ok) post = await r.json();
+    } catch {}
+    if (!post) {
+      slot.innerHTML = '<div style="text-align:center;padding:60px 20px;color:rgba(245,240,232,0.5);"><h2 style="font-family:\'Playfair Display\',serif;margin-bottom:8px;">Post not found</h2><p>The article you\'re looking for may have been removed or unpublished.</p></div>';
+      return;
+    }
+    document.title = post.title + ' — Renewonomics';
+    markArticleRead('impact:' + post.slug);
+
+    // Update OG / Twitter Card tags dynamically. Static HTML has fallback
+    // values for crawlers that don't execute JS; JS-aware sharers get the
+    // post-specific preview. Best effort — most platform crawlers are
+    // JS-blind, so user-specific previews remain a server-rendering future
+    // upgrade.
+    updateOgTags({
+      title: post.title,
+      description: post.summary || 'Read on Renewonomics — clean energy news with real impact.',
+      url:   window.location.origin + '/impact/' + encodeURIComponent(post.slug),
+      image: post.img || (window.location.origin + '/logo-icon-1024.png'),
+    });
+    const imgHtml = post.img
+      ? `<div class="post-hero-img"><img src="${escapeHtml(post.img)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none';"></div>`
+      : '';
+    const summaryHtml = post.summary ? `<div class="post-summary">${escapeHtml(post.summary)}</div>` : '';
+    const metaParts = [];
+    if (post.pubDate) metaParts.push(formatLongDate(post.pubDate));
+    if (post.author)  metaParts.push('By ' + escapeHtml(post.author));
+    if (post.category && post.category !== 'all') metaParts.push('#' + escapeHtml(post.category));
+
+    // Build the canonical post URL — used for share-intents and copy-link.
+    // We use the clean /impact/<slug> path because that's what's routed to
+    // the impact-post Netlify Function, which serves crawlers (LinkedIn,
+    // Facebook, etc.) post-specific OG/Twitter Card meta tags. Real human
+    // visitors get a 302 redirect to /impact.html?post=<slug> from the
+    // function, so the rich JS-driven detail page renders normally.
+    const postUrl   = window.location.origin + '/impact/' + encodeURIComponent(post.slug);
+    const shareText = post.summary ? `${post.title} — ${post.summary}` : post.title;
+    const shareBar  = buildShareBar(postUrl, post.title, shareText);
+
+    slot.innerHTML = `
+      ${imgHtml}
+      <div class="post-meta-bar">${metaParts.join(' · ')}</div>
+      <div class="post-title">${escapeHtml(post.title)}</div>
+      ${summaryHtml}
+      <div class="post-body">${renderMarkdown(post.body || '')}</div>
+      ${shareBar}
+    `;
+  }
+
+  /** Build the share-bar HTML for a given post URL.
+   *  Platform share-intent URLs are documented and stable — opening these in a
+   *  new tab triggers the user-facing share dialog where they pick where to
+   *  post (their feed, a page they manage, etc).
+   *
+   *  - LinkedIn: https://www.linkedin.com/sharing/share-offsite/?url=...
+   *  - Facebook: https://www.facebook.com/sharer/sharer.php?u=...
+   *  - Twitter/X: https://twitter.com/intent/tweet?text=...&url=...
+   *
+   *  We also expose a Web Share button on devices that support it (mobile
+   *  primarily) so users can pick from any installed app: WhatsApp, Telegram,
+   *  Email, Messages, etc. */
+  function buildShareBar(postUrl, title, text) {
+    const enc = (s) => encodeURIComponent(s || '');
+    // Truncate share text to fit a tweet (280 chars minus ~23 for the URL)
+    const tweetText = text.length > 220 ? text.slice(0, 217) + '…' : text;
+    // WhatsApp: title+summary then URL on its own line — reads cleanly in chat
+    const waText = tweetText + '\n\n' + postUrl;
+
+    const liUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${enc(postUrl)}`;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${enc(postUrl)}`;
+    const twUrl = `https://twitter.com/intent/tweet?text=${enc(tweetText)}&url=${enc(postUrl)}&via=renewonomics`;
+    const waUrl = `https://wa.me/?text=${enc(waText)}`;
+
+    // SVG icons inline so we don't depend on any icon font/CDN
+    const icons = {
+      linkedin:  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.23 0z"/></svg>',
+      facebook:  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+      twitter:   '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+      whatsapp:  '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>',
+      link:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+      share:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+    };
+
+    // Use data-* attributes for buttons with dynamic values — avoids
+    // apostrophes in titles/summaries breaking JS in onclick strings.
+    const nativeShareBtn = (typeof navigator !== 'undefined' && navigator.share)
+      ? `<button class="share-btn"
+               data-url="${escAttr(postUrl)}"
+               data-title="${escAttr(title)}"
+               data-text="${escAttr(text)}"
+               onclick="shareNativeFromBtn(this)">
+           <span class="share-icon">${icons.share}</span>Share via…
+         </button>`
+      : '';
+
+    return `
+      <div class="share-bar">
+        <div class="share-bar-title">📣 Share this post</div>
+        <div class="share-buttons">
+          <a class="share-btn linkedin" href="${liUrl}" target="_blank" rel="noopener" onclick="trackShare('linkedin')"><span class="share-icon">${icons.linkedin}</span>LinkedIn</a>
+          <a class="share-btn facebook" href="${fbUrl}" target="_blank" rel="noopener" onclick="trackShare('facebook')"><span class="share-icon">${icons.facebook}</span>Facebook</a>
+          <a class="share-btn twitter"  href="${twUrl}" target="_blank" rel="noopener" onclick="trackShare('twitter')"><span class="share-icon">${icons.twitter}</span>X / Twitter</a>
+          <a class="share-btn whatsapp" href="${waUrl}" target="_blank" rel="noopener" onclick="trackShare('whatsapp')"><span class="share-icon">${icons.whatsapp}</span>WhatsApp</a>
+          <button class="share-btn" data-url="${escAttr(postUrl)}" onclick="copyFromBtn(this)">
+            <span class="share-icon">${icons.link}</span><span class="copy-label">Copy link</span>
+          </button>
+          ${nativeShareBtn}
+        </div>
+      </div>`;
+  }
+
+  /** Helper: escape a value for safe insertion into an HTML attribute. */
+  function escAttr(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /** Update Open Graph / Twitter Card meta tags for the current post.
+   *  This affects how the page renders in link-preview cards on JS-aware
+   *  social platforms / chat apps. Most major social crawlers (LinkedIn,
+   *  Facebook) are JS-blind, so they keep using the static fallback tags
+   *  in the page <head>. Devices that do execute JS get the right preview. */
+  function updateOgTags({ title, description, url, image }) {
+    const upd = (selector, attr, value) => {
+      const el = document.querySelector(selector);
+      if (el && value) el.setAttribute(attr, value);
+    };
+    upd('meta[property="og:title"]',       'content', title);
+    upd('meta[property="og:description"]', 'content', description);
+    upd('meta[property="og:url"]',         'content', url);
+    upd('meta[property="og:image"]',       'content', image);
+    upd('meta[name="twitter:title"]',       'content', title);
+    upd('meta[name="twitter:description"]', 'content', description);
+    upd('meta[name="twitter:image"]',       'content', image);
+  }
+
+  /** Thin wrappers that read values from data-* attributes — avoids the
+   *  escAttr() &#39; → ' → broken-JS-string bug with apostrophes in titles. */
+  function shareNativeFromBtn(btn) {
+    shareNative(btn.dataset.url, btn.dataset.title, btn.dataset.text);
+  }
+  function copyFromBtn(btn) {
+    copyPostLink(btn, btn.dataset.url);
+  }
+
+  /** Copy the post URL to clipboard with visual confirmation. Falls back to a
+   *  document.execCommand path on older browsers / non-secure contexts. */
+  async function copyPostLink(btn, url) {
+    const labelEl = btn.querySelector('.copy-label');
+    const original = labelEl ? labelEl.textContent : 'Copy link';
+    const showCopied = () => {
+      btn.classList.add('copied');
+      if (labelEl) labelEl.textContent = '✓ Copied';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        if (labelEl) labelEl.textContent = original;
+      }, 1800);
+    };
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // Legacy fallback: temporary textarea + execCommand('copy')
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      showCopied();
+      trackShare('copy');
+    } catch {
+      if (labelEl) labelEl.textContent = '⚠ Failed';
+      setTimeout(() => { if (labelEl) labelEl.textContent = original; }, 1800);
+    }
+  }
+
+  /** Native Web Share — opens the OS-level share sheet on supported devices.
+   *  Only invoked on browsers that have navigator.share (mostly mobile). */
+  async function shareNative(url, title, text) {
+    if (!navigator.share) return;
+    try {
+      await navigator.share({ url, title, text });
+      trackShare('native');
+    } catch {
+      // User cancelled the share sheet — no-op
+    }
+  }
+
+  /** Fire-and-forget share tracking. Lightweight, doesn't block user.
+   *  Sent to /api/me/stats/track only if the user is logged in. */
+  function trackShare(platform) {
+    try {
+      fetch('/.netlify/functions/api/me/stats/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'share', platform, at: Date.now() }),
+      }).catch(() => {});
+    } catch { /* best-effort only */ }
+  }
+
+  // Very simple markdown renderer — supports paragraphs, bold, italic, links, images, headings, lists, blockquotes.
+  // Escapes all input first then re-applies markup, so it's safe against XSS.
+  function renderMarkdown(src) {
+    if (!src) return '';
+    // Escape first
+    let s = escapeHtml(src);
+
+    // Block-level: headings
+    s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    s = s.replace(/^## (.+)$/gm,  '<h2>$1</h2>');
+
+    // Images (inline): ![alt](url)  — the URL was escaped so decode the & back
+    s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(_, alt, url) {
+      return '<img alt="' + alt + '" src="' + url.replace(/&amp;/g, '&') + '">';
+    });
+
+    // Links: [text](url)
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(_, text, url) {
+      return '<a href="' + url.replace(/&amp;/g, '&') + '" target="_blank" rel="noopener">' + text + '</a>';
+    });
+
+    // Bold + italic + underline
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|\s)\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
+    s = s.replace(/__([^_]+)__/g, '<u>$1</u>');
+
+    // Blockquotes (simple: lines starting with >)
+    s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+    // Convert double-newlines into paragraph breaks
+    const paragraphs = s.split(/\n{2,}/).map(function(p) {
+      const trimmed = p.trim();
+      if (!trimmed) return '';
+      // Don't wrap already-wrapped block elements
+      if (/^<(h[1-6]|blockquote|ul|ol|img)/.test(trimmed)) return trimmed;
+      // Bullet list: lines starting with * or -
+      if (/^([*-] )/.test(trimmed)) {
+        const items = trimmed.split(/\n/).map(function(line) {
+          const m = line.match(/^[*-]\s+(.+)/);
+          return m ? '<li>' + m[1] + '</li>' : line;
+        }).join('');
+        return '<ul>' + items + '</ul>';
+      }
+      // Numbered list
+      if (/^(\d+\.\s)/.test(trimmed)) {
+        const items = trimmed.split(/\n/).map(function(line) {
+          const m = line.match(/^\d+\.\s+(.+)/);
+          return m ? '<li>' + m[1] + '</li>' : line;
+        }).join('');
+        return '<ol>' + items + '</ol>';
+      }
+      // Plain paragraph — convert single newlines to <br>
+      return '<p>' + trimmed.replace(/\n/g, '<br>') + '</p>';
+    });
+    return paragraphs.join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function formatRelativeDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 3600)    return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400)   return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 86400*7) return Math.floor(diff / 86400) + 'd ago';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function formatLongDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // Handle browser back/forward so list <-> detail transitions work naturally
+  window.addEventListener('popstate', () => { initImpactPosts(); });
+</script>
+<script>
+// Register the service worker for offline support + installability.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').then(function (reg) {
+      // When a new SW is found, activate it as soon as it's ready so users
+      // aren't stuck on a stale shell after we ship an update.
+      reg.addEventListener('updatefound', function () {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function () {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            nw.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(function () { /* SW registration failed — app still works online */ });
+  });
+}
+
+// ── TOP-BAR MENU (shared) ──────────────────────────────
+function toggleMenu(e) {
+  if (e) e.stopPropagation();
+  const dd  = document.getElementById('menu-dropdown');
+  const btn = document.getElementById('menu-btn');
+  const open = dd.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.menu-wrap');
+  const dd   = document.getElementById('menu-dropdown');
+  if (dd && dd.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+    dd.classList.remove('open');
+    const btn = document.getElementById('menu-btn');
+    if (btn) btn.classList.remove('open');
+  }
+});
+// Reveal the Admin entry for admins
+(function revealAdminMenu(){
+  try {
+    if (sessionStorage.getItem('rw_role') === 'admin') {
+      document.addEventListener('DOMContentLoaded', () => {
+        const a = document.getElementById('menu-admin');
+        if (a) a.style.display = '';
+      });
+      const a = document.getElementById('menu-admin');
+      if (a) a.style.display = '';
+    }
+  } catch {}
+})();
+
+</script>
+</body>
+</html>

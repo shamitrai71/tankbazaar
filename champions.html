@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#111a14">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32-v2.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16-v2.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon-v2.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Renewonomics">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="description" content="Renewonomics Green Champions — the companies leading the clean energy revolution. Profiles of top solar, wind, EV and recycling organisations worldwide.">
+<meta name="robots" content="index, follow">
+<title>Renewonomics — Green Champions 2026</title>
+<!-- Google AdSense: TO ENABLE, replace ca-pub-REPLACE_ME with your real Publisher ID, then uncomment this block.
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-REPLACE_ME" crossorigin="anonymous"></script>
+-->
+<!-- Fonts: preconnect + non-blocking load (was render-blocking ~1.8s) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap"></noscript>
+<style>
+  :root {
+    --green: #1a7a4a;
+    --lime:  #b5e853;
+    --lime2: #d4f57a;
+    --cream: #f5f0e8;
+    --accent: #ff5c35;
+    --dark:  #111a14;
+    --card:  #1c2a21;
+    --border: rgba(181,232,83,0.1);
+    --muted: rgba(245,240,232,0.45);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--dark);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--cream);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── TOPBAR ─────────────────────────────── */
+  .topbar {
+    position: fixed;
+    top:0; left:0; right:0;
+    z-index: 100;
+    background: rgba(17,26,20,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(181,232,83,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 56px;
+  }
+
+  .logo { display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .logo-icon { width:32px; height:32px; display:block; }
+  .logo-text { font-family:'Playfair Display',serif; font-size:20px; font-weight:900; letter-spacing:-0.5px; color:var(--cream); }
+  .logo-text span { color:var(--lime); }
+  .topbar-right { display:flex; align-items:center; gap:14px; }
+  .topbar-back { font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; cursor:pointer; border:1px solid var(--border); padding:5px 12px; border-radius:20px; transition:all 0.2s; }
+  .topbar-back:hover { color:var(--lime); border-color:rgba(181,232,83,0.3); }
+
+  /* ── PAGE ───────────────────────────────── */
+  .page { padding: 80px 0 100px; max-width: 480px; margin: 0 auto; }
+
+  /* ── HERO BANNER ─────────────────────────── */
+  .hero {
+    margin: 0 16px 24px;
+    background: linear-gradient(135deg, #0a2a12 0%, #1a5c30 50%, #0d3320 100%);
+    border: 1px solid rgba(181,232,83,0.2);
+    border-radius: 24px;
+    padding: 28px 24px 24px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(181,232,83,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: rgba(181,232,83,0.6);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--lime);
+    border-radius: 50%;
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.7)} }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+
+  .hero-title em { font-style: italic; color: var(--lime); }
+
+  .hero-sub {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 12px;
+  }
+
+  .hero-stat {
+    flex: 1;
+    background: rgba(181,232,83,0.08);
+    border: 1px solid rgba(181,232,83,0.15);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+
+  .hero-stat-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--lime);
+    line-height: 1;
+  }
+
+  .hero-stat-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ── FILTER TABS ─────────────────────────── */
+  /* Wrapper provides the right-edge fade hint and contains the scrollable row.
+     The fade fades from var(--bg) to transparent so it blends into the page. */
+  .filter-tabs-wrap {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .filter-tabs {
+    display: flex;
+    flex-wrap: wrap;       /* wrap onto multiple lines instead of horizontal scroll */
+    gap: 6px;
+    padding: 4px 16px;
+    justify-content: center;
+    animation: fadeUp 0.5s ease 0.1s both;
+  }
+
+  .filter-tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(181,232,83,0.35);
+    color: rgba(181,232,83,0.75);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    background: rgba(181,232,83,0.06);
+  }
+
+  .filter-tab.active, .filter-tab:hover {
+    background: var(--lime);
+    color: var(--dark);
+    border-color: var(--lime);
+    box-shadow: 0 0 12px rgba(181,232,83,0.35);
+  }
+
+  /* ── SECTION LABEL ───────────────────────── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 16px 14px;
+  }
+
+  .section-label-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(181,232,83,0.4);
+    white-space: nowrap;
+  }
+
+  .section-label-line { flex:1; height:1px; background:rgba(181,232,83,0.08); }
+
+  /* ── FEATURED CHAMPION (large) ───────────── */
+  .champion-featured {
+    margin: 0 16px 16px;
+    background: var(--card);
+    border: 1px solid rgba(181,232,83,0.12);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: fadeUp 0.5s ease 0.15s both;
+  }
+
+  .champion-featured:hover {
+    border-color: rgba(181,232,83,0.3);
+    transform: translateY(-2px);
+  }
+
+  .cf-banner {
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 72px;
+    position: relative;
+  }
+
+  .cf-rank {
+    position: absolute;
+    top: 12px; left: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--dark);
+    background: var(--lime);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .cf-sector {
+    position: absolute;
+    top: 12px; right: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--lime);
+    background: rgba(181,232,83,0.12);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid rgba(181,232,83,0.2);
+  }
+
+  .cf-body { padding: 16px 18px 18px; }
+
+  .cf-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .cf-tagline {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  .cf-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .cf-metric {
+    background: rgba(181,232,83,0.06);
+    border: 1px solid rgba(181,232,83,0.1);
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+
+  .cf-metric-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--lime);
+    line-height: 1;
+  }
+
+  .cf-metric-lbl {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.3;
+  }
+
+  .cf-desc {
+    font-size: 13px;
+    color: rgba(245,240,232,0.65);
+    line-height: 1.65;
+    margin-bottom: 14px;
+  }
+
+  /* expand / collapse */
+  .cf-full {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+    opacity: 0;
+  }
+
+  .cf-full.open { max-height: 600px; opacity: 1; }
+
+  .cf-full-body {
+    border-top: 1px solid rgba(181,232,83,0.08);
+    padding: 14px 0 4px;
+  }
+
+  .cf-full-body p {
+    font-size: 13px;
+    color: rgba(245,240,232,0.72);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+  .cf-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .cf-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: rgba(181,232,83,0.6);
+    background: rgba(181,232,83,0.07);
+    padding: 3px 9px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .cf-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cf-read-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--lime);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.2s;
+  }
+
+  .cf-read-btn:hover { opacity: 0.7; }
+
+  .cf-share-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .cf-share-btn:hover { color: var(--lime); }
+
+  /* ── CHAMPION CARD (regular) ─────────────── */
+  .champion-card {
+    margin: 0 16px 14px;
+    background: var(--card);
+    border: 1px solid rgba(181,232,83,0.08);
+    border-radius: 18px;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .champion-card:hover {
+    border-color: rgba(181,232,83,0.25);
+    transform: translateY(-1px);
+  }
+
+  /* Startup variant — very light lime background + dark text, visually distinct
+     from the standard dark cards used for established/public companies. */
+  .champion-card.startup {
+    background: linear-gradient(160deg, #eef9d8 0%, #dff2b8 100%);
+    border: 1px solid rgba(13,31,16,0.12);
+  }
+  .champion-card.startup:hover { border-color: rgba(13,31,16,0.25); }
+  .champion-card.startup .cc-body { border-left-color: rgba(13,31,16,0.08); }
+  .champion-card.startup .cc-name { color: #0d1f10; }
+  .champion-card.startup .cc-tagline { color: rgba(13,31,16,0.65); }
+  .champion-card.startup .cc-sector { background: rgba(13,31,16,0.1); color: #1a5c30; }
+  .champion-card.startup .cc-rank { color: #0d1f10; opacity: 0.5; }
+  .champion-card.startup .cc-stat-val { color: #1a5c30; }
+  .champion-card.startup .cc-stat-lbl { color: rgba(13,31,16,0.55); }
+  .startup-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    background: #0d1f10; color: #b5e853;
+    padding: 2px 7px; border-radius: 4px;
+    margin-left: 6px; vertical-align: middle;
+  }
+  .champion-card.startup .cc-expand-inner { border-top-color: rgba(13,31,16,0.1); }
+  .champion-card.startup .cc-expand-inner p { color: rgba(13,31,16,0.75); }
+  .champion-card.startup .cc-read-btn { color: #1a5c30; }
+  .champion-card.startup .cf-tag { background: rgba(13,31,16,0.08); color: #1a5c30; }
+
+  /* Focus Champion variant — one per sector, called out in a warm amber/orange
+     treatment. Deliberately a different hue from both the startup cards above
+     (light green) and the Jobs cards on the feed page (also light green), so
+     all three "special" card types stay visually distinguishable at a glance. */
+  .champion-card.focus {
+    background: linear-gradient(160deg, #fdeee4 0%, #fad3b8 100%);
+    border: 1px solid rgba(122,42,16,0.18);
+  }
+  .champion-card.focus:hover { border-color: rgba(122,42,16,0.32); }
+  .champion-card.focus .cc-body { border-left-color: rgba(122,42,16,0.1); }
+  .champion-card.focus .cc-name { color: #3d1505; }
+  .champion-card.focus .cc-tagline { color: rgba(61,21,5,0.7); }
+  .champion-card.focus .cc-sector { background: rgba(122,42,16,0.12); color: #a5421a; }
+  .champion-card.focus .cc-rank { color: #3d1505; opacity: 0.5; }
+  .champion-card.focus .cc-stat-val { color: #a5421a; }
+  .champion-card.focus .cc-stat-lbl { color: rgba(61,21,5,0.55); }
+  .champion-card.focus .cc-expand-inner { border-top-color: rgba(122,42,16,0.12); }
+  .champion-card.focus .cc-expand-inner p { color: rgba(61,21,5,0.78); }
+  .champion-card.focus .cc-read-btn { color: #a5421a; }
+  .champion-card.focus .cf-tag { background: rgba(122,42,16,0.1); color: #a5421a; }
+  .focus-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    background: #7a2a10; color: #ffb088;
+    padding: 2px 7px; border-radius: 4px;
+    margin-left: 6px; vertical-align: middle;
+  }
+
+  .cc-stripe {
+    width: 64px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px 0;
+    font-size: 30px;
+  }
+
+  .cc-rank {
+    font-family: 'Space Mono', monospace;
+    font-size: 8px;
+    color: var(--lime);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    opacity: 0.6;
+  }
+
+  .cc-body {
+    flex: 1;
+    padding: 14px 14px 14px 12px;
+    border-left: 1px solid rgba(181,232,83,0.06);
+  }
+
+  .cc-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .cc-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .cc-sector {
+    font-family: 'Space Mono', monospace;
+    font-size: 8px;
+    color: var(--lime);
+    background: rgba(181,232,83,0.1);
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+    margin-left: 8px;
+    margin-top: 2px;
+  }
+
+  .cc-tagline {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .cc-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cc-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .cc-stat-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--lime);
+  }
+
+  .cc-stat-lbl {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* expand panel on card */
+  .cc-expand {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+    opacity: 0;
+    padding: 0 14px 0 0;
+  }
+
+  .cc-expand.open { max-height: 400px; opacity: 1; }
+
+  .cc-expand-inner {
+    border-top: 1px solid rgba(181,232,83,0.08);
+    padding: 12px 0 4px;
+  }
+
+  .cc-expand-inner p {
+    font-size: 12.5px;
+    color: rgba(245,240,232,0.7);
+    line-height: 1.65;
+    margin-bottom: 10px;
+  }
+
+  .cc-expand-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 4px;
+  }
+
+  .cc-read-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--lime);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  /* ── BOTTOM NAV ──────────────────────────── */
+  .bottom-nav {
+    position: fixed;
+    bottom:0; left:0; right:0;
+    background: rgba(17,26,20,0.97);
+    border-top: 1px solid rgba(181,232,83,0.1);
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0 18px;
+    z-index: 100;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 12px;
+  }
+
+  .nav-icon { font-size: 22px; line-height:1; }
+  .nav-label { font-family:'Space Mono',monospace; font-size:9px; color:rgba(245,240,232,0.35); text-transform:uppercase; letter-spacing:0.5px; }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 0 6px var(--lime)); }
+  .nav-item.active .nav-label { color: var(--lime); }
+
+  /* ── ANIMATIONS ──────────────────────────── */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .champion-card:nth-of-type(1)  { animation: fadeUp 0.4s ease 0.2s both; }
+  .champion-card:nth-of-type(2)  { animation: fadeUp 0.4s ease 0.25s both; }
+  .champion-card:nth-of-type(3)  { animation: fadeUp 0.4s ease 0.3s both; }
+  .champion-card:nth-of-type(4)  { animation: fadeUp 0.4s ease 0.35s both; }
+  .champion-card:nth-of-type(5)  { animation: fadeUp 0.4s ease 0.4s both; }
+  .champion-card:nth-of-type(6)  { animation: fadeUp 0.4s ease 0.45s both; }
+
+  /* ── TOAST ───────────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 88px; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--card);
+    border: 1px solid rgba(181,232,83,0.15);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--lime);
+    letter-spacing: 0.5px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .page-footer { text-align:center; padding: 4px 0 100px; font-family:'Space Mono',monospace; font-size:9px; color:rgba(245,240,232,0.18); letter-spacing:1px; }
+  .page-footer a { color:rgba(181,232,83,0.3); text-decoration:none; }
+  .page-footer a:hover { color:rgba(181,232,83,0.6); }
+  .menu-wrap { position: relative; }
+  .menu-btn { font-size: 22px; line-height: 1; font-weight: 700; color: rgba(181,232,83,0.85); background: rgba(181,232,83,0.08); border: 1px solid rgba(181,232,83,0.3); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .menu-btn:hover, .menu-btn.open { background: var(--lime); color: var(--dark); border-color: var(--lime); }
+  .menu-dropdown { position: absolute; top: 42px; right: 0; background: rgba(20,31,23,0.98); backdrop-filter: blur(12px); border: 1px solid rgba(181,232,83,0.25); border-radius: 12px; padding: 6px; min-width: 180px; z-index: 200; box-shadow: 0 8px 28px rgba(0,0,0,0.5); display: none; flex-direction: column; gap: 2px; animation: menuIn 0.15s ease; }
+  .menu-dropdown.open { display: flex; }
+  @keyframes menuIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+  .menu-link { display: flex; align-items: center; gap: 10px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--cream); text-decoration: none; padding: 10px 12px; border-radius: 8px; background: none; border: none; width: 100%; text-align: left; cursor: pointer; transition: background 0.15s; }
+  .menu-link:hover { background: rgba(181,232,83,0.12); }
+  .menu-link.current { color: var(--lime); background: rgba(181,232,83,0.08); }
+  .menu-ic { font-size: 15px; width: 18px; text-align: center; }
+  .menu-divider { height: 1px; background: rgba(181,232,83,0.15); margin: 4px 6px; }
+  .menu-logout { color: #ff8566; }
+  .menu-logout:hover { background: rgba(255,92,53,0.12); }
+
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo" onclick="window.location.href='feed.html'">
+    <img src="/icons/logo-mark.png" class="logo-icon" alt="Renewonomics logo">
+    <div class="logo-text">renew<span>onomics</span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="menu-wrap">
+      <button id="menu-btn" class="menu-btn" onclick="toggleMenu(event)" title="Menu" aria-label="Menu">⋮</button>
+      <div id="menu-dropdown" class="menu-dropdown">
+        <a class="menu-link" href="feed.html"><span class="menu-ic">🏠</span>Home</a>
+        <a class="menu-link current" href="champions.html"><span class="menu-ic">🏆</span>Champions</a>
+        <a class="menu-link" href="impact.html"><span class="menu-ic">📊</span>Impact</a>
+        <a class="menu-link" href="products.html"><span class="menu-ic">🛒</span>Market</a>
+        <a class="menu-link" href="profile.html"><span class="menu-ic">👤</span>Profile</a>
+        <a class="menu-link" id="menu-admin" href="admin.html" style="display:none;"><span class="menu-ic">⚙️</span>Admin</a>
+        <div class="menu-divider"></div>
+        <button class="menu-link menu-logout" onclick="logout()"><span class="menu-ic">🚪</span>Log out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Green Champions 2026</div>
+    <div class="hero-title">The companies <em>leading</em> the clean energy revolution</div>
+    <div class="hero-sub">Profiling the organisations making the biggest impact on renewable energy and sustainable recycling worldwide.</div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-val" id="hero-stat-champions">—</div><div class="hero-stat-lbl">Champions</div></div>
+      <div class="hero-stat"><div class="hero-stat-val" id="hero-stat-categories">—</div><div class="hero-stat-lbl">Sectors</div></div>
+      <div class="hero-stat"><div class="hero-stat-val" id="hero-stat-countries">—</div><div class="hero-stat-lbl">Countries</div></div>
+    </div>
+  </div>
+
+  <!-- FILTER TABS -->
+  <div class="filter-tabs-wrap">
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-cat="all" onclick="filterChampions(this,'all')">All</button>
+      <button class="filter-tab" data-cat="solar" onclick="filterChampions(this,'solar')">☀️ Solar</button>
+      <button class="filter-tab" data-cat="wind" onclick="filterChampions(this,'wind')">💨 Wind</button>
+      <button class="filter-tab" data-cat="ev" onclick="filterChampions(this,'ev')">⚡ EV</button>
+      <button class="filter-tab" data-cat="storage" onclick="filterChampions(this,'storage')">🔋 Storage</button>
+      <button class="filter-tab" data-cat="hydrogen" onclick="filterChampions(this,'hydrogen')">⚛️ Hydrogen</button>
+      <button class="filter-tab" data-cat="nuclear" onclick="filterChampions(this,'nuclear')">☢️ Nuclear</button>
+      <button class="filter-tab" data-cat="water" onclick="filterChampions(this,'water')">💧 Water</button>
+      <button class="filter-tab" data-cat="waste" onclick="filterChampions(this,'waste')">🗑️ Waste</button>
+      <button class="filter-tab" data-cat="bio" onclick="filterChampions(this,'bio')">🌱 Bio</button>
+      <button class="filter-tab" data-cat="agri" onclick="filterChampions(this,'agri')">🌾 Agri</button>
+      <button class="filter-tab" data-cat="recycling" onclick="filterChampions(this,'recycling')">♻️ Recycling</button>
+      <button class="filter-tab" data-cat="diversified" onclick="filterChampions(this,'diversified')">🌐 Diversified</button>
+      <button class="filter-tab" data-cat="environment" onclick="filterChampions(this,'environment')">🌍 Environment</button>
+      <button class="filter-tab" data-cat="policy" onclick="filterChampions(this,'policy')">📋 Policy</button>
+    </div>
+  </div>
+
+  <!-- LIVE NEWS PULSE (populated from RSS articles in Blobs) -->
+  <div id="news-pulse" style="margin:16px 0;padding:16px 18px;background:rgba(181,232,83,0.08);border:1px solid rgba(181,232,83,0.28);border-radius:14px;display:none;box-shadow:0 0 18px rgba(181,232,83,0.07);"">
+    <div style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(181,232,83,0.8);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--lime);animation:pulse 2s infinite;vertical-align:middle;margin-right:6px;"></span>
+      Live Coverage · <span id="pulse-total">0</span> articles this week
+    </div>
+    <div id="pulse-bars" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
+  <!-- FEATURED #1 -->
+  <div class="section-label">
+    <div class="section-label-text">Champion of the Year</div>
+    <div class="section-label-line"></div>
+  </div>
+
+  <!-- Champion cards rendered from API (/api/champions). -->
+  <!-- CSS classes and structure are preserved so existing styles/animations still apply. -->
+  <div id="champion-featured-slot"></div>
+
+  <!-- SECTION: TOP CHAMPIONS -->
+  <div class="section-label" style="margin-top:8px;">
+    <div class="section-label-text">Top Champions</div>
+    <div class="section-label-line"></div>
+  </div>
+
+  <div id="champion-cards-slot"></div>
+
+  <div style="text-align:center;padding:20px 0 8px;font-family:'Space Mono',monospace;font-size:9px;color:rgba(245,240,232,0.2);letter-spacing:2px;text-transform:uppercase;">
+    ↓ More champions coming soon ↓
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item" onclick="window.location.href='feed.html'"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+  <div class="nav-item active"><div class="nav-icon">🏆</div><div class="nav-label">Champions</div></div>
+  <div class="nav-item" onclick="window.location.href='impact.html'"><div class="nav-icon">📊</div><div class="nav-label">Impact</div></div>
+  <div class="nav-item" id="nav-market" onclick="window.location.href='products.html'"><div class="nav-icon">🛒</div><div class="nav-label">Market</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="page-footer"><a href="privacy.html">Privacy Policy</a> · © 2026 Renewonomics</div>
+
+<script>
+  // ── AUTH GUARD ──────────────────────────────────────
+  if (!sessionStorage.getItem('rw_logged_in')) {
+    window.location.href = 'login.html';
+  }
+
+  const API_BASE = '/.netlify/functions/api';
+
+  // ── CATEGORY CONFIG ──────────────────────────────────
+  const CAT_LABELS = {
+    solar: '☀️ Solar', wind: '💨 Wind', ev: '⚡ EV',
+    storage: '🔋 Storage', hydrogen: '⚛️ Hydrogen', nuclear: '☢️ Nuclear',
+    water: '💧 Water', waste: '🗑️ Waste', bio: '🌱 Bio', agri: '🌾 Agri',
+    recycling: '♻️ Recycling', policy: '📋 Policy', diversified: '🌐 Diversified',
+    environment: '🌍 Environment', all: '📰 General'
+  };
+
+  // ── NEWS PULSE ───────────────────────────────────────
+  // Pulls live article counts per category from the RSS Blobs
+  // and renders a mini activity bar chart in the Live Coverage strip.
+  async function loadNewsPulse() {
+    try {
+      const res = await fetch(API_BASE + '/articles', { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const articles = await res.json();
+      if (!articles.length) return;
+
+      // Count articles by category
+      const counts = {};
+      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      let weekTotal = 0;
+      articles.forEach(a => {
+        const pub = new Date(a.pubDate).getTime();
+        const cat = a.category || 'all';
+        counts[cat] = (counts[cat] || 0) + 1;
+        if (pub >= weekAgo) weekTotal++;
+      });
+
+      const pulse = document.getElementById('news-pulse');
+      const bars  = document.getElementById('pulse-bars');
+      const total = document.getElementById('pulse-total');
+      if (!pulse || !bars) return;
+
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const max    = sorted[0]?.[1] || 1;
+
+      total.textContent = weekTotal;
+      bars.innerHTML = sorted.map(([cat, count]) => `
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;"
+             onclick="filterChampions(document.querySelector('.filter-tab[onclick*=\\'${cat}\\']') || document.querySelector('.filter-tab'), '${cat}')">
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(181,232,83,0.85);width:64px;text-align:right;flex-shrink:0;">${CAT_LABELS[cat] || cat}</div>
+          <div style="flex:1;height:7px;background:rgba(181,232,83,0.14);border-radius:4px;overflow:hidden;">
+            <div style="height:100%;border-radius:4px;background:rgba(181,232,83,0.75);width:0%;transition:width 0.8s ease;"
+                 data-w="${Math.round((count / max) * 100)}"></div>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(181,232,83,0.7);width:28px;flex-shrink:0;">${count}</div>
+        </div>`).join('');
+
+      // Animate bars after paint
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          bars.querySelectorAll('[data-w]').forEach(el => {
+            el.style.width = el.dataset.w + '%';
+          });
+        }, 50);
+      });
+
+      pulse.style.display = 'block';
+    } catch (e) {
+      console.warn('[champions] News pulse unavailable:', e.message);
+    }
+  }
+
+  // Swap Saved slot to Admin button for admin users
+  window.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('rw_role') === 'admin') {
+      const gear = document.getElementById('topbar-admin');
+      if (gear) gear.style.display = '';
+    }
+    renderChampions().then(() => applyInitialPreferredCategories());
+    loadNewsPulse();
+  });
+
+  // ── RENDER CHAMPIONS FROM API ───────────────────────
+  // Fetches champion data from /api/champions and builds DOM nodes that use
+  // the exact same CSS classes as the original hardcoded cards, so all
+  // existing styles and animations keep working unchanged.
+  async function renderChampions() {
+    const featuredSlot = document.getElementById('champion-featured-slot');
+    const cardsSlot    = document.getElementById('champion-cards-slot');
+    if (!featuredSlot || !cardsSlot) return;
+
+    let list = [];
+    try {
+      const r = await fetch('/.netlify/functions/api/champions');
+      if (r.ok) list = await r.json();
+    } catch (e) { /* fall through to empty state */ }
+
+    if (!Array.isArray(list) || !list.length) {
+      featuredSlot.innerHTML = '<div style="text-align:center;color:rgba(245,240,232,0.3);padding:40px 0;font-family:\'Space Mono\',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;">Loading champions…</div>';
+      return;
+    }
+
+    // Live hero stats computed from the actual data — never goes stale.
+    updateHeroStats(list);
+
+    const featured = list.find(c => c.rank === 1) || list.find(c => c.featured) || list[0];
+    const others   = list.filter(c => c !== featured)
+                          .sort((a, b) => (a.rank || 999) - (b.rank || 999));
+
+    // Render the featured champion — matches the original .champion-featured structure
+    featuredSlot.innerHTML = renderFeaturedCard(featured);
+
+    // Render the top-champions grid
+    cardsSlot.innerHTML = others.map((c, i) => renderChampionCard(c, i + 1)).join('');
+  }
+
+  /** Compute the three hero strip numbers from the live champion list.
+   *  - Champions: array length
+   *  - Sectors:   distinct cat values
+   *  - Countries: parsed from tags — each tag like '🇺🇸 USA' contributes one country. */
+  function updateHeroStats(list) {
+    const champEl = document.getElementById('hero-stat-champions');
+    const catEl   = document.getElementById('hero-stat-categories');
+    const cntEl   = document.getElementById('hero-stat-countries');
+    if (!champEl || !catEl || !cntEl) return;
+
+    const sectors = new Set();
+    const countries = new Set();
+    list.forEach(c => {
+      if (c.cat) sectors.add(c.cat);
+      // Country tags follow the convention: a flag emoji + space + country name,
+      // e.g. '🇺🇸 USA', '🇨🇳 China'. Detect by the regional indicator unicode block.
+      (c.tags || []).forEach(t => {
+        if (typeof t === 'string' && /[\u{1F1E6}-\u{1F1FF}]{2}/u.test(t)) countries.add(t.trim());
+      });
+    });
+
+    champEl.textContent = list.length;
+    catEl.textContent   = sectors.size;
+    cntEl.textContent   = countries.size;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function renderFeaturedCard(c) {
+    const statsHtml = (c.stats || []).map(s =>
+      `<div class="cf-metric"><div class="cf-metric-val">${esc(s.val)}</div><div class="cf-metric-lbl">${esc(s.lbl)}</div></div>`
+    ).join('');
+    const bodyHtml = (c.body || []).map(p => `<p>${esc(p)}</p>`).join('');
+    const tagsHtml = (c.tags || []).map(t => `<span class="cf-tag">${esc(t)}</span>`).join('');
+    const shortDesc = c.shortDesc
+      ? `<div class="cf-desc">${esc(c.shortDesc)}</div>`
+      : '';
+
+    return `
+      <div class="champion-featured" data-cat="${esc(c.cat || 'all')}">
+        <div class="cf-banner" style="background:${esc(c.stripeGrad || 'linear-gradient(135deg,#0a2a1a,#1a7a4a,#2d8a50)')}">
+          ${esc(c.emoji || '🏆')}
+          <div class="cf-rank">🏆 #${esc(c.rank || 1)} Champion</div>
+          <div class="cf-sector">${esc(c.sector || '')}</div>
+        </div>
+        <div class="cf-body">
+          <div class="cf-name">${esc(c.name)}</div>
+          <div class="cf-tagline">${esc(c.tagline || '')}</div>
+          ${statsHtml ? `<div class="cf-metrics">${statsHtml}</div>` : ''}
+          ${shortDesc}
+          <div class="cf-full" id="cf-${esc(c.id)}">
+            <div class="cf-full-body">
+              ${bodyHtml}
+              ${tagsHtml ? `<div class="cf-tags">${tagsHtml}</div>` : ''}
+            </div>
+          </div>
+          <div class="cf-footer">
+            <button class="cf-read-btn" onclick="toggleChampion('cf-${esc(c.id)}', this)">Read Full Profile →</button>
+            <button class="cf-share-btn" onclick="shareChampion('${esc(c.name).replace(/'/g, "\\'")}')">↗</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderChampionCard(c, idx) {
+    const statsHtml = (c.stats || []).map(s =>
+      `<div class="cc-stat"><div class="cc-stat-val">${esc(s.val)}</div><div class="cc-stat-lbl">${esc(s.lbl)}</div></div>`
+    ).join('');
+    const bodyHtml = (c.body || []).map(p => `<p>${esc(p)}</p>`).join('');
+    const tagsHtml = (c.tags || []).map(t => `<span class="cf-tag">${esc(t)}</span>`).join('');
+    const expandId = 'cc-' + esc(c.id);
+    const startupCls   = c.isStartup ? ' startup' : '';
+    const startupBadge = c.isStartup ? `<span class="startup-badge">🚀 Startup</span>` : '';
+    const focusCls      = c.isFocus ? ' focus' : '';
+    const focusBadge    = c.isFocus ? `<span class="focus-badge">🎯 Focus</span>` : '';
+
+    return `
+      <div class="champion-card${startupCls}${focusCls}" data-cat="${esc(c.cat || 'all')}" onclick="toggleCard('${expandId}', this)">
+        <div class="cc-stripe" style="background:${esc(c.stripeGrad || 'linear-gradient(180deg,#0d2a3d,#1a5c80)')}">
+          ${esc(c.emoji || '🏢')}
+          <div class="cc-rank">#${esc(c.rank || idx + 1)}</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-top">
+            <div class="cc-name">${esc(c.name)}${startupBadge}${focusBadge}</div>
+            <span class="cc-sector">${esc(c.sector || '')}</span>
+          </div>
+          <div class="cc-tagline">${esc(c.tagline || '')}</div>
+          ${statsHtml ? `<div class="cc-stats">${statsHtml}</div>` : ''}
+          <div class="cc-expand" id="${expandId}">
+            <div class="cc-expand-inner">
+              ${bodyHtml}
+              ${tagsHtml ? `<div class="cf-tags">${tagsHtml}</div>` : ''}
+              <div class="cc-expand-footer">
+                <button class="cc-read-btn" onclick="event.stopPropagation(); shareChampion('${esc(c.name).replace(/'/g, "\\'")}')">Share ↗</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async function logout() {
+    try {
+      const tok = localStorage.getItem('rw_session_token');
+      if (tok) {
+        await fetch('/.netlify/functions/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + tok }
+        });
+      }
+    } catch {}
+    localStorage.removeItem('rw_session_token');
+    localStorage.removeItem('rw_user');
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+  }
+
+  // ── PREFERRED CATEGORIES (shared logic — also present on Profile/Feed/Market) ──
+  // Source-of-truth priority: server (so a choice made on one device or in a
+  // previous login shows up everywhere) > localStorage (instant local cache,
+  // and the fallback when logged out / offline / the request fails).
+  const PREF_CATS_KEY = 'rw_preferred_categories';
+
+  function getLocalPreferredCategories() {
+    try { return JSON.parse(localStorage.getItem(PREF_CATS_KEY) || '[]'); } catch { return []; }
+  }
+  function setLocalPreferredCategories(arr) {
+    try { localStorage.setItem(PREF_CATS_KEY, JSON.stringify(arr)); } catch {}
+  }
+  async function loadPreferredCategories() {
+    const tok = localStorage.getItem('rw_session_token');
+    if (tok) {
+      try {
+        const res = await fetch('/.netlify/functions/api/me/preferences', {
+          headers: { 'Authorization': 'Bearer ' + tok },
+          signal: AbortSignal.timeout(6000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.preferredCategories)) {
+            setLocalPreferredCategories(data.preferredCategories);
+            return data.preferredCategories;
+          }
+        }
+      } catch {}
+    }
+    return getLocalPreferredCategories();
+  }
+  function savePreferredCategories(arr) {
+    setLocalPreferredCategories(arr);
+    const tok = localStorage.getItem('rw_session_token');
+    if (!tok) return;
+    fetch('/.netlify/functions/api/me/preferences', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
+      body: JSON.stringify({ preferredCategories: arr }),
+    }).catch(() => {});
+  }
+
+  // ── FILTER ──────────────────────────────────────────
+  let _selectedCats = new Set(); // multi-select filter state; empty = "All"
+
+  function syncFilterTabClasses() {
+    document.querySelectorAll('.filter-tab').forEach(b => {
+      const tabCat = b.dataset.cat;
+      const isActive = _selectedCats.size === 0 ? tabCat === 'all' : _selectedCats.has(tabCat);
+      b.classList.toggle('active', isActive);
+    });
+  }
+
+  /** Show/hide champion cards based on the current multi-select set. Scoped
+   *  to .champion-card specifically — the filter tabs themselves also carry
+   *  data-cat now (for the preference-sync lookup below), so a bare
+   *  [data-cat] selector here would incorrectly hide the tab bar too. */
+  function applyChampionVisibility() {
+    document.querySelectorAll('.champion-card[data-cat]').forEach(el => {
+      const show = _selectedCats.size === 0 || _selectedCats.has(el.dataset.cat);
+      el.style.display = show ? '' : 'none';
+    });
+  }
+
+  function filterChampions(btn, cat) {
+    if (cat === 'all') {
+      _selectedCats.clear();
+    } else {
+      if (_selectedCats.has(cat)) _selectedCats.delete(cat);
+      else _selectedCats.add(cat);
+    }
+    syncFilterTabClasses();
+    applyChampionVisibility();
+    savePreferredCategories([..._selectedCats]);
+  }
+
+  /** Apply the user's saved preferred categories on initial page load, once
+   *  the champion cards have been rendered (so applyChampionVisibility has
+   *  something to act on). No-op if no preference has been set yet. */
+  async function applyInitialPreferredCategories() {
+    const saved = await loadPreferredCategories();
+    if (!Array.isArray(saved) || !saved.length) return;
+    _selectedCats = new Set(saved);
+    syncFilterTabClasses();
+    applyChampionVisibility();
+  }
+
+  // ── TOGGLE FEATURED CHAMPION ────────────────────────
+  function toggleChampion(id, btn) {
+    const panel = document.getElementById(id);
+    const isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open');
+    btn.textContent = isOpen ? 'Read Full Profile →' : 'Show Less ↑';
+    if (!isOpen) {
+      setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+    }
+  }
+
+  // ── TOGGLE REGULAR CARD ─────────────────────────────
+  function toggleCard(id, card) {
+    const panel = document.getElementById(id);
+    const isOpen = panel.classList.contains('open');
+
+    // Close all others
+    document.querySelectorAll('.cc-expand.open').forEach(p => {
+      if (p !== panel) p.classList.remove('open');
+    });
+
+    panel.classList.toggle('open');
+    if (!isOpen) {
+      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+    }
+  }
+
+  // ── SHARE ───────────────────────────────────────────
+  function shareChampion(name) {
+    if (navigator.share) {
+      navigator.share({ title: name + ' — Renewonomics Champions', url: window.location.href });
+    } else {
+      showToast('Link copied!');
+    }
+  }
+
+  // ── TOAST ───────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+<script>
+// Register the service worker for offline support + installability.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').then(function (reg) {
+      // When a new SW is found, activate it as soon as it's ready so users
+      // aren't stuck on a stale shell after we ship an update.
+      reg.addEventListener('updatefound', function () {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function () {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            nw.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+    }).catch(function () { /* SW registration failed — app still works online */ });
+  });
+}
+
+// ── TOP-BAR MENU (shared) ──────────────────────────────
+function toggleMenu(e) {
+  if (e) e.stopPropagation();
+  const dd  = document.getElementById('menu-dropdown');
+  const btn = document.getElementById('menu-btn');
+  const open = dd.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.menu-wrap');
+  const dd   = document.getElementById('menu-dropdown');
+  if (dd && dd.classList.contains('open') && wrap && !wrap.contains(e.target)) {
+    dd.classList.remove('open');
+    const btn = document.getElementById('menu-btn');
+    if (btn) btn.classList.remove('open');
+  }
+});
+// Reveal the Admin entry for admins
+(function revealAdminMenu(){
+  try {
+    if (sessionStorage.getItem('rw_role') === 'admin') {
+      document.addEventListener('DOMContentLoaded', () => {
+        const a = document.getElementById('menu-admin');
+        if (a) a.style.display = '';
+      });
+      const a = document.getElementById('menu-admin');
+      if (a) a.style.display = '';
+    }
+  } catch {}
+})();
+
+</script>
+</body>
+</html>

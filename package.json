@@ -1,0 +1,13 @@
+{
+  "name": "renewonomics",
+  "version": "1.0.0",
+  "description": "Renewable energy news aggregator",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
