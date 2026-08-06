@@ -1021,6 +1021,21 @@ input[type="range"] {
 .globe-ship-chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .globe-ship-chip:hover { color: var(--text); background: rgba(255,255,255,0.04); }
 .globe-ship-chip.active { background: rgba(79,209,255,0.15); border-color: #4fd1ff; color: #4fd1ff; }
+.cat-chip-row {
+  pointer-events: auto; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
+  margin-top: 6px; max-width: 480px;
+}
+.cat-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(16,24,20,0.72); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 9px; cursor: pointer;
+  color: var(--text-muted); font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  backdrop-filter: blur(6px); transition: all 0.18s; white-space: nowrap;
+}
+.cat-chip i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; opacity: 0.4; }
+.cat-chip:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.cat-chip.active { color: var(--text); border-color: rgba(255,255,255,0.25); }
+.cat-chip.active i { opacity: 1; box-shadow: 0 0 4px currentColor; }
 .globe-seg-btn.active i { box-shadow: 0 0 0 1.5px rgba(6,17,13,0.3); }
 .globe-legend {
   position: absolute; z-index: 18; left: 14px; bottom: 14px;
@@ -1309,10 +1324,11 @@ input[type="range"] {
           <button class="globe-seg-btn" data-type="inland" onclick="setGlobeType('inland')"><i style="background:#5b8ac0;"></i>Inland</button>
         </div>
         <div class="globe-ship-toggle-row">
-          <button class="globe-ship-chip" id="globeShipToggle" onclick="toggleGlobeShips()">
+          <button class="globe-ship-chip active" id="globeShipToggle" onclick="toggleCategoryVisibility('ships')">
             <i style="background:#4fd1ff;"></i>🚢 Live Ships <span id="globeShipCount"></span>
           </button>
         </div>
+        <div class="cat-chip-row" id="globeCategoryChips"></div>
       </div>
       <div class="globe-legend" id="globeLegend" style="display:none;">
         <button class="globe-legend-btn" onclick="toggleGlobeLegend()">
@@ -1339,11 +1355,13 @@ input[type="range"] {
         <button class="map-btn" id="shipToggleBtn" title="Toggle Live Ships" onclick="toggleShipLayerOnMap()" style="font-size:15px;">🚢</button>
       </div>
       <div class="map-legend">
-        <h4>Facility Type <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">· tap to filter</span></h4>
-        <div class="legend-item legend-filter active" data-mapfilter="all" onclick="setMapType('all')"><div class="legend-dot" style="background:var(--text);width:11px;height:11px;"></div>All Types</div>
-        <div class="legend-item legend-filter" data-mapfilter="port" onclick="setMapType('port')"><div class="legend-dot" style="background:#2fa37c;width:11px;height:11px;"></div>Port Terminal</div>
-        <div class="legend-item legend-filter" data-mapfilter="inland" onclick="setMapType('inland')"><div class="legend-dot" style="background:#5b8ac0;width:11px;height:11px;"></div>Inland Terminal</div>
-        <div class="legend-item" style="opacity:0.7;margin-top:4px;font-size:9px;">Dot size = capacity</div>
+        <h4>Location <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">· tap to filter</span></h4>
+        <div class="legend-item legend-filter active" data-mapfilter="all" onclick="setMapType('all')"><div class="legend-dot" style="background:var(--text-dim);width:11px;height:11px;"></div>All Locations</div>
+        <div class="legend-item legend-filter" data-mapfilter="port" onclick="setMapType('port')"><div class="legend-dot" style="background:var(--text-dim);width:11px;height:11px;opacity:0.55;"></div>Port Terminal</div>
+        <div class="legend-item legend-filter" data-mapfilter="inland" onclick="setMapType('inland')"><div class="legend-dot" style="background:var(--text-dim);width:11px;height:11px;opacity:0.3;"></div>Inland Terminal</div>
+        <div class="legend-item" style="opacity:0.7;margin-top:4px;font-size:9px;">Dot size = capacity · dot color = category</div>
+        <h4 style="margin-top:10px;">Category <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">· tap to hide</span></h4>
+        <div class="cat-chip-row" id="mapCategoryChips" style="justify-content:flex-start;max-width:none;"></div>
         <div class="legend-item legend-filter" id="mapShipLegendToggle" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;" onclick="toggleShipLayerOnMap()"><div class="legend-dot" style="background:#4fd1ff;width:9px;height:9px;border-radius:2px;"></div>Live Ships <span id="shipLegendCount" style="color:var(--text-dim);margin-left:4px;"></span></div>
       </div>
     </div>
@@ -2837,6 +2855,55 @@ const TERMINAL_TYPES = {
 // safely resolves to "port" — refineries are now classified as port or inland.
 function terminalType(t) { return TERMINAL_TYPES[t.type] ? t.type : 'port'; }
 
+// Facility-category metadata: drives marker/globe color + the category toggle chips.
+// Distinct from TERMINAL_TYPES (port/inland is a location attribute, not a category).
+const FACILITY_CATEGORIES = {
+  storage:                  { label: 'Storage Terminals', color: '#2fa37c', hex: 0x2fa37c },
+  refineries:                { label: 'Refineries',        color: '#e2574c', hex: 0xe2574c },
+  petrochemicals:             { label: 'Petrochemicals',    color: '#c77dff', hex: 0xc77dff },
+  chemicals:                  { label: 'Chemicals',         color: '#f4a259', hex: 0xf4a259 },
+  fertilisers:                 { label: 'Fertilizer Plants', color: '#7fd858', hex: 0x7fd858 },
+  'gas-processing-lng-lpg':   { label: 'Gas Processing',    color: '#ffd166', hex: 0xffd166 },
+};
+// Dual-tagged facilities (e.g. refineries+petrochemicals) get ONE marker color —
+// priority order below picks which category "wins" the marker for display purposes.
+const CATEGORY_PRIORITY = ['refineries', 'petrochemicals', 'chemicals', 'fertilisers', 'gas-processing-lng-lpg'];
+function facilityCategory(t) {
+  const fc = t.facilityClass || ['storage'];
+  if (fc.includes('process')) {
+    const pt = t.processType || [];
+    for (const cat of CATEGORY_PRIORITY) { if (pt.includes(cat)) return cat; }
+    return 'refineries'; // safe fallback if facilityClass is process but processType is empty
+  }
+  return 'storage';
+}
+// Shared visibility state for the category toggle chips — drives both the 2D map
+// and the 3D globe. 'ships' piggybacks on the existing ship-layer toggles below
+// rather than duplicating their state.
+let categoryVisible = { storage: true, refineries: true, petrochemicals: true, chemicals: true, fertilisers: true, 'gas-processing-lng-lpg': true, ships: true };
+function toggleCategoryVisibility(key) {
+  if (key === 'ships') {
+    categoryVisible.ships = !categoryVisible.ships;
+    document.querySelectorAll('.cat-chip[data-cat="ships"]').forEach(b => b.classList.toggle('active', categoryVisible.ships));
+    // Drive whichever ship layer(s) exist on the currently-active view.
+    if (typeof toggleShipLayerOnMap === 'function' && document.getElementById('map-panel')?.classList.contains('active')) toggleShipLayerOnMap();
+    if (typeof toggleGlobeShips === 'function' && document.getElementById('globe-panel')?.classList.contains('active')) toggleGlobeShips();
+    return;
+  }
+  categoryVisible[key] = !categoryVisible[key];
+  document.querySelectorAll('.cat-chip[data-cat="' + key + '"]').forEach(b => b.classList.toggle('active', categoryVisible[key]));
+  if (typeof refreshMapMarkers === 'function') refreshMapMarkers(typeof filteredTerminals === 'function' ? filteredTerminals() : terminals);
+  if (typeof refreshGlobe === 'function' && document.getElementById('globe-panel')?.classList.contains('active')) refreshGlobe();
+}
+function categoryChipsHtml() {
+  const keys = ['storage', 'refineries', 'petrochemicals', 'chemicals', 'fertilisers', 'gas-processing-lng-lpg'];
+  return keys.map(k => {
+    const cat = FACILITY_CATEGORIES[k];
+    return '<button class="cat-chip active" data-cat="' + k + '" onclick="toggleCategoryVisibility(\'' + k + '\')">'
+      + '<i style="background:' + cat.color + ';"></i>' + cat.label + '</button>';
+  }).join('');
+}
+
 // Operational metric fields. Kept on every terminal but empty by default —
 // populated later via Data & API (admin) or by validated terminal owners.
 // Empty metrics render as "—", never fabricated.
@@ -3100,7 +3167,7 @@ function getMarkerColor(cap) {
   if (cap > 2000) return '#2fa37c';
   return '#46594f';
 }
-function getTypeColor(t) { return (TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port).color; }
+function getTypeColor(t) { return (FACILITY_CATEGORIES[facilityCategory(t)] || FACILITY_CATEGORIES.storage).color; }
 
 function getMarkerSize(cap) {
   if (cap > 8000) return 18;
@@ -3110,6 +3177,7 @@ function getMarkerSize(cap) {
 }
 
 function addMarker(t) {
+  if (categoryVisible[facilityCategory(t)] === false) return;
   const color = getTypeColor(t);
   const size = getMarkerSize(t.cap);
 
@@ -4451,6 +4519,7 @@ function globeDestinations() {
   const base = (typeof filteredTerminals === 'function') ? filteredTerminals() : terminals;
   return base
     .filter(t => globeTypeFilter === 'all' || terminalType(t) === globeTypeFilter)
+    .filter(t => categoryVisible[facilityCategory(t)] !== false)
     .map(t => ({
       name: t.name, lat: t.lat, lon: t.lng,
       type: terminalType(t), terminal: t,
@@ -4479,7 +4548,7 @@ function initGlobe() {
   if (dcLabel) dcLabel.textContent = typeWord;
   const sorted = [...dests].sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('globeLegendList').innerHTML = sorted.map(d=>`
-    <div><i style="width:6px;height:6px;border-radius:50%;background:${TERMINAL_TYPES[d.type].color};flex:0 0 auto;"></i>${d.name}</div>
+    <div><i style="width:6px;height:6px;border-radius:50%;background:${d.terminal ? getTypeColor(d.terminal) : TERMINAL_TYPES[d.type].color};flex:0 0 auto;"></i>${d.name}</div>
   `).join('');
 
   const llToVec = (lat, lon, r) => {
@@ -4543,13 +4612,19 @@ function initGlobe() {
     port: dotTex(TERMINAL_TYPES.port.color),
     inland: dotTex(TERMINAL_TYPES.inland.color),
   };
+  // One dot texture per facility CATEGORY — this is what actually colors each
+  // globe marker, so refineries/petrochemicals/fertilizer plants/etc. are
+  // visually distinct from plain storage terminals, matching the 2D map.
+  const DOT_BY_CATEGORY = {};
+  Object.keys(FACILITY_CATEGORIES).forEach(k => { DOT_BY_CATEGORY[k] = dotTex(FACILITY_CATEGORIES[k].color); });
   const cityMarkers=[];
   const MARKER_SIZE = 0.20;   // small, uniform visible dot
   const HIT_SIZE = 0.60;      // larger invisible tap target — touch fingers are imprecise
   dests.forEach((d) => {
     const pos = llToVec(d.lat,d.lon,PLANET_R+0.04);
     // Visible small colored dot (decorative only — not raycast against).
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:DOT_BY_TYPE[d.type]||DOT_BY_TYPE.port, transparent:true, depthWrite:false }));
+    const dotMap = (d.terminal && DOT_BY_CATEGORY[facilityCategory(d.terminal)]) || DOT_BY_TYPE[d.type] || DOT_BY_TYPE.port;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:dotMap, transparent:true, depthWrite:false }));
     sp.position.copy(pos); sp.scale.set(MARKER_SIZE,MARKER_SIZE,1);
     group.add(sp);
     // Invisible larger hit target — this is what taps/clicks actually register against.
@@ -4643,7 +4718,7 @@ function initGlobe() {
       if (cm) {
         const d=cm.userData.dest;
         if (d.terminal && typeof showPopup==='function') {
-          const col = (TERMINAL_TYPES[terminalType(d.terminal)] || TERMINAL_TYPES.port).color;
+          const col = getTypeColor(d.terminal);
           if (typeof globeFlyTo === 'function') globeFlyTo(d.terminal.lat, d.terminal.lng, col);
           showPopup(d.terminal);
         }
@@ -5218,6 +5293,13 @@ function closePriceChartModal() {
 
 async function startApp() {
   try {
+    // Populate the facility-category toggle chips (map legend + globe overlay).
+    // Pure DOM population, no terminal data dependency — safe to run first.
+    const mapChips = document.getElementById('mapCategoryChips');
+    if (mapChips) mapChips.innerHTML = categoryChipsHtml();
+    const globeChips = document.getElementById('globeCategoryChips');
+    if (globeChips) globeChips.innerHTML = categoryChipsHtml();
+
     // Normalize seed terminals so every record has metrics/ownership fields.
     // A single sparse-array hole or malformed entry must never take the whole
     // boot down: normalize defensively, drop anything that comes back null,
