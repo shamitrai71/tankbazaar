@@ -4743,10 +4743,10 @@ function initGlobe() {
     const w=mount.clientWidth||innerWidth, h=mount.clientHeight||innerHeight;
     renderer.setSize(w,h); camera.aspect=w/h;
     const tanV=Math.tan((camera.fov*Math.PI/180)/2), tanH=tanV*camera.aspect;
-    const margin = w>=768 ? 1.02 : 0.81;
+    const margin = w>=768 ? 1.10 : 0.85;
     let dist=Math.max(FIT_R/tanV, FIT_R/tanH)*margin; dist=Math.max(dist,16);
     const headroom=Math.max(0, dist*tanV-FIT_R);
-    const yOffset=Math.min(headroom*0.4, FIT_R*0.10);
+    const yOffset=Math.min(headroom*0.55, FIT_R*0.16);
     camera.position.set(0,yOffset,dist); camera.updateProjectionMatrix();
     if (scene.fog){ scene.fog.near=dist; scene.fog.far=dist+24; }
   }
