@@ -8190,7 +8190,7 @@ const TerminalStore = {
 
 // ─── MAP SETUP — DUAL ENGINE: Google Maps (primary) / Leaflet (fallback) ────
 
-let map, gMap, markers = [], selectedTerminal = null, usingGoogle = false;
+let map, gMap, mbMap, markers = [], selectedTerminal = null, usingGoogle = false, usingMapbox = false;
 
 function getGmapsKey() { return localStorage.getItem('tb_gmaps_key') || ''; }
 // Adding a Google Maps key (e.g. just for the Add-Terminal address autocomplete)
@@ -8209,6 +8209,8 @@ function initMap() {
     document.head.appendChild(s);
     // Safety fallback if callback never fires
     setTimeout(() => { if (!usingGoogle && !map) initLeafletMap(); }, 6000);
+  } else if (typeof mapboxgl !== 'undefined') {
+    initMapboxMainMap();
   } else {
     initLeafletMap();
   }
@@ -8318,6 +8320,81 @@ function attachTerminalAutocomplete() {
   if (note) { note.style.color = 'var(--accent2)'; note.textContent = '✓ Autocomplete active — start typing above.'; }
 }
 
+// ── MAPBOX ENGINE (default main-map engine) ──
+function terminalToFeature(t) {
+  if (categoryVisible[facilityCategory(t)] === false) return null;
+  return {
+    type: 'Feature',
+    properties: { id: t.id, color: getTypeColor(t), size: getMarkerSize(t.cap) },
+    geometry: { type: 'Point', coordinates: [t.lng, t.lat] },
+  };
+}
+function terminalsToGeoJSON(list) {
+  return {
+    type: 'FeatureCollection',
+    features: (list || terminals).map(terminalToFeature).filter(Boolean),
+  };
+}
+function refreshMapboxSource(list) {
+  if (!mbMap || !mbMap.getSource('terminals')) return;
+  mbMap.getSource('terminals').setData(terminalsToGeoJSON(list));
+}
+
+function initMapboxMainMap() {
+  usingGoogle = false;
+  usingMapbox = true;
+  mbMap = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/dark-v11',
+    projection: 'mercator',
+    center: [10, 20],
+    zoom: 2,
+    minZoom: 1.1,
+    maxZoom: 18,
+    scrollZoom: true,
+    dragPan: true,
+    dragRotate: true,
+    doubleClickZoom: true,
+    touchZoomRotate: true,
+    attributionControl: true,
+  });
+
+  mbMap.on('load', () => {
+    mbMap.addSource('terminals', { type: 'geojson', data: terminalsToGeoJSON(terminals) });
+
+    mbMap.addLayer({
+      id: 'terminal-glow', type: 'circle', source: 'terminals',
+      paint: {
+        'circle-radius': ['+', ['get', 'size'], 4],
+        'circle-color': ['get', 'color'],
+        'circle-opacity': 0.25,
+        'circle-blur': 0.8,
+      },
+    });
+    mbMap.addLayer({
+      id: 'terminal-points', type: 'circle', source: 'terminals',
+      paint: {
+        'circle-radius': ['/', ['get', 'size'], 2],
+        'circle-color': ['get', 'color'],
+        'circle-opacity': 0.9,
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': 'rgba(255,255,255,0.3)',
+      },
+    });
+
+    mbMap.on('click', 'terminal-points', (e) => {
+      const f = e.features && e.features[0];
+      if (!f) return;
+      const t = terminals.find(x => String(x.id) === String(f.properties.id));
+      if (t) showPopup(t);
+    });
+    mbMap.on('mouseenter', 'terminal-points', () => mbMap.getCanvas().style.cursor = 'pointer');
+    mbMap.on('mouseleave', 'terminal-points', () => mbMap.getCanvas().style.cursor = '');
+
+    updateDataSourceStatus();
+  });
+}
+
 // ── LEAFLET / OSM ENGINE ──
 function initLeafletMap() {
   if (typeof L === 'undefined') {
@@ -8329,6 +8406,7 @@ function initLeafletMap() {
     return;
   }
   usingGoogle = false;
+  usingMapbox = false;
   map = L.map('map', {
     zoomControl: false,
     minZoom: 2,                              // can't zoom out far enough to see repeated worlds
@@ -8362,6 +8440,7 @@ function getMarkerSize(cap) {
 
 function addMarker(t) {
   if (categoryVisible[facilityCategory(t)] === false) return;
+  if (usingMapbox) { refreshMapboxSource(); return; }
   const color = getTypeColor(t);
   const size = getMarkerSize(t.cap);
 
@@ -8402,6 +8481,7 @@ function addMarker(t) {
 }
 
 function removeMarkerById(id) {
+  if (usingMapbox) { refreshMapboxSource(); return; }
   const mi = markers.findIndex(m => String(m.terminal.id) === String(id));
   if (mi > -1) {
     if (markers[mi].engine === 'google') markers[mi].marker.setMap(null);
@@ -8417,15 +8497,16 @@ function clearAllMarkers() {
 
 // Redraw map markers for a given terminal subset (used by the type filter).
 function refreshMapMarkers(list) {
+  if (usingMapbox) { refreshMapboxSource(list); return; }
   clearAllMarkers();
   (list || terminals).forEach(t => addMarker(t));
 }
 
 // ── UNIFIED MAP CONTROLS (null-safe) ──
-function mapZoomIn() { if (usingGoogle && gMap) gMap.setZoom(gMap.getZoom() + 1); else if (map) map.zoomIn(); }
-function mapZoomOut() { if (usingGoogle && gMap) gMap.setZoom(gMap.getZoom() - 1); else if (map) map.zoomOut(); }
-function mapPanTo(lat, lng) { if (usingGoogle && gMap) gMap.panTo({lat, lng}); else if (map) map.panTo([lat, lng]); }
-function mapResize() { if (!usingGoogle && map) map.invalidateSize(); }
+function mapZoomIn() { if (usingMapbox && mbMap) mbMap.zoomIn(); else if (usingGoogle && gMap) gMap.setZoom(gMap.getZoom() + 1); else if (map) map.zoomIn(); }
+function mapZoomOut() { if (usingMapbox && mbMap) mbMap.zoomOut(); else if (usingGoogle && gMap) gMap.setZoom(gMap.getZoom() - 1); else if (map) map.zoomOut(); }
+function mapPanTo(lat, lng) { if (usingMapbox && mbMap) mbMap.panTo([lng, lat]); else if (usingGoogle && gMap) gMap.panTo({lat, lng}); else if (map) map.panTo([lat, lng]); }
+function mapResize() { if (usingMapbox && mbMap) mbMap.resize(); else if (!usingGoogle && map) map.invalidateSize(); }
 
 // ── MODAL / BROWSER-HISTORY INTEGRATION ──
 // Terminal modals (the quick popup and the full fact sheet) previously never
@@ -8894,7 +8975,7 @@ async function deleteListing(id) {
   });
 }
 
-function fitAll() { if (usingGoogle && gMap) { gMap.setCenter({lat:20,lng:10}); gMap.setZoom(2); } else if (map) map.setView([20, 10], 2); }
+function fitAll() { if (usingMapbox && mbMap) { mbMap.flyTo({ center: [10, 20], zoom: 2 }); } else if (usingGoogle && gMap) { gMap.setCenter({lat:20,lng:10}); gMap.setZoom(2); } else if (map) map.setView([20, 10], 2); }
 function toggleHeat() { /* future: add heatmap layer */ }
 
 // ── LIVE SHIPS ON THE MAP ──────────────────────────────────────────────────
