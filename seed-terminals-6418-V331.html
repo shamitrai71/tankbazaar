@@ -6523,13 +6523,18 @@ function normalize(t){
   }, t);
 }
 
-async function writeBatch(base, token, terminals){
+async function writeBatch(base, token, terminals, resourcePrefix){
   const url = `${base}:batchWrite`;
   const writes = terminals.map(t => {
     const doc = normalize(t);
     return {
       update: {
-        name: `${base}/terminals/${t.id}`,
+        // batchWrite requires the bare Firestore resource path here
+        // (projects/{proj}/databases/{db}/documents/terminals/{id}) -
+        // NOT the full https://firestore.googleapis.com/v1/... URL used
+        // for the fetch() call itself. Using the full URL here makes
+        // every single write fail as an invalid resource name.
+        name: `${resourcePrefix}/terminals/${t.id}`,
         fields: toFields(doc),
       },
       updateMask: { fieldPaths: Object.keys(doc) },
@@ -6564,10 +6569,13 @@ async function seed(){
   log(`\n--- Seeding ${ALL_TERMINALS.length} terminals (batches of ${BATCH}, via Firestore batchWrite) ---`, 'muted');
   const token = await currentUser.getIdToken();
   const base = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/${FIRESTORE_DB_ID}/documents`;
+  // The bare resource path Firestore's batchWrite API expects inside each
+  // write's "name" field - same as `base` but without the https://host/v1/ part.
+  const resourcePrefix = `projects/${FIREBASE_CONFIG.projectId}/databases/${FIRESTORE_DB_ID}/documents`;
   let ok=0, fail=0;
   for (let i = 0; i < ALL_TERMINALS.length; i += BATCH) {
     const batch = ALL_TERMINALS.slice(i, i + BATCH);
-    const results = await writeBatch(base, token, batch);
+    const results = await writeBatch(base, token, batch, resourcePrefix);
     results.forEach(({t, ok:wOk, status}) => {
       if (wOk) { ok++; log(`✓ ${t.id} ${t.name} (${t.country}) — ${t.type}`, 'ok'); }
       else { fail++; log(`✗ ${t.id} ${t.name} — ${status}`, 'err'); }
