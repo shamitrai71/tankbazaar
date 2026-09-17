@@ -1424,6 +1424,15 @@ input[type="range"] {
         <div style="text-align:right;"><div id="pipeStatCount" style="font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; color:var(--text);">—</div><div style="font-size:11px; color:var(--text-dim); margin-top:1px;">pipelines shown</div></div>
         <div style="text-align:right;"><div id="pipeStatKm" style="font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; color:var(--text);">—</div><div style="font-size:11px; color:var(--text-dim); margin-top:1px;">total km</div></div>
       </div>
+      <div id="pipeStyleSwitcher" style="position:absolute; top:18px; left:22px; z-index:5; display:flex; flex-wrap:wrap; gap:6px; max-width:430px;">
+        <span style="font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); align-self:center; margin-right:4px;">Map style</span>
+        <span class="product-tag active" data-pipestyle="dark" onclick="setPipeMapStyle('dark')">Dark</span>
+        <span class="product-tag" data-pipestyle="standard" onclick="setPipeMapStyle('standard')">Standard 3D</span>
+        <span class="product-tag" data-pipestyle="satellite" onclick="setPipeMapStyle('satellite')">Satellite</span>
+        <span class="product-tag" data-pipestyle="navNight" onclick="setPipeMapStyle('navNight')">Nav Night</span>
+        <span class="product-tag" data-pipestyle="outdoors" onclick="setPipeMapStyle('outdoors')">Terrain</span>
+        <span class="product-tag" data-pipestyle="light" onclick="setPipeMapStyle('light')">Light</span>
+      </div>
       <div class="map-legend" style="max-height:calc(100% - 40px); overflow-y:auto;">
         <h4>Product <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">· tap to hide</span></h4>
         <div class="legend-item legend-filter active" data-pipecat="gas" onclick="togglePipeCategory('gas')"><div class="legend-dot" style="background:#FFC145;width:14px;height:3px;border-radius:2px;"></div>Gas</div>
@@ -8337,6 +8346,21 @@ const terminals = [
 ,
   { id:6419, name:"HPCL Champaran Bottling Plant", country:"India", city:"Champaran, Bihar", lat:26.75, lng:84.77, cap:20, tanks:4, berths:0, occ:"65", products:["LPG"], op:"Hindustan Petroleum Corporation Limited (HPCL)", size:"md", type:"inland", facilityClass:["storage"], access:"captive" },
   { id:6420, name:"HPCL Purnea Bottling Plant", country:"India", city:"Purnea, Bihar", lat:25.78, lng:87.47, cap:20, tanks:4, berths:0, occ:"65", products:["LPG"], op:"Hindustan Petroleum Corporation Limited (HPCL)", size:"md", type:"inland", facilityClass:["storage"], access:"captive" }
+,
+  { id:6421, name:"IPPL Ennore LPG Import Terminal", country:"India", city:"Ennore, Tamil Nadu", lat:13.23, lng:80.32, cap:13140.0, tanks:4, berths:1, occ:"65", products:["LPG"], op:"Indian Potash and Petrochemicals Limited (IPPL)", size:"lg", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6422, name:"IPPL Haldia LPG Import Terminal", country:"India", city:"Haldia, West Bengal", lat:22.05, lng:88.08, cap:18250.0, tanks:5, berths:1, occ:"65", products:["LPG"], op:"Indian Potash and Petrochemicals Limited (IPPL)", size:"lg", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6423, name:"TEMIPL Mangalore LPG Import Terminal", country:"India", city:"Mangalore, Karnataka", lat:12.85, lng:74.82, cap:5110.0, tanks:2, berths:1, occ:"55", products:["LPG"], op:"Total Energies Marketing India Private Limited (TEMIPL)", size:"md", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6424, name:"SALPG Vishakhapatnam LPG Import Terminal", country:"India", city:"Vishakhapatnam, Andhra Pradesh", lat:17.68, lng:83.24, cap:13140.0, tanks:4, berths:1, occ:"65", products:["LPG"], op:"South Asia LPG Company (SALPG)", size:"lg", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6425, name:"EIPL Vishakhapatnam LPG Import Terminal", country:"India", city:"Vishakhapatnam, Andhra Pradesh", lat:17.70, lng:83.20, cap:4380.0, tanks:2, berths:1, occ:"55", products:["LPG"], op:"EIPL", size:"md", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6426, name:"IOC Kandla LPG Import Terminal", country:"India", city:"Kandla, Gujarat", lat:23.03, lng:70.22, cap:18250.0, tanks:5, berths:1, occ:"65", products:["LPG"], op:"Indian Oil Corporation Limited (IOCL)", size:"lg", type:"port", facilityClass:["storage"], access:"captive" },
+  { id:6427, name:"Aegis Kandla LPG Import Terminal", country:"India", city:"Kandla, Gujarat", lat:23.01, lng:70.20, cap:7300.0, tanks:3, berths:1, occ:"60", products:["LPG"], op:"Aegis Vopak Terminals Limited (AVTL)", size:"md", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6428, name:"BPCL JNPT LPG Import Terminal", country:"India", city:"JNPT, Navi Mumbai, Maharashtra", lat:18.95, lng:72.95, cap:7300.0, tanks:3, berths:1, occ:"60", products:["LPG"], op:"Bharat Petroleum Corporation Limited (BPCL)", size:"md", type:"port", facilityClass:["storage"], access:"captive" },
+  { id:6429, name:"Aegis Pipavav LPG Import Terminal", country:"India", city:"Pipavav, Gujarat", lat:20.92, lng:71.48, cap:25550.0, tanks:6, berths:1, occ:"70", products:["LPG"], op:"Aegis Vopak Terminals Limited (AVTL)", size:"xl", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6430, name:"IOCL Cochin LPG Import Terminal", country:"India", city:"Cochin, Kerala", lat:9.97, lng:76.28, cap:4380.0, tanks:2, berths:1, occ:"55", products:["LPG"], op:"Indian Oil Corporation Limited (IOCL)", size:"md", type:"port", facilityClass:["storage"], access:"captive" },
+  { id:6431, name:"IOC Paradip LPG Import Terminal", country:"India", city:"Paradip, Odisha", lat:20.31, lng:86.61, cap:7300.0, tanks:3, berths:1, occ:"60", products:["LPG"], op:"Indian Oil Corporation Limited (IOCL)", size:"md", type:"port", facilityClass:["storage"], access:"captive" },
+  { id:6432, name:"Petregaz Krishnapatnam LPG Import Terminal", country:"India", city:"Krishnapatnam, Andhra Pradesh", lat:14.25, lng:80.12, cap:10220.0, tanks:3, berths:1, occ:"65", products:["LPG"], op:"Petregaz India Private Limited", size:"lg", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6433, name:"JSW Jaigarh LPG Import Terminal", country:"India", city:"Jaigarh, Maharashtra", lat:17.29, lng:73.23, cap:2920.0, tanks:2, berths:1, occ:"50", products:["LPG"], op:"JSW Group", size:"sm", type:"port", facilityClass:["storage"], access:"independent" },
+  { id:6434, name:"Aegis Mangalore LPG Import Terminal", country:"India", city:"Mangalore, Karnataka", lat:12.87, lng:74.86, cap:10950.0, tanks:4, berths:1, occ:"65", products:["LPG"], op:"Aegis Vopak Terminals Limited (AVTL)", size:"lg", type:"port", facilityClass:["storage"], access:"independent" }
 ];
 
 // Facility-type metadata: label, marker color, glyph. Drives globe + map + filters.
@@ -14046,7 +14070,13 @@ function initPipeMapOnce() {
     attributionControl: true
   });
 
-  pipeMap.on('load', () => {
+  pipeMap.on('load', () => { buildPipeLayers(); });
+}
+
+// All pipeline sources/layers live here so they can be rebuilt from scratch.
+// Changing a Mapbox style wipes every custom source and layer, so this must be
+// re-run on each style switch (see setPipeMapStyle below) - not just on first load.
+function buildPipeLayers() {
     const geojson = pipeToGeoJSON(PIPE_DATA);
     pipeMap.addSource('pipelines', { type: 'geojson', data: geojson, lineMetrics: true });
 
@@ -14108,7 +14138,40 @@ function initPipeMapOnce() {
     pipeMapLoaded = true;
     updatePipeFilter();
     updatePipeStats();
+}
+
+// ── MAP STYLE SWITCHER ──
+// Mapbox's own style catalogue. 'standard' is their newest (v3) style with real
+// 3D buildings, terrain shading and richer labelling; the satellite hybrid keeps
+// place labels on top of imagery. Each is paired here with whether the app's
+// dark UI chrome still reads well over it.
+const PIPE_MAP_STYLES = {
+  dark:      { label: 'Dark',            url: 'mapbox://styles/mapbox/dark-v11' },
+  standard:  { label: 'Standard (3D)',   url: 'mapbox://styles/mapbox/standard' },
+  satellite: { label: 'Satellite',       url: 'mapbox://styles/mapbox/satellite-streets-v12' },
+  navNight:  { label: 'Navigation Night',url: 'mapbox://styles/mapbox/navigation-night-v1' },
+  outdoors:  { label: 'Terrain',         url: 'mapbox://styles/mapbox/outdoors-v12' },
+  light:     { label: 'Light',           url: 'mapbox://styles/mapbox/light-v11' },
+};
+let currentPipeStyle = 'dark';
+
+function setPipeMapStyle(key) {
+  if (!pipeMap || !PIPE_MAP_STYLES[key] || key === currentPipeStyle) return;
+  currentPipeStyle = key;
+  pipeMapLoaded = false;
+  // setStyle() destroys all custom sources/layers, so rebuild them once the new
+  // style finishes loading. 'style.load' fires on every subsequent switch too.
+  pipeMap.once('style.load', () => {
+    buildPipeLayers();
+    // The Standard style uses a light 'day' preset by default, which washes out
+    // the bright pipeline colours - switch it to night so the palette still reads.
+    if (key === 'standard' && pipeMap.setConfigProperty) {
+      try { pipeMap.setConfigProperty('basemap', 'lightPreset', 'night'); } catch(e) {}
+    }
   });
+  pipeMap.setStyle(PIPE_MAP_STYLES[key].url);
+  document.querySelectorAll('[data-pipestyle]').forEach(el =>
+    el.classList.toggle('active', el.dataset.pipestyle === key));
 }
 
 let pipeFlowOffset = 0;
