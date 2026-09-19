@@ -979,38 +979,6 @@ input[type="range"] {
 
 /* ── GLOBE VIEW ── */
 #globe-panel { position: relative; background: #0a1512; }
-
-/* ── PUBLIC FRONT-PAGE SHOWCASE ── */
-#showcasePanel {
-  position:absolute; top:0; left:0; bottom:0; width:clamp(320px, 31vw, 460px);
-  z-index:6; overflow-y:auto; padding:28px 26px 26px;
-  background:linear-gradient(90deg, rgba(8,18,15,.96) 0%, rgba(8,18,15,.90) 72%, rgba(8,18,15,0) 100%);
-  backdrop-filter:blur(2px); pointer-events:auto;
-}
-#showcasePanel::-webkit-scrollbar { width:6px; }
-#showcasePanel::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:3px; }
-.sc-kicker { font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
-.sc-title { font-size:clamp(24px,2.4vw,34px); line-height:1.12; font-weight:600; color:var(--text); margin:0 0 12px; }
-.sc-sub { font-size:13px; line-height:1.55; color:var(--text-dim); margin:0 0 22px; }
-.sc-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:22px; }
-.sc-stat { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:8px; padding:11px 12px; }
-.sc-snum { font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; color:var(--text); line-height:1.1; }
-.sc-slabel { font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); margin-top:3px; }
-.sc-features { display:flex; flex-direction:column; gap:14px; margin-bottom:24px; }
-.sc-feature { display:flex; gap:11px; align-items:flex-start; }
-.sc-ficon { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex:0 0 auto; }
-.sc-fname { font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; }
-.sc-fdesc { font-size:11.5px; line-height:1.5; color:var(--text-dim); }
-.sc-cta { border-top:1px solid rgba(255,255,255,.08); padding-top:18px; }
-.sc-btn-primary {
-  width:100%; padding:11px 16px; border:none; border-radius:7px; cursor:pointer;
-  background:var(--accent); color:#06211a; font-size:13px; font-weight:600; letter-spacing:.02em;
-}
-.sc-btn-primary:hover { filter:brightness(1.08); }
-.sc-note { font-size:10.5px; color:var(--text-dim); margin-top:9px; line-height:1.45; }
-@media (max-width: 900px) {
-  #showcasePanel { width:100%; background:linear-gradient(180deg, rgba(8,18,15,.97) 0%, rgba(8,18,15,.92) 100%); }
-}
 #globe-mount { position: absolute; inset: 0; overflow: hidden; }
 #globe-mount canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
 .globe-overlay-top {
@@ -1393,50 +1361,6 @@ input[type="range"] {
     <div class="view-panel active" id="globe-panel">
       <div id="globe-mount"></div>
       <div class="globe-loading" id="globeLoading">Loading globe…</div>
-
-      <!-- PUBLIC FRONT-PAGE SHOWCASE.
-           Replaces the sidebar on the globe view. Figures are populated at runtime
-           from the live dataset by renderShowcase(), so they can never drift out of
-           step with the data the way hard-coded marketing numbers would. -->
-      <div id="showcasePanel">
-        <div class="sc-brand">
-          <div class="sc-kicker">Global Energy Infrastructure Intelligence</div>
-          <h1 class="sc-title">Every terminal.<br>Every pipeline.<br>One map.</h1>
-          <p class="sc-sub">A live, researched database of petroleum storage, processing and
-             transport infrastructure — built facility by facility from primary sources.</p>
-        </div>
-
-        <div class="sc-stats" id="scStats"></div>
-
-        <div class="sc-features">
-          <div class="sc-feature">
-            <div class="sc-ficon" style="background:rgba(47,163,124,.14); color:#2fa37c;">◉</div>
-            <div><div class="sc-fname">Facility Map</div>
-                 <div class="sc-fdesc">Every tank farm, refinery and processing plant, with capacity, tank counts, berths and product slates.</div></div>
-          </div>
-          <div class="sc-feature">
-            <div class="sc-ficon" style="background:rgba(255,193,69,.14); color:#FFC145;">⎯</div>
-            <div><div class="sc-fname">Pipeline Tracker</div>
-                 <div class="sc-fdesc">Crude, product and gas routes with real waypoints, capacities, operators and flow direction.</div></div>
-          </div>
-          <div class="sc-feature">
-            <div class="sc-ficon" style="background:rgba(0,217,233,.14); color:#00D9E9;">⚓</div>
-            <div><div class="sc-fname">Live Vessel Tracking</div>
-                 <div class="sc-fdesc">AIS positions for tankers underway, matched against the terminals they serve.</div></div>
-          </div>
-          <div class="sc-feature">
-            <div class="sc-ficon" style="background:rgba(197,125,255,.14); color:#B57BFF;">▤</div>
-            <div><div class="sc-fname">Benchmarks &amp; Market Data</div>
-                 <div class="sc-fdesc">Compare utilisation, throughput and tank turns across operators, regions and facility types.</div></div>
-          </div>
-        </div>
-
-        <div class="sc-cta">
-          <button class="sc-btn-primary" onclick="showLoginGate()">Request Access</button>
-          <div class="sc-note">Accounts are reviewed and approved manually. Sign up to request access.</div>
-        </div>
-      </div>
-
       <div class="globe-overlay-top">
         <div class="globe-segmented" id="globeSegmented">
           <button class="globe-seg-btn active" data-type="all" onclick="setGlobeType('all')">All</button>
@@ -10156,8 +10080,6 @@ let chartsInit = { benchmark: false, market: false, tracking: false, flow: false
 const VIEW_ORDER = ['globe','map','pipelines','listings','benchmark','market','tracking','flow','prices'];
 
 function switchView(view) {
-  // Gate: the globe is public, everything else requires an approved account.
-  if (!guardView(view)) return;
   document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
   const panel = document.getElementById(view+'-panel');
   if (panel) panel.classList.add('active');
@@ -10166,10 +10088,6 @@ function switchView(view) {
   // filters/list, every other view keeps the shared facility sidebar.
   const facSide = document.getElementById('sidebar-facilities-view');
   const pipeSide = document.getElementById('sidebar-pipelines-view');
-  // The globe is the public front page - a showcase, not a working view. Hide the
-  // whole sidebar there so the globe runs full-bleed behind the feature widgets.
-  const sidebarEl = document.getElementById('sidebar');
-  if (sidebarEl) sidebarEl.style.display = (view === 'globe') ? 'none' : '';
   if (facSide && pipeSide) {
     facSide.style.display = (view === 'pipelines') ? 'none' : '';
     pipeSide.style.display = (view === 'pipelines') ? '' : 'none';
@@ -10260,61 +10178,9 @@ const GLOBE_HUB = { name: 'Mumbai', lat: 19.07, lon: 72.87 };
 let globeShipSprites = [], globeShipsVisible = false, globeShipPulseRaf = null, _shipTexCache = null;
 
 function onGlobeShown() {
-  renderShowcase();   // keep the public front-page figures in step with the data
   if (globeBuilt) { window.dispatchEvent(new Event('resize')); return; }
   if (!window.threeReady) { window.pendingGlobeInit = true; return; }
   initGlobe();
-}
-
-// Lets a visitor stuck at either gate return to the public globe preview rather
-// than being trapped in a modal with no way out except signing out.
-function backToPublicGlobe() {
-  document.getElementById('loginGate')?.classList.add('hidden');
-  document.getElementById('pendingGate')?.classList.add('hidden');
-  switchView('globe');
-}
-
-// Populates the public front-page stat tiles from the LIVE dataset, so the
-// showcase can never advertise figures that have drifted from reality.
-function renderShowcase() {
-  const el = document.getElementById('scStats');
-  if (!el) return;
-  const nTerm = Array.isArray(terminals) ? terminals.length : 0;
-  const nCountries = new Set((terminals || []).map(t => t.country).filter(Boolean)).size;
-  const nPipes = (typeof PIPE_DATA !== 'undefined' && Array.isArray(PIPE_DATA)) ? PIPE_DATA.length : 0;
-  const pipeKm = (typeof PIPE_DATA !== 'undefined' && Array.isArray(PIPE_DATA))
-    ? PIPE_DATA.reduce((s, p) => s + (p.km || 0), 0) : 0;
-  const tiles = [
-    [nTerm.toLocaleString(), 'Facilities'],
-    [nCountries.toLocaleString(), 'Countries'],
-    [nPipes.toLocaleString(), 'Pipelines mapped'],
-    [Math.round(pipeKm).toLocaleString(), 'Pipeline km'],
-  ];
-  el.innerHTML = tiles.map(([n, l]) =>
-    `<div class="sc-stat"><div class="sc-snum">${n}</div><div class="sc-slabel">${l}</div></div>`).join('');
-}
-
-// ── PUBLIC FRONT PAGE / GATED INTERIOR ──
-// The globe is deliberately PUBLIC: a visitor can land, see the showcase and spin
-// the planet without an account. Everything past it is gated. This inverts the
-// previous behaviour, where the sign-in overlay covered the app at startup.
-const PUBLIC_VIEWS = ['globe'];
-
-function hasAppAccess() {
-  return !!(currentUser && (
-    currentUser.status === 'active' ||
-    currentUser.role === 'admin' || currentUser.role === 'superadmin' ||
-    (typeof isSuperAdmin === 'function' && isSuperAdmin(currentUser.email))
-  ));
-}
-
-// Returns true if navigation may proceed; otherwise raises the appropriate gate.
-function guardView(view) {
-  if (PUBLIC_VIEWS.includes(view)) return true;
-  if (hasAppAccess()) return true;
-  if (!currentUser) { showLoginGate(); return false; }
-  showPendingGate('pending');
-  return false;
 }
 
 function setGlobeType(type) {
@@ -10366,18 +10232,6 @@ function globeDestinations() {
     .filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lon));
 }
 
-// Holds the THREE.Line objects for pipelines drawn on the globe, so they can be
-// toggled or rebuilt without walking the whole scene graph.
-let globePipelineLines = [];
-let globePipelinesVisible = true;
-
-function setGlobePipelinesVisible(on) {
-  globePipelinesVisible = !!on;
-  globePipelineLines.forEach(l => { l.visible = globePipelinesVisible; });
-  const btn = document.getElementById('globePipeToggle');
-  if (btn) btn.classList.toggle('active', globePipelinesVisible);
-}
-
 function initGlobe() {
   window.pendingGlobeInit = false;
   if (globeBuilt || !window.threeReady) return;
@@ -10411,14 +10265,14 @@ function initGlobe() {
     // Solid colored dot with a thin bright rim — reads clearly at small sizes.
     x.beginPath(); x.arc(s/2,s/2,s*0.32,0,7); x.fillStyle=ring; x.fill();
     x.lineWidth=s*0.07; x.strokeStyle='rgba(238,244,239,0.9)'; x.beginPath(); x.arc(s/2,s/2,s*0.32,0,7); x.stroke();
-    const t=new THREE.CanvasTexture(c); if (THREE.sRGBEncoding!==undefined) t.encoding=THREE.sRGBEncoding; return t;
+    const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t;
   }
 
   const BG = 0x0a1512;
   const renderer = new THREE.WebGLRenderer({ antialias:true });
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.setClearColor(BG,1);
-  if (THREE.sRGBEncoding!==undefined) renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.outputEncoding = THREE.sRGBEncoding;
   mount.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -10447,7 +10301,7 @@ function initGlobe() {
         for (let i=0;i<p.length;i+=4){ const c=p[i+2]>p[i+1]?OCEAN_COLOR:LAND_COLOR; p[i]=c[0]; p[i+1]=c[1]; p[i+2]=c[2]; }
         cx.putImageData(id,0,0);
       } catch(e) {}
-      const tex=new THREE.CanvasTexture(cv); if (THREE.sRGBEncoding!==undefined) tex.encoding=THREE.sRGBEncoding;
+      const tex=new THREE.CanvasTexture(cv); tex.encoding=THREE.sRGBEncoding;
       try { tex.anisotropy=renderer.capabilities.getMaxAnisotropy(); } catch(e){}
       planetMat.map=tex; planetMat.needsUpdate=true;
     };
@@ -10470,55 +10324,6 @@ function initGlobe() {
   const DOT_BY_CATEGORY = {};
   Object.keys(FACILITY_CATEGORIES).forEach(k => { DOT_BY_CATEGORY[k] = dotTex(FACILITY_CATEGORIES[k].color); });
   const cityMarkers=[];
-
-  // ── PIPELINE ARCS ON THE GLOBE ──
-  // Draws the pipeline tracker's routes onto the 3D globe as curved arcs that
-  // follow the sphere's surface. Each consecutive waypoint pair is interpolated
-  // along its great circle (spherical linear interpolation) so the line hugs the
-  // planet instead of cutting through it, then lifted very slightly above the
-  // surface so it is not z-fought by the planet mesh.
-  function buildGlobePipelines() {
-    if (typeof PIPE_DATA === 'undefined' || !Array.isArray(PIPE_DATA)) return;
-    const LIFT = 1.004;           // just above the surface
-    const SEGS = 24;              // interpolation steps per waypoint pair
-    const COLORS = { gas:0xFFC145, crude:0xFF4136, product:0xFF8C1A, lpg:0x00D9E9, other:0xB57BFF };
-    let drawn = 0;
-    for (const p of PIPE_DATA) {
-      if (!p.w || p.w.length < 2) continue;
-      // Only operational lines on the showcase globe - under-construction,
-      // idle and disrupted routes would need legend explanation the front
-      // page deliberately does not carry.
-      if (p.st !== 'operational') continue;
-      const pts = [];
-      for (let i = 0; i < p.w.length - 1; i++) {
-        const a = llToVec(p.w[i][1],   p.w[i][0],   PLANET_R * LIFT).normalize();
-        const b = llToVec(p.w[i+1][1], p.w[i+1][0], PLANET_R * LIFT).normalize();
-        for (let s = 0; s <= SEGS; s++) {
-          const v = a.clone().lerp(b, s / SEGS).normalize().multiplyScalar(PLANET_R * LIFT);
-          pts.push(v);
-        }
-      }
-      if (pts.length < 2) continue;
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      const mat = new THREE.LineBasicMaterial({
-        color: COLORS[p.cat] || COLORS.other,
-        transparent: true, opacity: 0.55, depthWrite: false,
-      });
-      const line = new THREE.Line(geo, mat);
-      line.userData.isPipeline = true;
-      group.add(line);
-      globePipelineLines.push(line);
-      drawn++;
-    }
-    console.log(`%c[TANK BAZAAR] globe pipelines drawn: ${drawn}`, 'color:#FFC145;');
-  }
-  try { buildGlobePipelines(); }
-  catch (e) {
-    // A fault while drawing pipeline arcs must not take the whole globe down -
-    // the markers and planet are the more important part of the showcase.
-    console.error('[TANK BAZAAR] globe pipeline arcs failed, continuing without them:', e);
-  }
-
   const MARKER_SIZE = 0.20;   // small, uniform visible dot
   const HIT_SIZE = 0.60;      // larger invisible tap target — touch fingers are imprecise
   dests.forEach((d) => {
@@ -10618,12 +10423,12 @@ function initGlobe() {
       setPointer(e); const cm=cityHit();
       if (cm) {
         const d=cm.userData.dest;
-        // FRONT-PAGE GLOBE IS NON-INTERACTIVE FOR DATA.
-        // The globe is a public showcase, so clicking a marker must NOT open the
-        // terminal detail popup - that is gated content. A brief name tooltip is
-        // kept so the globe still feels alive, but no facility data is exposed
-        // and no modal opens. Drag-to-rotate is deliberately left working.
-        showTip(d.name, e.clientX, e.clientY); clearTimeout(tipT); tipT=setTimeout(hideTip,1600);
+        if (d.terminal && typeof showPopup==='function') {
+          const col = getTypeColor(d.terminal);
+          if (typeof globeFlyTo === 'function') globeFlyTo(d.terminal.lat, d.terminal.lng, col);
+          showPopup(d.terminal);
+        }
+        else { showTip(d.name, e.clientX, e.clientY); clearTimeout(tipT); tipT=setTimeout(hideTip,1600); }
       } else if (globeShipsVisible) {
         const sm=shipHit();
         if (sm) {
@@ -10753,7 +10558,7 @@ function shipDotTexture() {
   x.beginPath(); x.arc(s/2, s/2, s*0.22, 0, 7); x.fillStyle = '#7fe0ff'; x.fill();
   x.lineWidth = s*0.06; x.strokeStyle = 'rgba(255,255,255,0.95)';
   x.beginPath(); x.arc(s/2, s/2, s*0.22, 0, 7); x.stroke();
-  const t = new THREE.CanvasTexture(c); if (THREE.sRGBEncoding!==undefined) t.encoding = THREE.sRGBEncoding; return t;
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
 }
 
 function clearGlobeShipMarkers() {
@@ -11294,33 +11099,11 @@ loadScript(
   'https://cdn.jsdelivr.net/npm/chart.js'
 );
 
-// THREE.js VERSION PIN — DO NOT BUMP TO r160+ WITHOUT REWRITING THE GLOBE.
-// The globe uses the classic UMD build (a plain script tag that defines a global
-// `THREE`). That build was DEPRECATED at r150 and REMOVED at r160, so loading
-// r160 leaves `THREE` undefined and the globe silently never initialises —
-// which is exactly what was happening. This code also uses THREE.sRGBEncoding,
-// removed at r152. r149 is therefore the newest release that supports both.
-// Moving past this needs an ES-module rewrite of initGlobe(), not a version bump.
 loadScript(
-  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.149.0/three.min.js',
-  function() {
-    window.threeReady = (typeof THREE !== 'undefined');
-    if (!window.threeReady) { showGlobeLoadError(); return; }
-    if (window.pendingGlobeInit) initGlobe();
-  },
-  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js',
+  function() { window.threeReady = (typeof THREE !== 'undefined'); if (window.threeReady && window.pendingGlobeInit) initGlobe(); },
+  'https://unpkg.com/three@0.160.0/build/three.min.js'
 );
-
-// Surfaces a real message if THREE never loads, instead of leaving the front
-// page showing an empty black panel with no explanation.
-function showGlobeLoadError() {
-  const el = document.getElementById('globeLoading');
-  if (el) {
-    el.textContent = '3D globe unavailable — WebGL library failed to load.';
-    el.style.opacity = '1';
-  }
-  console.error('[TANK BAZAAR] THREE.js failed to load from both CDNs; globe disabled.');
-}
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════
@@ -12063,7 +11846,6 @@ function showGlobeLoadError() {
     </div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
       <button class="login-submit" style="flex:none;width:auto;padding:10px 20px;" onclick="recheckAccess()">↻ Check Again</button>
-      <button class="sso-btn" style="flex:none;width:auto;padding:10px 20px;" onclick="backToPublicGlobe()">← Back to Preview</button>
       <button class="sso-btn" style="flex:none;width:auto;padding:10px 20px;" onclick="userLogout()">Sign Out</button>
     </div>
   </div>
@@ -12953,14 +12735,7 @@ function initAuthListener() {
     } else {
       currentUser = null;
       applyLoggedOutUI();
-      // PUBLIC FRONT PAGE: a signed-out visitor is NOT bounced to a sign-in
-      // overlay any more. They land on the globe showcase and can look around;
-      // the gate is raised only when they try to enter a non-public view
-      // (see guardView). Resolve the auth check so startup proceeds normally.
-      document.getElementById('loginGate')?.classList.add('hidden');
-      document.getElementById('pendingGate')?.classList.add('hidden');
-      switchView('globe');
-      if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
+      showMandatorySignIn();
     }
   });
 }
@@ -14445,43 +14220,11 @@ function buildPipeLayers() {
     });
     animatePipeFlow();
 
-    // ── INVISIBLE HIT-TARGET LAYER ──
-    // The visible pipe-lines layer is only ~1.3-4.4px wide, which is far too thin
-    // to click reliably. This transparent layer sits on top with a much wider
-    // stroke purely to catch pointer events, so clicking "near" a pipeline works.
-    // It is invisible (opacity 0) but still hit-tested by Mapbox.
-    pipeMap.addLayer({
-      id: 'pipe-hit', type: 'line', source: 'pipelines',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#000', 'line-opacity': 0, 'line-width': 22 }
-    });
-
-    // Hover highlight so it is obvious which line is about to be selected.
-    pipeMap.addLayer({
-      id: 'pipe-hover', type: 'line', source: 'pipelines',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      filter: ['==', ['get', 'idx'], -1],
-      paint: {
-        'line-color': '#ffffff',
-        'line-width': ['interpolate', ['linear'], ['coalesce', ['get', 'capacity'], 8], 0, 3.5, 10, 4.5, 50, 6, 150, 8],
-        'line-opacity': 0.55, 'line-blur': 0.5
-      }
-    });
-
-    // Interactions bind to the wide hit layer, not the thin visible one.
-    pipeMap.on('click', 'pipe-hit', (e) => {
+    pipeMap.on('click', 'pipe-lines', (e) => {
       if (e.features && e.features[0]) openPipePopup(e.features[0].properties.idx, e.lngLat);
     });
-    pipeMap.on('mousemove', 'pipe-hit', (e) => {
-      pipeMap.getCanvas().style.cursor = 'pointer';
-      if (e.features && e.features[0]) {
-        pipeMap.setFilter('pipe-hover', ['==', ['get', 'idx'], e.features[0].properties.idx]);
-      }
-    });
-    pipeMap.on('mouseleave', 'pipe-hit', () => {
-      pipeMap.getCanvas().style.cursor = '';
-      pipeMap.setFilter('pipe-hover', ['==', ['get', 'idx'], -1]);
-    });
+    pipeMap.on('mouseenter', 'pipe-lines', () => pipeMap.getCanvas().style.cursor = 'pointer');
+    pipeMap.on('mouseleave', 'pipe-lines', () => pipeMap.getCanvas().style.cursor = '');
 
     // Not adding Mapbox's own NavigationControl - it would overlap either the custom
     // zoom buttons (top-right) or the legend (bottom-right). The custom buttons below
@@ -14623,11 +14366,6 @@ function updatePipeFilter() {
   ];
   pipeMap.setFilter('pipe-lines', filter);
   pipeMap.setFilter('pipe-lines-glow', filter);
-  // The invisible hit layer must honour the same filters, otherwise hidden
-  // pipelines would still be clickable and could open a popup for a line the
-  // user cannot see. Clear any stale hover highlight for the same reason.
-  if (pipeMap.getLayer('pipe-hit')) pipeMap.setFilter('pipe-hit', filter);
-  if (pipeMap.getLayer('pipe-hover')) pipeMap.setFilter('pipe-hover', ['==', ['get', 'idx'], -1]);
   // pipe-flow additionally requires status==='operational' (a moving dash implies
   // live flow), so combine the user's filter with that fixed condition rather than
   // overwrite it.
