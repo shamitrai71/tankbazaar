@@ -181,7 +181,39 @@ TWI and TankBazaar's global data (SAMREF's Saudi-approved vendors, WPC's Chinese
 ## 10. Open Questions Carried Forward
 
 1. **TankBazaar access** — form not yet decided (GitHub repo, Firestore export, direct DB access). Required before real category-compatibility checking can start.
-2. **TankBazaar's internal structure** — fully separate collections per asset type, or one collection with a type discriminator field? Leaned toward the latter in discussion, not decided.
+2. **TankBazaar's internal structure** — fully separate collections per asset type, or one collection with a type discriminator field? Leaned toward the latter in discussion, not decided. **Now a hard blocker for Section 11's search-engine schema design too — see below.**
 3. **500-member list composition** — upstream/downstream split, supplier/buyer-side split, India-only vs. global — needed to sharpen near-term subscriber targeting.
-4. **Companies.tsx pagination fix sequencing** — build independently of merge timing (recommended), or bundle with the eventual TWI merge itself? Not decided.
+4. ~~**Companies.tsx pagination fix sequencing**~~ — **Resolved, see Section 11.** Built independently of merge timing, as recommended. Confirmed live in the codebase.
 5. **TWI-side "Supplier Profile" extension** — the common-core-plus-extension shape was proposed directionally; the actual field list for the Supplier Profile block, and a full category-compatibility validation pass between TWI and Tankonomics' existing `categoryIds` structure, have not yet been done in detail.
+6. **Search engine architecture** — see Section 11. Tankonomics and TankBazaar both lean toward a hosted search engine (Typesense discussed); TWI toward client-side. One shared Typesense instance across apps, or separate ones per app? Not decided — Tankonomics and TankBazaar aren't currently syncing into each other, which argues for separate instances today, but a future TWI→Tankonomics merge (and possibly TankBazaar) could make a shared instance the better long-term call.
+
+---
+
+## 11. Search Architecture — Confirmed the Pagination Fix Landed, Found What It Broke
+
+*Follow-up discussion, dated after Section 2's original finding. Checked directly against the current codebase rather than assumed the doc's earlier description still held.*
+
+### The pagination fix: built, and built well
+Confirmed directly in `Companies.tsx`: the old unlimited `useCollection("companies", ...)` call (Section 2's finding) has been replaced with cursor-based pagination — `getDocs` with `limit(48)` and `startAfter(cursor)`, a one-time fetch rather than a live `onSnapshot` listener. This resolves the quota-exhaustion risk Section 2 flagged.
+
+It goes a step further than pagination alone: server-side category narrowing is also implemented, via `where("allCategoryIds", "array-contains-any", categoryFilter)`, bounding *which* page of documents gets read rather than fetching broadly and filtering client-side. The code correctly documents and handles Firestore's real 10-value cap on `array-contains-any`, falling back to client-side-only filtering for the rare case of more than 10 categories selected. This was Section 2's second flagged gap ("server-side `where()` filtering... instead of client-side post-filtering"), and it's handled too.
+
+### What the fix quietly broke: free-text search
+Section 2 predicted this exact outcome: *"a 'load everything into memory and filter' pattern silently provided \[full-text search\] today... pagination removes that side-effect."* Confirmed live: the search box's `filteredCompanies` logic still runs, but only over the `companies` React state array — which now only holds whatever page(s) have been fetched through pagination, not the full collection. A company not yet loaded onto the current page is invisible to search, regardless of how exact the typed match would be.
+
+This means the search-layer need Section 2 called *"likely... once pagination is in place"* is no longer a forward-looking prediction — pagination is in place, live, today, and the search box is quietly non-functional for anything outside the currently-loaded page.
+
+### Decision direction: different engines for different schemas, not one blanket choice
+Discussed and reasoned through, not yet built:
+
+- **Tankonomics → a hosted search engine (Typesense proposed).** Directly resolves the gap above. Also the natural fit architecturally — Tankonomics is the one T3 app built as a React/Vite SPA with a build pipeline, so it can consume a proper search API and use InstantSearch-style components natively, unlike TWI and TankBazaar's static single-file HTML.
+- **TankBazaar → also leans toward a hosted engine, despite being static HTML like TWI.** The deciding factor isn't build-step architecture — it's schema shape. Section 4 already established TankBazaar as "several genuinely different schemas wearing one label" (Refineries, Floating Structures, Oil Rigs, Pipelines, etc.), each with different meaningful fields (Nelson complexity, water depth rating, ammonia capacity...). That's a faceted-search-across-heterogeneous-types problem, which client-side text-matching libraries (Fuse.js, MiniSearch) handle poorly and real search engines handle natively.
+- **TWI → client-side search remains the better fit.** Its schema is comparatively uniform (suppliers describable by category/products/certifications — Section 4's own characterization), its browsing pattern is mostly category-tree navigation rather than heavy free-text search, and at ~10,800 companies it's well within range for an in-browser library with no sync pipeline, no new server dependency, and no build-step conflict with its existing single-file architecture.
+
+### Why Open Question #2 is now a hard blocker, not just a nice-to-have
+A TankBazaar search index's schema — what's indexed, what's facetable, whether one search box can span asset types at all — depends entirely on whether TankBazaar ends up as separate Firestore collections per asset type or one collection with a `facility_type` discriminator. Designing the search schema before that's decided risks building it against the wrong shape and redoing it. This should be settled first.
+
+### Not yet decided
+- One shared Typesense instance for Tankonomics + TankBazaar, or two separate ones (see Open Question #6 above).
+- Firebase's official Algolia/Typesense sync Extensions exist and would handle the Firestore→search-index sync automatically — worth using instead of hand-building that pipeline, but not yet evaluated in detail against this project's specific needs.
+- Whether TWI's search need ever outgrows client-side (e.g., if it eventually gains TankBazaar-style schema heterogeneity) — no evidence of that today, flagged only as a "revisit if" rather than a current concern.
