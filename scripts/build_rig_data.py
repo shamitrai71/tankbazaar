@@ -42,7 +42,10 @@ for r in range(2, rws.max_row+1):
     la, lo = num(g('Latitude')), num(g('Longitude')); src = 'direct'
     if la is None or lo is None or not(-90<=la<=90) or not(-180<=lo<=180):
         pla, plo = num(g('Latitude (matched OGIM offshore platform)')), num(g('Longitude (matched OGIM offshore platform)'))
-        if pla is not None and plo is not None: la, lo, src = pla, plo, 'matched OGIM offshore platform'
+        if pla is not None and plo is not None:
+            la, lo = pla, plo
+            basis = str(g('Field position match basis') or '')
+            src = 'matched OGIM offshore platform' if ('OGIM' in basis or not basis) else 'matched platform position (see match basis)'
         else:
             inh = field_coord.get(str(g('Field Key (FK)') or ''))
             if not inh: continue
