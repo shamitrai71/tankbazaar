@@ -14583,16 +14583,22 @@ function buildPipeLayers() {
     // idle/disrupted lines. Waypoint order is pre-reversed at export time for any
     // pipeline flagged as flowing opposite to its origin->destination convention,
     // so this single shared animation correctly shows every line's real direction.
-    pipeMap.addLayer({
-      id: 'pipe-flow', type: 'line', source: 'pipelines',
-      filter: ['==', ['get', 'status'], 'operational'],
-      layout: { 'line-cap': 'round' },
-      paint: {
-        'line-color': ['get', 'color'],
-        'line-width': ['interpolate', ['linear'], ['coalesce', ['get', 'capacity'], 8], 0, 1.6, 10, 2.2, 50, 3.4, 150, 4.8],
-        'line-opacity': 0.95,
-        'line-dasharray': [0, 4, 1.2, 0]
-      }
+    // PERFORMANCE: animating 'line-dasharray' on ONE layer made Mapbox rebuild the geometry of all ~1,070 operational lines on every
+    // step (about 120 ms of main-thread work each, roughly half of the page's time even when nothing was happening). The overlay is now
+    // created once per dash phase (4 static layers) and each step only swaps which phase is opaque - Mapbox does not draw a layer whose
+    // opacity is 0, and changing an opacity does not rebuild any geometry.
+    TB_PIPE_FLOW_PHASES.forEach(function (offset, i) {
+      pipeMap.addLayer({
+        id: tbPipeFlowId(i), type: 'line', source: 'pipelines',
+        filter: ['==', ['get', 'status'], 'operational'],
+        layout: { 'line-cap': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['interpolate', ['linear'], ['coalesce', ['get', 'capacity'], 8], 0, 1.6, 10, 2.2, 50, 3.4, 150, 4.8],
+          'line-opacity': i === pipeFlowPhase ? 0.95 : 0,
+          'line-dasharray': pipeFlowDashPattern(offset)
+        }
+      });
     });
     animatePipeFlow();
 
@@ -14678,6 +14684,9 @@ function setPipeMapStyle(key) {
 
 let pipeFlowOffset = 0;
 let pipeFlowLastFrame = 0;
+let pipeFlowPhase = 0;
+const TB_PIPE_FLOW_PHASES = [0, 2, 4, 6];                 // dash offsets (of an 8-step cycle), one static layer each
+function tbPipeFlowId(i) { return i === 0 ? 'pipe-flow' : 'pipe-flow-' + i; }
 function pipeFlowDashPattern(offset) {
   const cycle = 8;
   const o = offset % cycle;
@@ -14687,13 +14696,19 @@ let pipeFlowRaf = null;
 const PIPE_FLOW_REDUCED = (typeof matchMedia === 'function') && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function animatePipeFlow(ts) {
   if (!pipeMap) return;
-  // Only paint while the pipelines view is on screen and the tab is visible. Every call cancels the pending frame first,
-  // so rebuilding the layers (basemap switch) can never start a second, parallel loop.
+  // Only step while the pipelines view is on screen, the tab is visible and the map is not being dragged/zoomed. Every call cancels
+  // the pending frame first, so rebuilding the layers (basemap switch) can never start a second, parallel loop.
   const pp = document.getElementById('pipelines-panel');
   const visible = !document.hidden && pp && pp.classList.contains('active') && !PIPE_FLOW_REDUCED;
-  if (visible && (!ts || ts - pipeFlowLastFrame > 60)) { // throttle to ~16fps
-    pipeFlowOffset = (pipeFlowOffset + 1) % 8;
-    if (pipeMap.getLayer('pipe-flow')) pipeMap.setPaintProperty('pipe-flow', 'line-dasharray', pipeFlowDashPattern(pipeFlowOffset));
+  const moving = typeof pipeMap.isMoving === 'function' && pipeMap.isMoving();
+  if (visible && !moving && (!ts || ts - pipeFlowLastFrame > 120)) { // ~8 steps per second
+    const prev = pipeFlowPhase;
+    const next = (prev + 1) % TB_PIPE_FLOW_PHASES.length;
+    if (pipeMap.getLayer(tbPipeFlowId(next))) {
+      pipeMap.setPaintProperty(tbPipeFlowId(prev), 'line-opacity', 0);
+      pipeMap.setPaintProperty(tbPipeFlowId(next), 'line-opacity', 0.95);
+      pipeFlowPhase = next;
+    }
     pipeFlowLastFrame = ts || 0;
   }
   if (pipeFlowRaf) cancelAnimationFrame(pipeFlowRaf);
@@ -14759,7 +14774,9 @@ function updatePipeFilter() {
   // pipe-flow additionally requires status==='operational' (a moving dash implies
   // live flow), so combine the user's filter with that fixed condition rather than
   // overwrite it.
-  pipeMap.setFilter('pipe-flow', ['all', filter, ['==', ['get', 'status'], 'operational']]);
+  TB_PIPE_FLOW_PHASES.forEach(function (o, i) {
+    if (pipeMap.getLayer(tbPipeFlowId(i))) pipeMap.setFilter(tbPipeFlowId(i), ['all', filter, ['==', ['get', 'status'], 'operational']]);
+  });
   updatePipeStats();
   renderPipelineList();
 }
