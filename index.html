@@ -1200,6 +1200,9 @@ input[type="range"] {
 .mapboxgl-popup .pv { flex: 1; color: var(--text); overflow-wrap: anywhere; }
 /* basin popups carry their own dark inline box: make it flat inside the new popup frame */
 .mapboxgl-popup-content > div[style*="background:#0e1d19"] { background: transparent !important; padding: 0 !important; }
+
+/* Rig map counters sit on a dark pill so they stay readable on the light basemaps (white text on a pale map was invisible) */
+#rigStats { padding: 7px 14px; background: rgba(16,24,20,0.82); border: 1px solid var(--border); border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -1565,7 +1568,7 @@ input[type="range"] {
         <span class="product-tag" data-rigstyle="cleanGrey" onclick="setRigMapStyle('cleanGrey')" title="Flat cool-grey land + one light-blue water colour">Clean Grey</span>
         <span class="product-tag" data-rigstyle="cleanSand" onclick="setRigMapStyle('cleanSand')" title="Flat sand-toned land + one light-blue water colour">Clean Sand</span>
       </div>
-      <div class="map-legend" style="max-height:calc(100% - 215px); overflow-y:auto;">
+      <div class="map-legend" style="max-height:calc(100% - 245px); overflow-y:auto;">
         <h4>Rig Type <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">· tap to hide</span></h4>
         <div class="legend-item legend-filter active" data-rigtype="fixed" onclick="toggleRigType('fixed')"><div class="legend-dot" style="background:#FFC145;"></div>Fixed platform</div>
         <div class="legend-item legend-filter active" data-rigtype="floating" onclick="toggleRigType('floating')"><div class="legend-dot" style="background:#00D9E9;"></div>Floating (FPSO/semi/drillship)</div>
@@ -10592,17 +10595,31 @@ function initGlobe() {
   const cityMarkers=[];
   const MARKER_SIZE = 0.20;   // small, uniform visible dot
   const HIT_SIZE = 0.60;      // larger invisible tap target — touch fingers are imprecise
+  // PERFORMANCE: this used to create TWO sprites per terminal (a visible dot plus an invisible tap target), each with its own
+  // material, so ~6,500 terminals meant ~13,000 draw calls and a 13,000-item transparent sort on every frame (about 5 fps).
+  //  - the visible dots are now ONE THREE.Points object per dot texture (a handful of draw calls);
+  //  - the tap targets share one material and are marked invisible, so they are never drawn but the Raycaster still hits them
+  //    (Raycaster only looks at layers, not .visible).
+  // A Points size of S renders (S * tan(fov/2)) world units wide, so the size is divided by tan(fov/2) to match the old sprite size.
+  const DOT_SIZE = MARKER_SIZE / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const hitMat = new THREE.SpriteMaterial({ transparent:true, opacity:0, depthWrite:false });
+  const dotBuckets = new Map();   // dot texture -> flat [x,y,z,...]
   dests.forEach((d) => {
     const pos = llToVec(d.lat,d.lon,PLANET_R+0.04);
-    // Visible small colored dot (decorative only — not raycast against).
     const dotMap = (d.terminal && DOT_BY_CATEGORY[facilityCategory(d.terminal)]) || DOT_BY_TYPE[d.type] || DOT_BY_TYPE.port;
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:dotMap, transparent:true, depthWrite:false }));
-    sp.position.copy(pos); sp.scale.set(MARKER_SIZE,MARKER_SIZE,1);
-    group.add(sp);
-    // Invisible larger hit target — this is what taps/clicks actually register against.
-    const hit=new THREE.Sprite(new THREE.SpriteMaterial({ transparent:true, opacity:0, depthWrite:false }));
+    let bucket = dotBuckets.get(dotMap); if (!bucket) { bucket = []; dotBuckets.set(dotMap, bucket); }
+    bucket.push(pos.x, pos.y, pos.z);
+    // Larger invisible tap target - this is what taps/clicks actually register against.
+    const hit=new THREE.Sprite(hitMat);
+    hit.visible = false;
     hit.position.copy(pos); hit.scale.set(HIT_SIZE,HIT_SIZE,1);
     hit.userData={ dest:d }; group.add(hit); cityMarkers.push(hit);
+  });
+  dotBuckets.forEach((arr, map) => {
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ map: map, size: DOT_SIZE, sizeAttenuation: true, transparent: true, depthWrite: false }));
+    pts.frustumCulled = false;
+    group.add(pts);
   });
 
   // ── Pulsing beacon (concentric rings) shown when a terminal is selected ──
