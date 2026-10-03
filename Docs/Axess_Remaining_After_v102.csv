@@ -1,0 +1,15 @@
+﻿Axess row,Installation,Country,Type,Shortlist tier,Why not loaded (after register v102)
+AX-041,BW Magna,Brazil,FSRU,C - Needs coordinates and facts,"Brazil batch: FSRU (import terminal), not a field platform."
+AX-057,Cidade de Rio das Ostras,Brazil,FPSO,C - Needs coordinates and facts,"v102: sources still conflict on its field (Badejo, Espadarte, Tartaruga Verde); Wikipedia lists it as scrapped in 2020."
+AX-061,Cidade de Sao Vicente,Brazil,FPSO,C - Needs coordinates and facts,Brazil batch: Extended well test unit at Lula Sul with a 2009-2019 contract; not a permanent field unit.
+AX-149,FPSO Cidade de Macaé,Brazil,FPSO,C - Needs coordinates and facts,"Brazil batch: Axess types it FPSO but it is the FSO Cidade de Macaé, a storage unit serving Roncador; not a field production unit."
+AX-285,P-08,Brazil,FPU SS,C - Needs coordinates and facts,v102: Petrobras VIII (SS-29) - field not stated in any source found.
+AX-206,Knock Allan,Gabon,FPSO,C - Needs coordinates and facts,v102: serves Olowi (Gabon); not in GEM or the platform file; no coordinate source found.
+AX-040,BW Athena,United Kingdom,FPSO,C - Needs coordinates and facts,"v102: still no coordinate (not in GEM, not in the platform file). Athena field, UKCS block 14/18b, about 18 km west of Claymore; FPSO May 2012 - Jan 2016."
+AX-022,Berg Helene,,FPSO,C - Needs coordinates and facts,v87 review: Unidentified; no country or field in the source.
+AX-184,HP1,,FPU,C - Needs coordinates and facts,v87 review: Unidentified; no country or field in the source.
+AX-183,Hoegh FSRU #10,,FSRU,C - Needs coordinates and facts,"v87 review: FSRU (import terminal), not a field platform."
+AX-114,Dynamic Producer,Brazil,FPWSO,R - Review (subsea / unclassified),Brazil batch: Extended well test unit; not a permanent field unit.
+AX-193,JADE,Brazil,Subsea,R - Review (subsea / unclassified),"Brazil batch: Pipe-laying vessel, not a platform."
+AX-403,Tweedsmuir,United Kingdom,Subsea Tieback,R - Review (subsea / unclassified),v102: GEM has Tweedsmuir South (57.9526N 0.1508E) but no source names the host platform; the platform file has no Tweedsmuir record.
+AX-332,Safe Boreas,,,R - Review (subsea / unclassified),v87 review: Accommodation unit; not a production platform.

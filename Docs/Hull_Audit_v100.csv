@@ -1,0 +1,15 @@
+﻿Basin ID,Basin,Fields mapped (with coordinates),Points the hull was built from,Hull area km2,Fields' own footprint km2 (30 km discs),Hull fullness (footprint / hull),Share of hull over land,Share of fields onshore,Isolated fields (>250 km from any other),Decision,Reason
+OB-0001,West Siberian Basin,141,70,930931,318430,34%,85%,99%,Pobeda Oil and Gas Field (Russia) (383 km),REDRAWN v100,"Hull 6 vertices, ~931,000 km2 vs the fields' own footprint ~318,000 km2 (66% empty); built from 70 points while 141 fields are mapped"
+OB-0003,Volga-Ural Basin,7,5,21871,17940,82%,100%,100%,,Kept,Only 7 fields; hull covers 82% of what the fields themselves cover - a hull is a fair summary of a sparse basin
+OB-0012,Bohai Bay Basin,42,33,87159,64369,74%,39%,26%,,Kept,"Hull is 74% as full as the fields' own footprint; 39% of it lies over land, matching a basin with 26% onshore fields"
+OB-0015,South China Sea Basin,49,44,934925,73583,8%,4%,2%,"Dongfang 13-2 Oil and Gas Field (H (262 km); Lingshui 36-1 Oil Field (Hainan, C (303 km)",REDRAWN v100,"Hull ~935,000 km2 vs the fields' own footprint ~74,000 km2 (92% empty); covered the northern South China Sea and the Guangdong-Hainan coast"
+OB-0023,Carnarvon Basin,26,26,44085,52372,119%,1%,0%,,Kept,Hull is already tighter than a 30 km footprint of the 26 fields; 99% over water as expected
+OB-0035,Levant Basin,5,5,4334,10156,234%,0%,0%,,Kept,5 offshore points; hull smaller than their discs; sparse
+OB-0042,Berkine Basin,27,15,291101,58752,20%,100%,100%,Kahlouche Oil and Gas Field (Alger (326 km); Hassi Moumene Oil and Gas Field (A (304 km),REDRAWN v100,"Hull ~291,000 km2 vs the fields' own footprint ~59,000 km2 (80% empty). Hassi Messaoud also moved to the Oued Mya Basin (GEM label). Kahlouche and Hassi Moumene remain as isolated discs"
+OB-0043,Illizi Basin,5,5,12706,13049,103%,100%,100%,,Kept,5 fields; hull and footprint match (103%)
+OB-0054,Anza Basin,0,12,48889,0,0%,100%,,,Kept,Hull of 12 exploration-well locations from Kenya NOC (not field points); no fields in the layer; described as a well hull in its own note
+OB-0069,Uinta Basin,26,26,2974,13403,451%,100%,100%,,Kept,26 fields tightly clustered; hull is smaller than the 30 km footprint of the fields
+OB-0075,Sureste Basin,138,115,37287,53416,143%,38%,38%,,Kept,Hull is 143% of the fields' footprint; land/sea mix (38% land) matches the fields (38% onshore)
+OB-0077,Chicontepec Basin,21,17,3436,11362,331%,100%,100%,,Kept,All 21 fields are the Chicontepec/ATG fields named in the cited papers; hull is tight (331%)
+OB-0078,Orinoco Basin / Belt,55,30,39874,47350,119%,99%,96%,,Kept,Hull and footprint match (119%); 99% over land as expected
+OB-0084,Neuquén Basin,111,109,51765,63786,123%,100%,100%,,Kept,111 fields; hull is 123% of their footprint
