@@ -8979,6 +8979,103 @@ function tbApplyBasemapPalette(map, entry) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// PLACE NAMES (all three maps). Mapbox draws city and town names below our data
+// layers and, on Dark / Nav Night, in dim grey, so most names disappear under
+// terminal dots, pipelines and rigs. After every style load and whenever we add
+// layers, this (1) adds 'tb-place-extra', a second settlement layer from the
+// style's own streets source that admits more towns per zoom level, (2) lifts the
+// basemap's country / state / settlement label layers and the extra layer to the
+// top, and (3) gives them stronger text colour and a halo for the basemap.
+// Everything is guarded: if a style has no place labels nothing changes.
+// ---------------------------------------------------------------------------
+const TB_PLACE_EXTRA = 'tb-place-extra';
+function tbPlaceLabelLayers(map) {
+  let layers = [];
+  try { layers = (map.getStyle() || {}).layers || []; } catch (e) { return []; }
+  return layers.filter(function (l) {
+    return l.type === 'symbol' && (l['source-layer'] === 'place_label' || /^(country|state|settlement|continent)-.*label/.test(l.id || '')) && l.id !== TB_PLACE_EXTRA;
+  });
+}
+function tbStyleIsDark(map) {
+  let n = '';
+  try { n = (map.getStyle() || {}).name || ''; } catch (e) {}
+  return /dark|night|satellite/i.test(n);
+}
+function tbApplyPlaceLabels(map) {
+  const labels = tbPlaceLabelLayers(map);
+  if (!labels.length) return;
+  const dark = tbStyleIsDark(map);
+  const paint = function (id, p, v) { try { map.setPaintProperty(id, p, v); } catch (e) {} };
+  const style = function (id, settlement) {
+    paint(id, 'text-color', dark ? (settlement ? '#f1f4f7' : '#c9d3dd') : (settlement ? '#1f2328' : '#4a525a'));
+    paint(id, 'text-halo-color', dark ? 'rgba(10,14,20,0.9)' : 'rgba(255,255,255,0.95)');
+    paint(id, 'text-halo-width', 1.6);
+    paint(id, 'text-halo-blur', 0.3);
+    paint(id, 'text-opacity', 1);
+  };
+  labels.forEach(function (l) { style(l.id, /settlement/.test(l.id) || l['source-layer'] === 'place_label'); });
+  if (!map.getLayer(TB_PLACE_EXTRA)) {
+    const ref = labels.find(function (l) { return /settlement/.test(l.id) && l.source; }) || labels.find(function (l) { return l.source; });
+    if (ref) {
+      let font = null;
+      try { font = map.getLayoutProperty(ref.id, 'text-font'); } catch (e) {}
+      try {
+        map.addLayer({
+          id: TB_PLACE_EXTRA, type: 'symbol', source: ref.source, 'source-layer': 'place_label', minzoom: 2.5,
+          filter: ['all',
+            ['==', ['get', 'class'], 'settlement'],
+            ['<=', ['to-number', ['get', 'symbolrank'], 99],
+              ['step', ['zoom'], 7, 3.5, 9, 4.5, 11, 5.5, 12, 6.5, 13, 7.5, 15, 9, 18]]],
+          layout: {
+            'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']],
+            'text-font': font || ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 3, 10, 6, 11.5, 9, 13, 12, 15],
+            'text-padding': 3,
+            'symbol-sort-key': ['to-number', ['get', 'symbolrank'], 99],
+            'text-max-width': 8,
+          },
+          paint: {},
+        });
+        style(TB_PLACE_EXTRA, true);
+      } catch (e) { console.warn('extra place labels unavailable', e); }
+    }
+  }
+  tbLiftPlaceLabels(map);
+}
+// Extra layer first, then the basemap's own labels above it (so Mapbox's names win collisions).
+function tbLiftPlaceLabels(map) {
+  let layers = [];
+  try { layers = (map.getStyle() || {}).layers || []; } catch (e) { return; }   // runs only after a style load or a layer add
+  const ids = [];
+  if (map.getLayer(TB_PLACE_EXTRA)) ids.push(TB_PLACE_EXTRA);
+  tbPlaceLabelLayers(map).forEach(function (l) { ids.push(l.id); });
+  if (!ids.length) return;
+  const top = layers.slice(-ids.length).map(function (l) { return l.id; });
+  if (top.join('|') === ids.join('|')) return;     // already on top in the right order
+  ids.forEach(function (id) { try { map.moveLayer(id); } catch (e) {} });
+}
+function tbWirePlaceLabels(map) {
+  if (!map || map._tbPlaceWired || typeof map.on !== 'function') return;
+  map._tbPlaceWired = true;
+  let t = null;
+  const run = function () { clearTimeout(t); t = setTimeout(function () { try { tbApplyPlaceLabels(map); } catch (e) {} }, 60); };
+  map.on('style.load', run);
+  map.on('load', run);
+  // Our own addLayer calls put data above the labels: lift the labels again shortly after.
+  // (Wrapping addLayer avoids listening to 'styledata', which the pipeline flow animation fires ~8 times a second.)
+  if (typeof map.addLayer === 'function' && !map._tbAddLayerWrapped) {
+    const orig = map.addLayer.bind(map);
+    map.addLayer = function (layer, before) {
+      const r = orig(layer, before);
+      if (layer && layer.id !== TB_PLACE_EXTRA) { clearTimeout(t); t = setTimeout(function () { try { if (map.getLayer(TB_PLACE_EXTRA)) tbLiftPlaceLabels(map); else tbApplyPlaceLabels(map); } catch (e) {} }, 60); }
+      return r;
+    };
+    map._tbAddLayerWrapped = true;
+  }
+  try { if (map.isStyleLoaded && map.isStyleLoaded()) run(); } catch (e) {}
+}
+
 // Metric + nautical scale bars, bottom-left (the legend is bottom-right).
 // ── "Back to normal": undo any rotation/tilt (north up, flat) without moving or zooming the map ──
 function tbMapFor(which) {
@@ -8993,6 +9090,7 @@ function tbResetNorth(which) {
 }
 // The button's needle turns against the map's bearing (like a compass) and the button lights up while the map is turned or tilted.
 function tbWireCompass(map, which) {
+  tbWirePlaceLabels(map);
   if (!map || map._tbCompassWired || typeof map.on !== 'function') return;
   const btn = document.querySelector('[data-compass="' + which + '"]'); if (!btn) return;
   const needle = btn.querySelector('.tb-compass-needle');
