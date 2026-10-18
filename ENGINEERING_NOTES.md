@@ -11,6 +11,8 @@ apps, and especially before writing a script that touches many records at once.
 This file should live at the root of each of the five repos. If you fix a new
 class of bug, add it here.
 
+> **Update 17 Oct 2026:** cross-app decisions now live in `T3_DECISIONS.md` at the repo root (same file in all three T3 repos). Where this doc disagrees with it, `T3_DECISIONS.md` wins.
+
 ---
 
 ## 1. Data integrity — bulk edits across many records
@@ -229,6 +231,13 @@ ASTSPARES ↔ TankWorldIndia). Renaming a company after it's live means the
 old document is orphaned and every cross-app link pointing at the old slug
 breaks. Renaming is only safe **before** a record has been seeded anywhere.
 
+Merging duplicates and deleting inactive companies still retires slugs. Record
+every retired slug with its survivor (or "deleted") in one map, and make every
+cross-app lookup go through it; TankWorldIndia keeps this map as
+`TWI_RETIRED_SLUGS.csv`. After a reseed, delete the retired documents from
+Firestore (the admin "Find orphaned records" tool), never before the new
+build is live.
+
 ### 5.2 A subsidiary is a separate legal entity, not a "location" of its parent
 
 Early modeling collapsed foreign subsidiaries into their parent's card as if
@@ -350,3 +359,65 @@ patterns worth reusing deliberately:
   symptom. Several issues in this project turned out to be "the fix is
   correct but was never actually deployed" or "deployed but not seeded"
   rather than a code defect.
+
+---
+
+## 9. Cross-project sign-in (added 17 Oct 2026)
+
+### 9.1 A sign-in from one Firebase project means nothing to another project's rules
+
+Tankonomics, TankBazaar and TankWorldIndia are three separate Firebase
+projects, so each has its own sign-in system. A Tankonomics ID token is not
+accepted by TankBazaar's or TankWorldIndia's security rules, and the same
+person signing in with Google gets a different uid in each project. Shared
+sign-in therefore needs a bridge. The design in `T3_DECISIONS.md` §4 is a
+Cloud Run endpoint that verifies the Tankonomics token and returns a custom
+token for the other project.
+
+### 9.2 Custom tokens carry no email unless you add it
+
+Rules that identify admins by `request.auth.token.email` (TankBazaar and
+TankWorldIndia both do) stop recognising an admin who signs in through a
+custom token, unless the bridge adds `email` as a developer claim. Test admin
+access first after any sign-in change, or keep admins on a direct sign-in.
+
+### 9.3 Changing the uid orphans ownership fields
+
+Switching an app to bridged sign-in changes every user's uid (to
+`tk_<Tankonomics uid>`). Every field that stores a uid then points at an
+account that no longer signs in: `users/{uid}` doc ids, `companies.ownerUid`,
+claims, TankBazaar `ownerId`. Map old uids to new ones by email in a one-time
+migration before the switch, or owners lose their listings.
+
+### 9.4 A file on hosting is public, whatever the database rules say
+
+Firestore rules protect Firestore only. A data file served by hosting (for
+example TankWorldIndia's `companies.json`) or committed to a public repo can be
+downloaded by anyone with the URL. The same applies to data embedded in a page
+(TankBazaar's old built-in terminal copy, removed 17 Oct; TankWorldIndia's
+single-file build, which embeds the whole company list). Serve sensitive data
+only through Firestore, or through a server that checks the ID token first.
+
+## 10. Scale patterns (added 17 Oct 2026)
+
+Lessons from the Tankonomics scale review (`T3_DECISIONS.md` §7). They apply to
+any app here that expects real traffic.
+
+- **Never read a whole collection from a page.**
+  - Use `limit()` + cursors.
+  - A listener with no limit reads every document on every visit, and its cost
+    grows with the collection, not with the user.
+- **Don't filter in the browser after a broad fetch.**
+  - It hides the cost, and it silently breaks search once pagination arrives.
+  - Use `where()`, or a search engine.
+- **The browser must not write counts, other people's notifications, or
+  anything a rule can't fully check.** Use trigger functions or the Cloud Run
+  service.
+- **Don't store growing lists of uids in one document** (for example likes as
+  an array).
+  - A document holds 1 MiB and sustains about one write per second.
+  - Use one document per like, plus a server-maintained counter.
+- **`get()` and `exists()` in rules are billed reads on every request.** Put
+  stable facts (tier, approval) in custom claims instead.
+- **Decide the Firestore location before real data arrives.** It cannot be
+  changed later.
