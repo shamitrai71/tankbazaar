@@ -3012,10 +3012,15 @@ window.addEventListener('popstate', (ev) => {
 
 // Deep-link support: if the page loads with #terminal-<id> already in the
 // URL (a shared/bookmarked link), open that terminal once terminals are ready.
+// TankBazaar facility ids are never reused. When duplicate records were merged,
+// the removed id is listed here so old links (including those on Tankonomics)
+// open the surviving record. Keep in step with TB_ID_REDIRECTS in Tankonomics
+// (src/lib/tbLocationId.ts).
+const TB_ID_REDIRECT = {349:2223,3330:2223,3233:59,3237:59,1728:535,2617:536,16:4428,575:1703,2754:587,9:526,43:613,550:6427,554:6429,74:3406,419:3406,420:3414,3628:1330,3878:1330,3614:785,6413:5854,96:685,3868:53,3802:54};
 function openTerminalFromHash() {
   const m = /^#terminal-(\d+)/.exec(location.hash);
   if (!m) return;
-  const t = findTerminalById(parseInt(m[1], 10));
+  const t = findTerminalById(TB_ID_REDIRECT[parseInt(m[1], 10)] || parseInt(m[1], 10));
   if (t) {
     history.replaceState({ tbTerminalId: t.id }, '', '#terminal-' + t.id);
     _modalHistoryOwned = true;
@@ -3659,7 +3664,7 @@ function viewFull() {
   const ty = TERMINAL_TYPES[terminalType(t)] || TERMINAL_TYPES.port;
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('fs-name', t.name);
-  document.getElementById('fs-loc').innerHTML = `${t.city}, ${t.country} · <span style="color:${ty.color};">● ${ty.short}</span> · operated by ${t.op || '—'}`;
+  document.getElementById('fs-loc').innerHTML = `${t.city}, ${t.country} · <span style="color:${ty.color};">● ${ty.short}</span> · ${t.op ? 'operated by ' + t.op : (tbOwnerOf(t) ? 'owned by ' + tbOwnerOf(t) : '')}`;
   set('fs-cap', `${(t.cap/1000).toFixed(1)}M kbd`);
   set('fs-occ', t.occ || '—');
   set('fs-tanks', t.tanks != null ? t.tanks : '—');
@@ -3691,10 +3696,32 @@ function viewFull() {
 
   const lw = document.getElementById('fs-legal-wrap'), lh = tbLegalHtml(t, true);
   if (lw) { lw.style.display = lh ? '' : 'none'; document.getElementById('fs-legal').innerHTML = lh; }
+  const sw = document.getElementById('fs-site-wrap'), sh = tbSiteFactsHtml(t);
+  if (sw) { sw.style.display = sh ? '' : 'none'; document.getElementById('fs-site').innerHTML = sh; }
   const nw = document.getElementById('fs-lng-wrap'), nh = tbLngHtml(t);
   if (nw) { nw.style.display = nh ? '' : 'none'; document.getElementById('fs-lng').innerHTML = nh; }
 
   document.getElementById('factSheetModal').classList.remove('hidden');
+}
+
+// Facts published on the operator's own website (V404, Vopak research round): siteStatus, storageCapacity, tankInfo,
+// certifications[], operatorShare, ownership, berthInfo, accessInfo, siteNote, infoSrc, infoDate. Shown on the fact sheet.
+function tbSiteFactsHtml(t) {
+  if (!t || !(t.storageCapacity || t.siteStatus || t.infoSrc)) return '';
+  const e = tbLegalEsc, rows = [];
+  const add = function (k, v) { if (v !== undefined && v !== null && v !== '') rows.push('<div><span style="color:var(--text-dim);">' + k + ':</span> ' + v + '</div>'); };
+  add('Status', e(t.siteStatus || ''));
+  add('Storage capacity', e(t.storageCapacity || ''));
+  add('Tanks', e(t.tankInfo || ''));
+  const certs = Array.isArray(t.certifications) ? t.certifications : (t.certifications ? [t.certifications] : []);
+  add('Certifications', certs.map(e).join(', '));
+  add('Shareholding', e([t.operatorShare, t.ownership].filter(Boolean).join(' · ')));
+  add('Berths', e(t.berthInfo || ''));
+  add('Access', e(t.accessInfo || ''));
+  add('Note', e(t.siteNote || ''));
+  const link = /^https?:\/\//.test(t.infoSrc || '') ? '<a href="' + e(t.infoSrc) + '" target="_blank" rel="noopener" style="color:var(--accent2);">operator page</a>' : '';
+  rows.push('<div style="font-size:10.5px;color:var(--text-dim);margin-top:4px;">Source: ' + (link || 'operator website') + (t.infoDate ? ' · checked ' + e(t.infoDate) : '') + '. Certifying bodies and expiry dates are not published.</div>');
+  return rows.join('');
 }
 
 // GEM LNG terminal fields (gemId, lngRole, lngStatus, lngCapMtpa, lngCapUcMtpa, lngStartYear, gemOwner, gemOperator, gemUrl, gemSrc), shown on the fact sheet.
@@ -5964,6 +5991,11 @@ loadScript(
       <div id="fs-legal" style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;"></div>
     </div>
 
+      <div id="fs-site-wrap" style="display:none;">
+        <div class="fs-section-label">Operator website facts</div>
+        <div id="fs-site" style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;"></div>
+      </div>
+
       <div id="fs-lng-wrap" style="display:none;">
         <div class="fs-section-label">LNG terminal (Global Energy Monitor)</div>
         <div id="fs-lng" style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;"></div>
@@ -7966,7 +7998,7 @@ function renderTerminalDataTable() {
       <td class="cell-accent">${(t.cap/1000).toFixed(1)}M</td>
       <td>${t.tanks}</td>
       <td>${t.berths}</td>
-      <td>${t.op}</td>
+      <td>${t.op || tbOwnerOf(t)}</td>
       <td style="font-size:9px;color:var(--text-muted);">${t.products.join(', ')}</td>
       <td>
         <div style="display:flex;gap:5px;">
@@ -8095,7 +8127,7 @@ function editTerminalForm(id) {
   editingTerminalId = id;
   adminNav('addterminal', null);
   document.getElementById('nt-name').value = t.name;
-  document.getElementById('nt-op').value = t.op;
+  document.getElementById('nt-op').value = t.op || '';
   document.getElementById('nt-city').value = t.city;
   document.getElementById('nt-country').value = t.country;
   document.getElementById('nt-lat').value = t.lat;
@@ -9545,7 +9577,7 @@ let currentMasterStyle = tbSavedStyleKey('master', 'dark');
 const TB_MASTER_GROUPS = [
   { key: 'termStorage',  label: 'Storage terminals',               color: '#2fa37c' },
   { key: 'termProcess',  label: 'Process plants (refineries, gas, chemicals)', color: '#e0b84f' },
-  { key: 'termFloating', label: 'Floating units (FSO, FSRU, FPSO)', color: '#d4922f' },
+  { key: 'termFloating', label: 'Floating production units (FPSO, FLNG)', color: '#d4922f' },
   { key: 'approx',       label: 'Ring terminals with approximate positions', color: 'transparent', ring: '#ffd34d' },
   { key: 'pipeOp',       label: 'Pipelines in service',             color: '#FF8C1A' },
   { key: 'pipeDev',      label: 'Pipelines proposed / under construction', color: PIPE_DEV_COLOR },
@@ -9578,6 +9610,7 @@ function tbMasterData() {
   if (typeof PIPE_DATA === 'undefined' || !PIPE_DATA) PIPE_DATA = PIPE_DATA_RAW;
   if (!RIG_DATA) { RIG_DATA = RIG_DATA_RAW.rigs; RIG_BASINS = RIG_DATA_RAW.basins; RIG_FIELDS = RIG_DATA_RAW.fields || []; }
 }
+function tbOwnerOf(t) { return (t && (t.legalName || t.ownerName || t.op)) || ''; }
 function tbTermGroup(t) {
   if (t.type === 'floating') return 'termFloating';
   const pc = t.primaryClass || ((t.facilityClass || []).indexOf('process') >= 0 && (t.facilityClass || []).indexOf('storage') < 0 ? 'process' : 'storage');
@@ -9804,7 +9837,7 @@ function masterToggleBox() {
 }
 function tbMasterItem(kind, ref) {
   const esc = tbLegalEsc;
-  if (kind === 't') { const t = ref; return { kind: 'Terminal', color: '#2fa37c', name: t.name, sub: (t.op || '') + ' · ' + (t.city || '') + ', ' + (t.country || '') + (t.posAcc === 'town' || t.posAcc === 'grid' ? ' · approximate position' : ''), go: 't:' + t.id }; }
+  if (kind === 't') { const t = ref; return { kind: 'Terminal', color: '#2fa37c', name: t.name, sub: (t.op || tbOwnerOf(t)) + ' · ' + (t.city || '') + ', ' + (t.country || '') + (t.posAcc === 'town' || t.posAcc === 'grid' ? ' · approximate position' : ''), go: 't:' + t.id }; }
   if (kind === 'p') { const p = PIPE_DATA[ref]; return { kind: 'Pipeline', color: PIPE_COLORS[p.cat] || PIPE_COLORS.other, name: p.n, sub: (p.co || '') + ' · ' + (p.sr || p.st), go: 'p:' + ref }; }
   if (kind === 'r') { const r = RIG_DATA[ref]; return { kind: 'Rig', color: RIG_TYPE_COLORS[r.tc] || '#00D9E9', name: r.n, sub: (r.fld || '') + ' · ' + (r.st || ''), go: 'r:' + ref }; }
   const f = RIG_FIELDS[ref]; return { kind: 'Field', color: '#4fa8d8', name: f.n, sub: (f.op || '') + ' · ' + (f.c || ''), go: 'f:' + ref };
@@ -9825,7 +9858,7 @@ function masterSearch(q) {
     tbMasterData();
     const hit = function (s) { return String(s || '').toLowerCase().indexOf(q) >= 0; };
     const items = [];
-    (terminals || []).forEach(function (t) { if (items.length < 60 && (hit(t.name) || hit(t.op) || hit(t.legalName))) items.push(tbMasterItem('t', t)); });
+    (terminals || []).forEach(function (t) { if (items.length < 60 && (hit(t.name) || hit(t.op) || hit(t.legalName) || hit(t.ownerName) || hit((t.altNames || []).join(' ')))) items.push(tbMasterItem('t', t)); });
     PIPE_DATA.forEach(function (p, i) { if (items.length < 90 && (hit(p.n) || hit(p.co))) items.push(tbMasterItem('p', i)); });
     RIG_DATA.forEach(function (r, i) { if (items.length < 110 && (hit(r.n) || hit(r.fld))) items.push(tbMasterItem('r', i)); });
     RIG_FIELDS.forEach(function (f, i) { if (items.length < 130 && (hit(f.n) || hit(f.op))) items.push(tbMasterItem('f', i)); });
@@ -9845,7 +9878,7 @@ function masterListInView() {
 function masterExportInView() {
   const iv = tbMasterInBounds(), on = tbMasterOn, rows = [['Layer', 'ID', 'Name', 'Operator / owner', 'Country', 'Status or class', 'Latitude', 'Longitude', 'Position accuracy']];
   const csv = function (v) { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-  ['termStorage', 'termProcess', 'termFloating'].forEach(function (g) { if (on[g]) iv[g].forEach(function (t) { rows.push(['Terminal', t.id, t.name, t.op, t.country, t.primaryClass || g, t.lat, t.lng, t.posAcc || '']); }); });
+  ['termStorage', 'termProcess', 'termFloating'].forEach(function (g) { if (on[g]) iv[g].forEach(function (t) { rows.push(['Terminal', t.id, t.name, t.op || tbOwnerOf(t), t.country, t.primaryClass || g, t.lat, t.lng, t.posAcc || '']); }); });
   ['pipeOp', 'pipeDev'].forEach(function (g) { if (on[g]) iv[g].forEach(function (i) { const p = PIPE_DATA[i]; rows.push(['Pipeline', tbPipeKeys()[i], p.n, p.co, '', p.sr || p.st, p.w[0][1], p.w[0][0], '']); }); });
   if (on.rigs) iv.rigs.forEach(function (i) { const r = RIG_DATA[i]; rows.push(['Rig', r.k || i, r.n, r.op, r.c, r.st, r.lat, r.lng, r.src || '']); });
   if (on.fields) iv.fields.forEach(function (i) { const f = RIG_FIELDS[i]; rows.push(['Oil field', f.id, f.n, f.op, f.c, f.st, f.lat, f.lng, '']); });
