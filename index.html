@@ -534,6 +534,28 @@ input[type="range"] {
 .panel-header { margin-bottom: 24px; }
 .panel-title { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
 .panel-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+/* Companies view */
+#companies-panel { overflow-y: auto; }
+.co-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.co-controls input, .co-controls select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; }
+.co-controls input { flex: 1 1 240px; min-width: 0; }
+.co-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.co-table th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; padding: 9px 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+.co-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.co-row { cursor: pointer; }
+.co-row:hover td { background: var(--surface2); }
+.co-mono { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; color: var(--text-muted); word-break: break-all; }
+.co-badge { display: inline-block; font-size: 9.5px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); margin-left: 4px; vertical-align: middle; }
+.co-btn { background: var(--surface2); border: 1px solid var(--accent2); color: var(--accent3); border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer; font-family: inherit; }
+.co-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; }
+@media (max-width: 900px) { .co-grid { grid-template-columns: minmax(0, 1fr); } .co-table th:nth-child(5), .co-table td:nth-child(5) { display: none; } }
+.co-kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 8px; font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.co-kv > div:first-child { color: var(--text-muted); }
+.co-kv > div:last-child { word-break: break-word; }
+@media (max-width: 520px) { .co-kv { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+#coFilterChip { display: none; align-items: center; gap: 8px; margin: 10px 12px 0; padding: 7px 10px; border: 1px solid var(--accent2); border-radius: 8px; font-size: 11px; color: var(--accent3); background: var(--surface2); }
+#coFilterChip button { margin-left: auto; background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 13px; }
+
 
 .kpi-grid {
   display: grid;
@@ -1287,6 +1309,7 @@ input[type="range"] {
     <button class="nav-btn" onclick="switchView('tracking')">🚢 Tracking</button>
     <button class="nav-btn" onclick="switchView('flow')">🛢 Flow</button>
     <button class="nav-btn" onclick="switchView('prices')">💹 Prices</button>
+    <button class="nav-btn" onclick="switchView('companies')">🏢 Companies</button>
   </nav>
   <div class="header-right">
     <div class="live-badge"><div class="live-dot"></div>LIVE AIS</div>
@@ -1332,8 +1355,10 @@ input[type="range"] {
       <button class="nav-btn" onclick="switchView('tracking')">🚢 Ship Tracking</button>
       <button class="nav-btn" onclick="switchView('flow')">🛢 Product Flow</button>
       <button class="nav-btn" onclick="switchView('prices')">💹 Commodity Prices</button>
+      <button class="nav-btn" onclick="switchView('companies')">🏢 Companies</button>
     </div>
     <div id="sidebar-facilities-view">
+    <div id="coFilterChip"><span>🏢</span><span>Facilities of <b id="coFilterName"></b></span><button onclick="tbSetCompanyFilter(null)" title="Show all facilities">✕</button></div>
     <div class="sidebar-section">
       <div class="sidebar-label">Filters</div>
       <div class="filter-group">
@@ -1975,6 +2000,32 @@ input[type="range"] {
       <div style="font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Commodity prices are OilPriceAPI spot prices, refreshed up to twice daily; their trend charts build up over time as new daily points are collected. Currency and metal rates are ECB/central-bank daily closes via Frankfurter. Click any card to plot its trend for the selected period.</div>
     </div>
 
+    <!-- COMPANIES VIEW: register of registered legal owners (list + one company per #/company/<slug>) -->
+    <div class="view-panel" id="companies-panel">
+      <div id="co-list-wrap">
+        <div class="panel-header">
+          <div class="panel-title">Companies</div>
+          <div class="panel-subtitle" id="co-summary">Registered legal owners of TankBazaar facilities.</div>
+        </div>
+        <div class="co-controls">
+          <input id="co-search" type="search" placeholder="Search name, LEI, registry number…" oninput="tbCompanyFilterChanged()">
+          <select id="co-country" onchange="tbCompanyFilterChanged()"><option value="">All countries</option></select>
+          <select id="co-idkind" onchange="tbCompanyFilterChanged()">
+            <option value="">Any identifier</option><option value="lei">With an LEI</option>
+            <option value="registry">Registry number only</option><option value="none">No identifier yet</option>
+          </select>
+          <select id="co-sort" onchange="tbCompanyFilterChanged()">
+            <option value="facilities">Most facilities</option><option value="name">Name A–Z</option><option value="country">Country</option>
+          </select>
+        </div>
+        <div class="chart-card" style="padding:0;overflow:auto;">
+          <table class="co-table"><thead><tr><th>Company</th><th>Country</th><th>Identifier</th><th style="text-align:right;">Facilities</th><th>Parent</th></tr></thead>
+          <tbody id="co-list-body"></tbody></table>
+        </div>
+      </div>
+      <div id="co-detail" style="display:none;"></div>
+    </div>
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -2241,8 +2292,13 @@ const TerminalStore = {
     // one bad entry can never crash the sort/render that follows.
     this._codeSeed = terminals.map(normalizeTerminal).filter(Boolean);
     try {
-      const docs = await FS_REST.listPublic('terminals');
+      // Bundle first (1 read when unchanged); the whole collection only if the bundle is unavailable.
+      let docs = null;
+      try { docs = await BundleStore.loadTerminals(); } catch (e) { console.warn('[TANK BAZAAR] terminal bundle not used:', e.message); docs = null; }
+      if (docs && docs.length) console.log('[TANK BAZAAR] ' + docs.length + ' terminals from the data bundle');
+      else docs = await FS_REST.listPublic('terminals');
       if (docs && docs.length) {
+        CompanyStore.load();
         const existingIds = new Set(docs.map(d => parseInt(d.id)));
         terminals.length = 0;
         docs.map(normalizeTerminal)
@@ -2294,6 +2350,305 @@ const TerminalStore = {
     catch (e) { console.warn('[TANK BAZAAR] terminal delete failed:', e.message); return false; }
   },
 };
+
+// ── DATA BUNDLES (Oct 2026) ──
+// The companies-and-bundles seeder packs the terminals collection into a few bundles/terminals-N
+// documents and the company index into bundles/companies-N, with bundles/manifest written last.
+// A visit reads the manifest (1 read). The parts are read only when their version changed since
+// this browser last loaded them; otherwise they come from IndexedDB. Terminal edits saved in the
+// app since the last rebuild leave a marker in bundleEdits, and those terminals are re-read
+// individually and laid over the bundle. Any failure falls back to reading the whole collection.
+const BundleStore = {
+  _db: null, _manifest: null,
+  _open() {
+    return new Promise(res => {
+      try {
+        const r = indexedDB.open('tb_bundles', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('b');
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => res(null);
+      } catch (e) { res(null); }
+    });
+  },
+  async _idb(op, key, val) {
+    try {
+      if (typeof indexedDB === 'undefined') return null;
+      this._db = this._db || await this._open();
+      if (!this._db) return null;
+      return await new Promise(res => {
+        const tx = this._db.transaction('b', op === 'get' ? 'readonly' : 'readwrite');
+        const st = tx.objectStore('b');
+        const rq = op === 'get' ? st.get(key) : op === 'put' ? st.put(val, key) : st.clear();
+        rq.onsuccess = () => res(op === 'get' ? rq.result : true);
+        rq.onerror = () => res(null);
+      });
+    } catch (e) { return null; }
+  },
+  async manifest() {
+    if (!this._manifest) this._manifest = await FS_REST.get('bundles', 'manifest');
+    return this._manifest;
+  },
+  // Returns the records of one bundle kind ('terminals' or 'companies'), or null if unavailable.
+  async load(kind) {
+    if (!firebaseReady || !fbAuth || !fbAuth.currentUser) return null;
+    const m = await this.manifest();
+    const info = m && m[kind];
+    if (!info || !info.parts || !info.version) return null;
+    const cached = await this._idb('get', kind);
+    if (cached && cached.version === info.version && Array.isArray(cached.data) && cached.data.length === info.count) return cached.data;
+    const parts = await Promise.all(Array.from({ length: info.parts }, (_, i) => FS_REST.get('bundles', kind + '-' + i)));
+    if (parts.some(p => !p || p.version !== info.version)) { console.warn('[TANK BAZAAR] ' + kind + ' bundle parts are out of step with the manifest (rebuild in progress?)'); return null; }
+    const data = [];
+    parts.sort((a, b) => a.part - b.part).forEach(p => JSON.parse(p.data).forEach(x => data.push(x)));
+    if (data.length !== info.count) { console.warn('[TANK BAZAAR] ' + kind + ' bundle count mismatch'); return null; }
+    this._idb('put', kind, { version: info.version, data: data });
+    return data;
+  },
+  // Terminals from the bundle, with terminals edited since the rebuild re-read and laid on top.
+  async loadTerminals() {
+    const data = await this.load('terminals');
+    if (!data) return null;
+    let edits = [];
+    try { edits = await FS_REST.list('bundleEdits'); } catch (e) { console.warn('[TANK BAZAAR] bundleEdits unreadable:', e.message); }
+    if (!edits.length) return data;
+    const byId = new Map(data.map(t => [String(t.id), t]));
+    await Promise.all(edits.map(async e => {
+      const id = String(e.id);
+      try {
+        const d = await FS_REST.get('terminals', id);
+        if (d) { d.id = /^\d+$/.test(id) ? parseInt(id, 10) : id; byId.set(id, d); }
+        else byId.delete(id);
+      } catch (err) { console.warn('[TANK BAZAAR] could not re-read edited terminal ' + id, err.message); }
+    }));
+    return Array.from(byId.values());
+  },
+  // Leave a marker so the next visit re-reads this terminal until the bundle is rebuilt.
+  markEdited(docId, deleted) {
+    FS_REST.setMerge('bundleEdits', String(docId), { id: String(docId), at: Date.now(), deleted: !!deleted })
+      .catch(e => console.warn('[TANK BAZAAR] edit marker not saved (publish the new firestore.rules):', e.message));
+  },
+  clearCache() { this._manifest = null; return this._idb('clear'); },
+};
+
+// ── COMPANIES (register owners; document id = register Company ID, URL = Tankonomics slug) ──
+const CompanyStore = {
+  list: null, byId: new Map(), bySlug: new Map(), byAlias: new Map(), byTerminal: new Map(), _p: null, _full: new Map(),
+  load() {
+    if (this._p) return this._p;
+    this._p = (async () => {
+      let d = null;
+      try { d = await BundleStore.load('companies'); } catch (e) { console.warn('[TANK BAZAAR] company index not loaded:', e.message); }
+      if (!d) { this._p = null; return null; }
+      this.list = d;
+      d.forEach(c => {
+        this.byId.set(c.id, c); this.bySlug.set(c.s, c);
+        (c.a || []).forEach(a => this.byAlias.set(a, c));
+        (c.f || []).forEach(fid => { const k = String(fid); if (!this.byTerminal.has(k)) this.byTerminal.set(k, []); this.byTerminal.get(k).push(c); });
+      });
+      if (typeof tbCompaniesLoaded === 'function') tbCompaniesLoaded();
+      return d;
+    })();
+    return this._p;
+  },
+  async details(id) {
+    if (this._full.has(id)) return this._full.get(id);
+    let d = null;
+    try { d = await FS_REST.get('companies', id); } catch (e) { console.warn('[TANK BAZAAR] company ' + id + ' not readable:', e.message); }
+    if (d) this._full.set(id, d);
+    return d;
+  },
+  forTerminal(t) { return (t && this.byTerminal.get(String(t.id))) || []; },
+};
+
+function tbCoEsc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let _tbRegionNames = null;
+function tbCountryName(cc) {
+  if (!cc) return '';
+  try { _tbRegionNames = _tbRegionNames || new Intl.DisplayNames(['en'], { type: 'region' }); return _tbRegionNames.of(cc) || cc; }
+  catch (e) { return cc; }
+}
+function tbCoIdKind(c) { return c.l ? 'lei' : (c.r ? 'registry' : 'none'); }
+// Link a legal-entity name on a terminal to its company page (plain text until the index has loaded).
+function tbCompanyLinkFor(t, name) {
+  const list = CompanyStore.forTerminal(t);
+  if (!list.length) return tbCoEsc(name);
+  const lc = String(name).trim().toLowerCase();
+  const c = list.find(x => String(x.n).trim().toLowerCase() === lc || (x.o || []).some(o => String(o).trim().toLowerCase() === lc)) || (list.length === 1 ? list[0] : null);
+  if (!c) return tbCoEsc(name);
+  return '<a href="#/company/' + encodeURIComponent(c.s) + '" onclick="tbOpenCompany(\'' + tbCoEsc(c.s) + '\');return false;" style="color:var(--accent2);text-decoration:underline;">' + tbCoEsc(name) + '</a>';
+}
+function tbCompaniesLoaded() {
+  // Owner names in an already-open terminal popup or fact sheet become links once the index arrives.
+  try {
+    if (selectedTerminal) {
+      const legalEl = document.getElementById('p-legal');
+      const pop = document.getElementById('terminal-popup');
+      if (legalEl && pop && pop.style.display !== 'none') legalEl.innerHTML = tbLegalHtml(selectedTerminal, false);
+      const fs = document.getElementById('factSheetModal'), lw = document.getElementById('fs-legal');
+      if (fs && lw && !fs.classList.contains('hidden')) lw.innerHTML = tbLegalHtml(selectedTerminal, true);
+    }
+  } catch (e) { /* popups not built yet */ }
+  if (document.getElementById('companies-panel')?.classList.contains('active') && document.getElementById('co-detail').style.display === 'none') tbRenderCompanyList();
+}
+
+// Company filter on the map and lists ("Show these facilities on the map").
+let tbCompanyFilter = null;
+function tbSetCompanyFilter(c) {
+  tbCompanyFilter = c ? { slug: c.s, name: c.n, ids: new Set((c.f || []).map(String)) } : null;
+  const chip = document.getElementById('coFilterChip');
+  if (chip) {
+    chip.style.display = tbCompanyFilter ? 'flex' : 'none';
+    const lbl = document.getElementById('coFilterName');
+    if (lbl && tbCompanyFilter) lbl.textContent = tbCompanyFilter.name + ' (' + tbCompanyFilter.ids.size + ')';
+  }
+  if (typeof filterTerminals === 'function') filterTerminals();
+}
+function tbFitTerminals(list) {
+  const pts = list.filter(t => isFinite(t.lat) && isFinite(t.lng));
+  if (!pts.length) return;
+  let s = 90, w = 180, n = -90, e = -180;
+  pts.forEach(t => { s = Math.min(s, t.lat); n = Math.max(n, t.lat); w = Math.min(w, t.lng); e = Math.max(e, t.lng); });
+  if (pts.length === 1) { mapPanTo(pts[0].lat, pts[0].lng); if (usingMapbox && mbMap) mbMap.setZoom(7); else if (!usingGoogle && map) map.setView([pts[0].lat, pts[0].lng], 7); return; }
+  try {
+    if (usingMapbox && mbMap) mbMap.fitBounds([[w, s], [e, n]], { padding: 60, duration: 700, maxZoom: 9 });
+    else if (usingGoogle && gMap && window.google) gMap.fitBounds(new google.maps.LatLngBounds({ lat: s, lng: w }, { lat: n, lng: e }));
+    else if (map && map.fitBounds) map.fitBounds([[s, w], [n, e]], { padding: [40, 40] });
+  } catch (err) { console.warn('fit failed', err); }
+}
+function tbShowCompanyOnMap(slug) {
+  const c = CompanyStore.bySlug.get(slug);
+  if (!c) return;
+  tbSetCompanyFilter(c);
+  switchView('map');
+  setTimeout(() => tbFitTerminals(terminals.filter(t => tbCompanyFilter && tbCompanyFilter.ids.has(String(t.id)))), 250);
+}
+
+// ── Companies view: list ──
+const TB_CO_PAGE = 200;
+let _tbCoShown = TB_CO_PAGE;
+function tbCompanyListFiltered() {
+  const q = (document.getElementById('co-search')?.value || '').trim().toLowerCase();
+  const cc = document.getElementById('co-country')?.value || '';
+  const idk = document.getElementById('co-idkind')?.value || '';
+  const sort = document.getElementById('co-sort')?.value || 'facilities';
+  let list = (CompanyStore.list || []).filter(c => {
+    if (cc && c.c !== cc) return false;
+    if (idk && tbCoIdKind(c) !== idk) return false;
+    if (q) {
+      const hay = (c.n + ' ' + (c.o || []).join(' ') + ' ' + c.l + ' ' + c.r + ' ' + c.id + ' ' + c.s + ' ' + c.p).toLowerCase();
+      if (hay.indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+  if (sort === 'name') list.sort((a, b) => String(a.n).localeCompare(String(b.n)));
+  else if (sort === 'country') list.sort((a, b) => tbCountryName(a.c).localeCompare(tbCountryName(b.c)) || (b.f.length - a.f.length));
+  else list.sort((a, b) => (b.f.length - a.f.length) || String(a.n).localeCompare(String(b.n)));
+  return list;
+}
+function tbCompanyFilterChanged() { _tbCoShown = TB_CO_PAGE; tbRenderCompanyList(); }
+function tbFillCountryOptions() {
+  const sel = document.getElementById('co-country');
+  if (!sel || sel.options.length > 1 || !CompanyStore.list) return;
+  const counts = {};
+  CompanyStore.list.forEach(c => { if (c.c) counts[c.c] = (counts[c.c] || 0) + 1; });
+  Object.keys(counts).map(cc => [cc, tbCountryName(cc)]).sort((a, b) => a[1].localeCompare(b[1]))
+    .forEach(([cc, nm]) => { const o = document.createElement('option'); o.value = cc; o.textContent = nm + ' (' + counts[cc] + ')'; sel.appendChild(o); });
+}
+function tbRenderCompanyList() {
+  const body = document.getElementById('co-list-body'), sum = document.getElementById('co-summary');
+  if (!body) return;
+  if (!CompanyStore.list) {
+    body.innerHTML = '<tr><td colspan="5" style="padding:18px;color:var(--text-muted);">' +
+      (currentUser ? 'Loading companies…' : 'Sign in with an approved account to see the company register.') + '</td></tr>';
+    if (currentUser) CompanyStore.load().then(d => { if (!d) body.innerHTML = '<tr><td colspan="5" style="padding:18px;color:var(--text-muted);">The company index is not available yet. An admin needs to run the companies-and-bundles seeder.</td></tr>'; });
+    return;
+  }
+  tbFillCountryOptions();
+  const all = CompanyStore.list, list = tbCompanyListFiltered();
+  const withLei = all.filter(c => c.l).length, noId = all.filter(c => !c.l && !c.r).length;
+  if (sum) sum.textContent = all.length.toLocaleString() + ' companies · ' + withLei.toLocaleString() + ' with an LEI · ' + (all.length - withLei - noId).toLocaleString() + ' with a registry number only · ' + noId.toLocaleString() + ' without an identifier · showing ' + list.length.toLocaleString();
+  const rows = list.slice(0, _tbCoShown).map(c => {
+    const idTxt = c.l ? 'LEI ' + c.l : (c.r ? c.r : '<span style="color:var(--accent);">none yet</span>');
+    return '<tr class="co-row" onclick="tbOpenCompany(\'' + tbCoEsc(c.s) + '\')">' +
+      '<td><a href="#/company/' + encodeURIComponent(c.s) + '" onclick="event.preventDefault();" style="color:var(--text);font-weight:600;">' + tbCoEsc(c.n) + '</a>' + (c.st && c.st !== 'ACTIVE' ? ' <span class="co-badge">' + tbCoEsc(String(c.st).slice(0, 24)) + '</span>' : '') + '</td>' +
+      '<td>' + tbCoEsc(tbCountryName(c.c)) + '</td>' +
+      '<td class="co-mono">' + (c.l ? tbCoEsc(idTxt) : (c.r ? tbCoEsc(String(c.r).slice(0, 60)) : idTxt)) + '</td>' +
+      '<td style="text-align:right;">' + c.f.length + '</td>' +
+      '<td>' + tbCoEsc(c.p || '') + '</td></tr>';
+  });
+  if (list.length > _tbCoShown) rows.push('<tr><td colspan="5" style="padding:12px;text-align:center;"><button class="co-btn" onclick="event.stopPropagation();_tbCoShown+=' + TB_CO_PAGE + ';tbRenderCompanyList();">Show more (' + (list.length - _tbCoShown).toLocaleString() + ' left)</button></td></tr>');
+  if (!list.length) rows.push('<tr><td colspan="5" style="padding:18px;color:var(--text-muted);">No company matches these filters.</td></tr>');
+  body.innerHTML = rows.join('');
+}
+function tbShowCompanyList() {
+  const l = document.getElementById('co-list-wrap'), d = document.getElementById('co-detail');
+  if (l) l.style.display = ''; if (d) d.style.display = 'none';
+  tbRenderCompanyList();
+}
+
+// ── Companies view: one company ──
+function tbOpenCompany(slug) {
+  try { hidePopupOnly(); hideFactSheetOnly(); } catch (e) { /* not open */ }
+  _modalHistoryOwned = false;
+  _tbCoOpening = true;
+  switchView('companies', true);
+  tbSetHash('#/company/' + encodeURIComponent(slug), 'push');
+  tbShowCompany(slug);
+}
+async function tbShowCompany(slug) {
+  const l = document.getElementById('co-list-wrap'), box = document.getElementById('co-detail');
+  if (l) l.style.display = 'none';
+  box.style.display = '';
+  box.innerHTML = '<div style="padding:18px;color:var(--text-muted);">Loading…</div>';
+  if (!currentUser) { box.innerHTML = '<div style="padding:18px;color:var(--text-muted);">Sign in with an approved account to see this company.</div>'; _tbPendingRoute = location.hash; return; }
+  await CompanyStore.load();
+  let c = CompanyStore.bySlug.get(slug);
+  if (!c && CompanyStore.byAlias.has(slug)) { c = CompanyStore.byAlias.get(slug); tbSetHash('#/company/' + encodeURIComponent(c.s), 'replace'); }
+  if (!c && /^CO\d{5}$/.test(slug) && CompanyStore.byId.has(slug)) { c = CompanyStore.byId.get(slug); tbSetHash('#/company/' + encodeURIComponent(c.s), 'replace'); }
+  if (!c) { box.innerHTML = '<div style="padding:18px;">' + (CompanyStore.list ? 'No company with the address “' + tbCoEsc(slug) + '”.' : 'The company index is not available yet.') + ' <a href="#/companies" style="color:var(--accent2);">Back to the company list</a></div>'; return; }
+  document.title = c.n + ' · Tank Bazaar';
+  const full = await CompanyStore.details(c.id) || {};
+  const facs = (c.f || []).map(id => findTerminalById(id)).filter(Boolean);
+  const roles = {}; (full.facilities || []).forEach(x => { roles[String(x.id)] = x.role; });
+  const row = (k, v) => v ? '<div class="co-kv"><div>' + k + '</div><div>' + v + '</div></div>' : '';
+  const lei = c.l ? '<a href="https://search.gleif.org/#/record/' + encodeURIComponent(c.l) + '" target="_blank" rel="noopener" style="color:var(--accent2);">' + tbCoEsc(c.l) + '</a>' : '';
+  const parentC = full.parent && full.parent.id ? CompanyStore.byId.get(full.parent.id) : null;
+  const parent = parentC ? '<a href="#/company/' + encodeURIComponent(parentC.s) + '" onclick="tbOpenCompany(\'' + tbCoEsc(parentC.s) + '\');return false;" style="color:var(--accent2);">' + tbCoEsc(parentC.n) + '</a>' : tbCoEsc(c.p || '');
+  const subs = (CompanyStore.list || []).filter(x => x.p && (x.p === c.n) && x.id !== c.id).slice(0, 40);
+  const addr = [full.address, full.city, full.region, full.postalCode, tbCountryName(full.country || c.c)].filter(Boolean).map(tbCoEsc).join(', ');
+  const hq = full.hqAddress && full.hqAddress !== full.address ? [full.hqAddress, full.hqCity, tbCountryName(full.hqCountry)].filter(Boolean).map(tbCoEsc).join(', ') : '';
+  const rels = (full.relations || []).filter(r => !/arent/.test(r.rel)).map(r => tbCoEsc(r.rel) + ': ' + tbCoEsc(r.name)).join('<br>');
+  const src = String(full.source || '').split(/\s*[|;\n]\s*/).filter(Boolean).map(s => /^https?:\/\//.test(s) ? '<a href="' + tbCoEsc(s) + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + tbCoEsc(s) + '</a>' : tbCoEsc(s)).join('<br>');
+  const facRows = facs.map(t => '<tr class="co-row" onclick="tbOpenFacility(' + JSON.stringify(String(t.id)).replace(/"/g, '&quot;') + ')"><td>' + tbCoEsc(t.name) + '</td><td>' + tbCoEsc([t.city, t.country].filter(Boolean).join(', ')) + '</td><td>' + tbCoEsc(typeof facilityRoleLabel === 'function' ? facilityRoleLabel(t) : (t.primaryClass || '')) + '</td><td>' + tbCoEsc(roles[String(t.id)] || '') + '</td></tr>').join('');
+  const missing = (c.f || []).length - facs.length;
+  box.innerHTML =
+    '<div style="margin-bottom:14px;"><a href="#/companies" style="color:var(--accent2);font-size:12px;">← All companies</a></div>' +
+    '<div class="panel-header" style="margin-bottom:14px;"><div class="panel-title">' + tbCoEsc(c.n) + '</div>' +
+    '<div class="panel-subtitle">' + tbCoEsc(tbCountryName(c.c)) + (full.legalForm && !/^[A-Z0-9]{4}$/.test(full.legalForm) ? ' · ' + tbCoEsc(full.legalForm) : '') + (c.st ? ' · ' + tbCoEsc(c.st) : '') + ' · ' + facs.length + ' facilit' + (facs.length === 1 ? 'y' : 'ies') + ' in TankBazaar</div></div>' +
+    '<div class="co-grid">' +
+      '<div class="chart-card"><div class="chart-title">Legal entity</div>' +
+        row('LEI', lei) + row('Registry IDs', tbCoEsc(c.r)) + (!c.l && !c.r ? row('Identifier', '<span style="color:var(--accent);">none recorded yet</span>') : '') +
+        row('Registered address', addr) + row('Head office', hq) + row('Parent', parent) +
+        (subs.length ? row('Subsidiaries in the register', subs.map(x => '<a href="#/company/' + encodeURIComponent(x.s) + '" onclick="tbOpenCompany(\'' + tbCoEsc(x.s) + '\');return false;" style="color:var(--accent2);">' + tbCoEsc(x.n) + '</a>').join('<br>')) : '') +
+        row('Also known as', (c.o || []).map(tbCoEsc).join('<br>')) + row('Name history', rels) +
+        row('Register ID', '<span class="co-mono">' + tbCoEsc(c.id) + '</span>') +
+        row('Tankonomics address', '<span class="co-mono">/business/' + tbCoEsc(c.s) + '</span>' + (full.slugSource === 'tankonomics' ? ' <span class="co-badge">existing</span>' : full.slugSource === 'tankonomics-unreviewed' ? ' <span class="co-badge">to confirm</span>' : ' <span class="co-badge">reserved</span>')) +
+        row('Source', src) +
+      '</div>' +
+      '<div class="chart-card"><div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">Facilities' +
+        (facs.length ? '<button class="co-btn" onclick="tbShowCompanyOnMap(\'' + tbCoEsc(c.s) + '\')">Show on the map</button>' : '') + '</div>' +
+        (facs.length ? '<div style="overflow:auto;max-height:520px;"><table class="co-table"><thead><tr><th>Facility</th><th>Location</th><th>Class</th><th>Role</th></tr></thead><tbody>' + facRows + '</tbody></table></div>' : '<div style="color:var(--text-muted);font-size:12px;">No TankBazaar facility is linked to this company.</div>') +
+        (missing > 0 ? '<div style="color:var(--text-dim);font-size:10.5px;margin-top:6px;">' + missing + ' linked facilit' + (missing === 1 ? 'y is' : 'ies are') + ' not in the loaded terminal list.</div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div style="color:var(--text-dim);font-size:10px;margin-top:10px;">Registered legal entity matched from public registers. Check the register record before relying on it.</div>';
+}
+function tbOpenFacility(id) {
+  const t = findTerminalById(id);
+  if (!t) return;
+  switchView('map');
+  setTimeout(() => { showPopup(t); mapPanTo(t.lat, t.lng); if (usingMapbox && mbMap) mbMap.setZoom(Math.max(mbMap.getZoom(), 6)); else if (!usingGoogle && map) map.setView([t.lat, t.lng], 6); }, 250);
+}
 
 // ─── MAP SETUP — DUAL ENGINE: Google Maps (primary) / Leaflet (fallback) ────
 
@@ -2898,12 +3253,13 @@ function popModalHistoryIfOwned() {
 // Every main view and detail page has its own shareable / bookmarkable URL:
 //   #/globe #/map #/pipelines #/rigs #/listings #/benchmark #/market
 //   #/tracking #/flow #/prices        -> main views (Back/Forward switch views)
+//   #/companies  #/company/<slug>     -> company register list and one company (slug = Tankonomics /business/<slug>)
 //   #/profile   #/admin               -> account overlays (need sign-in / admin role)
 //   #/pipeline/<slug>  #/rig/<key>    -> pipeline and rig detail pages
 //   #terminal-<id>                    -> terminals (unchanged, see above)
 // Transient forms (claim, metrics, listing, login) intentionally have no URL.
 // ---------------------------------------------------------------------------
-const TB_ROUTE_VIEWS = ['globe','map','pipelines','rigs','master','listings','benchmark','market','tracking','flow','prices'];
+const TB_ROUTE_VIEWS = ['globe','map','pipelines','rigs','master','listings','benchmark','market','tracking','flow','prices','companies'];
 let _tbRouterReady = false;        // set true at the end of boot so start-up code never rewrites a deep link
 let _tbPendingRoute = null;        // a #/profile or #/admin link opened while signed out
 let _tbCurrentViewHash = '#/globe';// where to fall back to when a detail overlay closes
@@ -2981,6 +3337,7 @@ function tbApplyRoute() {
     return true;
   }
   if ((name === 'pipeline' || name === 'rig') && arg) { tbCloseOverlays(); tbOpenDetailWhenReady(name, arg); return true; }
+  if (name === 'company' && arg) { tbCloseOverlays(); _tbCoOpening = true; switchView('companies', true); tbShowCompany(arg); return true; }
   return false;
 }
 function tbApplyPendingRoute() {
@@ -3016,7 +3373,7 @@ window.addEventListener('popstate', (ev) => {
 // the removed id is listed here so old links (including those on Tankonomics)
 // open the surviving record. Keep in step with TB_ID_REDIRECTS in Tankonomics
 // (src/lib/tbLocationId.ts).
-const TB_ID_REDIRECT = {349:2223,3330:2223,3233:59,3237:59,1728:535,2617:536,16:4428,575:1703,2754:587,9:526,43:613,550:6427,554:6429,74:3406,419:3406,420:3414,3628:1330,3878:1330,3614:785,6413:5854,96:685,3868:53,3802:54};
+const TB_ID_REDIRECT = {38: 3387, 6425: 3387, 349:2223,3330:2223,3233:59,3237:59,1728:535,2617:536,16:4428,575:1703,2754:587,9:526,43:613,550:6427,554:6429,74:3406,419:3406,420:3414,3628:1330,3878:1330,3614:785,6413:5854,96:685,3868:53,3802:54};
 function openTerminalFromHash() {
   const m = /^#terminal-(\d+)/.exec(location.hash);
   if (!m) return;
@@ -3649,9 +4006,10 @@ function tbLegalParts(v) { return String(v || '').split('|').map(x => x.trim()).
 function tbLegalHtml(t, full) {
   const names = tbLegalParts(t && t.legalName), leis = tbLegalParts(t && t.lei), regs = tbLegalParts(t && t.registryId);
   if (!names.length) return '';
-  if (!full) return 'Legal entity: ' + names.map(tbLegalEsc).join('; ');
+  const nm = n => (typeof tbCompanyLinkFor === 'function') ? tbCompanyLinkFor(t, n) : tbLegalEsc(n);
+  if (!full) return 'Legal entity: ' + names.map(nm).join('; ');
   const leiLinks = leis.filter(l => /^[A-Z0-9]{20}$/.test(l)).map(l => '<a href="https://search.gleif.org/#/record/' + l + '" target="_blank" rel="noopener" style="color:var(--accent2);">' + l + '</a>');
-  return '<div><b>' + names.map(tbLegalEsc).join('</b><br><b>') + '</b></div>'
+  return '<div><b>' + names.map(nm).join('</b><br><b>') + '</b></div>'
     + (leiLinks.length ? '<div>LEI: ' + leiLinks.join(', ') + ' <span style="color:var(--text-dim);">(GLEIF record)</span></div>' : '')
     + (regs.length ? '<div>Registry ID: ' + regs.map(tbLegalEsc).join('; ') + '</div>' : '')
     + '<div style="color:var(--text-dim);font-size:10px;">Registered legal entity, matched from public registers. Check the register record before relying on it.</div>';
@@ -3875,6 +4233,8 @@ function filteredTerminals() {
   const allProdTags = document.querySelectorAll('#sidebar-facilities-view .product-tag').length;
 
   return terminals.filter(t => {
+    // Company ("Show on the map" from a company page)
+    if (tbCompanyFilter && !tbCompanyFilter.ids.has(String(t.id))) return false;
     // Type
     if (ft !== 'all' && terminalType(t) !== ft) return false;
     // Region
@@ -4284,7 +4644,8 @@ function renderFlows() {
 // ─── VIEW SWITCHING ──────────────────────────────────────────────────────────
 
 let chartsInit = { benchmark: false, market: false, tracking: false, flow: false };
-const VIEW_ORDER = ['globe','map','pipelines','rigs','master','listings','benchmark','market','tracking','flow','prices'];
+const VIEW_ORDER = ['globe','map','pipelines','rigs','master','listings','benchmark','market','tracking','flow','prices','companies'];
+let _tbCoOpening = false; // set while a #/company/<slug> route opens, so switchView does not show the list
 
 function switchView(view, _fromRoute) {
   document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
@@ -4315,6 +4676,7 @@ function switchView(view, _fromRoute) {
   if (view === 'master') { setTimeout(initMasterMapOnce,60); }
   if (view === 'listings') { if (typeof loadListings==='function') loadListings(); }
   if (view === 'prices') { if (typeof loadMarketPrices==='function') loadMarketPrices(); }
+  if (view === 'companies') { if (_tbCoOpening) _tbCoOpening = false; else { document.title = 'Companies · Tank Bazaar'; tbShowCompanyList(); } }
   if (view === 'benchmark') { whenChartReady(initBenchmarkCharts); chartsInit.benchmark=true; }
   if (view === 'market' && !chartsInit.market) { whenChartReady(function(){renderMarket('global');}); chartsInit.market=true; }
   if (view === 'tracking' && !chartsInit.tracking) { renderShips(); chartsInit.tracking=true; }
@@ -7159,6 +7521,7 @@ const FS_REST = {
       body: JSON.stringify({ fields: FS_REST.toFields(data) }),
     });
     if (!res.ok) throw await tbRestFail(res, 'saving ' + collection + '/' + docId);
+    if (collection === 'terminals') BundleStore.markEdited(docId, false);
     return res.json();
   },
   async get(collection, docId) {
@@ -7214,6 +7577,7 @@ const FS_REST = {
       method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token },
     });
     if (!res.ok && res.status !== 404) throw await tbRestFail(res, 'deleting ' + collection + '/' + docId);
+    if (collection === 'terminals') BundleStore.markEdited(docId, true);
   },
 };
 
@@ -7340,6 +7704,7 @@ function userLogout() {
   showConfirm('Sign Out', 'Are you sure you want to sign out?', () => {
     closeProfilePage(); closeAdminPanel();
     if (firebaseReady) fbAuth.signOut();
+    try { BundleStore.clearCache(); CompanyStore._p = null; CompanyStore.list = null; } catch (e) { /* nothing cached */ }
     currentUser = null;
     applyLoggedOutUI();
     toast('Signed out.');

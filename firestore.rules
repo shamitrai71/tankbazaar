@@ -7,21 +7,52 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && request.auth.token.email == 'esraigroup@gmail.com';
     }
-    // A signed-in user whose OWN profile doc says they've been verified.
-    // get() on a doc that doesn't exist yet (e.g. the instant after first
-    // sign-in, before their profile is written) safely evaluates to false
-    // here rather than granting access, so this fails closed.
+    // A signed-in user whose OWN profile says the admin approved them.
+    // Only the admin can set status to 'active' (see /users below).
     function isApprovedUser() {
       return isSignedIn() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
-    // Any signed-in user can create & manage their own profile.
-    // Admin can read/manage everyone.
+    // ── USERS: approval is admin-only ──
+    //  CREATE (own profile): only as status 'pending', role 'member',
+    //    with the real sign-in email and uid (no spoofed email for the admin to approve).
+    //  UPDATE (own profile): name, company, lastLogin etc. are fine, but the user
+    //    cannot change status, cannot raise role, cannot change email or uid.
+    //    The app writes the existing status/role back on every sign-in; the same
+    //    value is allowed. Lowering role to 'member' is allowed because the app
+    //    rewrites role from its email list at sign-in, and a self-downgrade grants nothing.
+    //  The admin can approve, suspend, change roles and delete anyone.
+    function newD() { return request.resource.data; }
+    function oldD() { return resource.data; }
+
+    function createIsSafe(uid) {
+      return newD().get('status', '') == 'pending'
+          && newD().get('role', 'member') == 'member'
+          && newD().get('email', '') == request.auth.token.email
+          && newD().get('uid', uid) == uid;
+    }
+    function statusUnchanged() {
+      return newD().get('status', null) == oldD().get('status', null)
+          // older profile with no status field yet: may only become 'pending'
+          || (oldD().get('status', null) == null && newD().get('status', null) == 'pending');
+    }
+    function roleNotRaised() {
+      return newD().get('role', 'member') == oldD().get('role', 'member')
+          || newD().get('role', 'member') == 'member';
+    }
+    function identityUnchanged() {
+      return newD().get('email', null) == oldD().get('email', null)
+          && newD().get('uid', null) == oldD().get('uid', null);
+    }
+
     match /users/{uid} {
       allow read:   if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid) || isAdmin();
+      allow create: if isAdmin() || (isOwner(uid) && createIsSafe(uid));
+      allow update: if isAdmin()
+                    || (isOwner(uid) && statusUnchanged() && roleNotRaised() && identityUnchanged());
+      // Self-delete stays allowed (Profile → Delete account). Signing up again
+      // only recreates a 'pending' profile, so it cannot be used to self-approve.
       allow delete: if isOwner(uid) || isAdmin();
     }
 
@@ -36,10 +67,7 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Terminals: read now requires the super admin OR a verified, signed-in
-    // user — the site is sign-in + approval gated end-to-end, not just at
-    // the UI layer. Admin can write anything. A validated owner
-    // (resource.ownerId == their uid) may update the doc (operational metrics).
+    // Terminals: admin, or a user the admin has approved.
     match /terminals/{doc} {
       allow read:   if isAdmin() || isApprovedUser();
       allow create: if isAdmin();
@@ -48,16 +76,14 @@ service cloud.firestore {
                     || (isSignedIn() && resource.data.ownerId == request.auth.uid);
     }
 
-    // Terminal ownership claims: a signed-in user creates their own claim and
-    // can read it; admin can read/update all (to approve/reject).
+    // Terminal ownership claims.
     match /terminalClaims/{doc} {
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
       allow read:   if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
       allow update, delete: if isAdmin();
     }
 
-    // Storage capacity listings: same approval-gated read as terminals. The
-    // listing owner (ownerId == their uid) can create/edit/delete their own; admin any.
+    // Storage capacity listings: same approval-gated read as terminals.
     match /listings/{doc} {
       allow read:   if isAdmin() || isApprovedUser();
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
@@ -65,15 +91,41 @@ service cloud.firestore {
                     || (isSignedIn() && resource.data.ownerId == request.auth.uid);
     }
 
-    // Live vessel-position cache: written only by our Netlify Function
-    // (vessels.js), which runs server-side without a user auth token — so
-    // this collection is intentionally public read/write. It holds no
-    // sensitive data (just cached, publicly-available AIS positions and a
-    // call-count used to stay under the VesselAPI free-tier quota), so the
-    // tradeoff is reasonable. If tighter control is ever needed, switch the
-    // function to the Firebase Admin SDK with a service-account key instead.
+    // Register companies (document id = register Company ID, e.g. CO00001; the
+    // Tankonomics slug is a field). Same approval-gated read as terminals.
+    match /companies/{doc} {
+      allow read:  if isAdmin() || isApprovedUser();
+      allow write: if isAdmin();
+    }
+
+    // Data bundles (terminals-N, companies-N, manifest), written by the
+    // companies-and-bundles seeder. Same approval-gated read as terminals.
+    match /bundles/{doc} {
+      allow read:  if isAdmin() || isApprovedUser();
+      allow write: if isAdmin();
+    }
+
+    // Edit markers: a terminal saved in the app since the last bundle rebuild.
+    // Document id = terminal id. The admin, or the terminal's owner (the same
+    // people who may update that terminal), may leave a marker.
+    match /bundleEdits/{id} {
+      allow read:   if isAdmin() || isApprovedUser();
+      allow create, update: if isAdmin()
+                    || (isSignedIn()
+                        && exists(/databases/$(database)/documents/terminals/$(id))
+                        && get(/databases/$(database)/documents/terminals/$(id)).data.get('ownerId', null) == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // Live vessel-position cache, written by the Netlify function without a user
+    // token. Unchanged in this round (separate follow-up).
     match /liveDataCache/{doc} {
       allow read, write: if true;
+    }
+
+    // Everything not listed above is closed.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
