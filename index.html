@@ -2614,10 +2614,10 @@ async function tbShowCompany(slug) {
   const lei = c.l ? '<a href="https://search.gleif.org/#/record/' + encodeURIComponent(c.l) + '" target="_blank" rel="noopener" style="color:var(--accent2);">' + tbCoEsc(c.l) + '</a>' : '';
   const parentC = full.parent && full.parent.id ? CompanyStore.byId.get(full.parent.id) : null;
   const parent = parentC ? '<a href="#/company/' + encodeURIComponent(parentC.s) + '" onclick="tbOpenCompany(\'' + tbCoEsc(parentC.s) + '\');return false;" style="color:var(--accent2);">' + tbCoEsc(parentC.n) + '</a>' : tbCoEsc(c.p || '');
-  const subs = (CompanyStore.list || []).filter(x => x.p && (x.p === c.n) && x.id !== c.id).slice(0, 40);
+  const subs = (CompanyStore.list || []).filter(x => x.id !== c.id && (x.pi ? x.pi === c.id : (x.p && x.p === c.n))).slice(0, 40);
   const addr = [full.address, full.city, full.region, full.postalCode, tbCountryName(full.country || c.c)].filter(Boolean).map(tbCoEsc).join(', ');
   const hq = full.hqAddress && full.hqAddress !== full.address ? [full.hqAddress, full.hqCity, tbCountryName(full.hqCountry)].filter(Boolean).map(tbCoEsc).join(', ') : '';
-  const rels = (full.relations || []).filter(r => !/arent/.test(r.rel)).map(r => tbCoEsc(r.rel) + ': ' + tbCoEsc(r.name)).join('<br>');
+  const rels = (full.relations || []).filter(r => !/arent|Subsidiary/.test(r.rel)).map(r => tbCoEsc(r.rel) + ': ' + tbCoEsc(r.name)).join('<br>');
   const src = String(full.source || '').split(/\s*[|;\n]\s*/).filter(Boolean).map(s => /^https?:\/\//.test(s) ? '<a href="' + tbCoEsc(s) + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + tbCoEsc(s) + '</a>' : tbCoEsc(s)).join('<br>');
   const facRows = facs.map(t => '<tr class="co-row" onclick="tbOpenFacility(' + JSON.stringify(String(t.id)).replace(/"/g, '&quot;') + ')"><td>' + tbCoEsc(t.name) + '</td><td>' + tbCoEsc([t.city, t.country].filter(Boolean).join(', ')) + '</td><td>' + tbCoEsc(typeof facilityRoleLabel === 'function' ? facilityRoleLabel(t) : (t.primaryClass || '')) + '</td><td>' + tbCoEsc(roles[String(t.id)] || '') + '</td></tr>').join('');
   const missing = (c.f || []).length - facs.length;
@@ -3373,7 +3373,7 @@ window.addEventListener('popstate', (ev) => {
 // the removed id is listed here so old links (including those on Tankonomics)
 // open the surviving record. Keep in step with TB_ID_REDIRECTS in Tankonomics
 // (src/lib/tbLocationId.ts).
-const TB_ID_REDIRECT = {38: 3387, 6425: 3387, 349:2223,3330:2223,3233:59,3237:59,1728:535,2617:536,16:4428,575:1703,2754:587,9:526,43:613,550:6427,554:6429,74:3406,419:3406,420:3414,3628:1330,3878:1330,3614:785,6413:5854,96:685,3868:53,3802:54};
+const TB_ID_REDIRECT = {38: 3387, 6425: 3387, 349:2223,3330:2223,3233:59,3237:59,1728:535,2617:536,16:4428,575:1703,2754:587,9:526,43:613,550:6427,554:6429,74:3406,419:3406,420:3414,3628:1330,3878:1330,3614:785,6413:5854,96:685,3868:53,3802:54,6611:656,6863:681,6466:6867};
 function openTerminalFromHash() {
   const m = /^#terminal-(\d+)/.exec(location.hash);
   if (!m) return;
