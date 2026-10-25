@@ -2621,6 +2621,8 @@ async function tbShowCompany(slug) {
   const src = String(full.source || '').split(/\s*[|;\n]\s*/).filter(Boolean).map(s => /^https?:\/\//.test(s) ? '<a href="' + tbCoEsc(s) + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + tbCoEsc(s) + '</a>' : tbCoEsc(s)).join('<br>');
   const facRows = facs.map(t => '<tr class="co-row" onclick="tbOpenFacility(' + JSON.stringify(String(t.id)).replace(/"/g, '&quot;') + ')"><td>' + tbCoEsc(t.name) + '</td><td>' + tbCoEsc([t.city, t.country].filter(Boolean).join(', ')) + '</td><td>' + tbCoEsc(typeof facilityRoleLabel === 'function' ? facilityRoleLabel(t) : (t.primaryClass || '')) + '</td><td>' + tbCoEsc(roles[String(t.id)] || '') + '</td></tr>').join('');
   const missing = (c.f || []).length - facs.length;
+  const liUrl = /^https:\/\/www\.linkedin\.com\/(company|showcase)\/[^\s"'<>]+$/i.test(full.linkedin || '') ? full.linkedin : '';
+  const li = liUrl ? '<a href="' + tbCoEsc(liUrl) + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + tbCoEsc(liUrl.replace(/^https:\/\/www\./, '')) + '</a>' : '';
   box.innerHTML =
     '<div style="margin-bottom:14px;"><a href="#/companies" style="color:var(--accent2);font-size:12px;">← All companies</a></div>' +
     '<div class="panel-header" style="margin-bottom:14px;"><div class="panel-title">' + tbCoEsc(c.n) + '</div>' +
@@ -2628,7 +2630,7 @@ async function tbShowCompany(slug) {
     '<div class="co-grid">' +
       '<div class="chart-card"><div class="chart-title">Legal entity</div>' +
         row('LEI', lei) + row('Registry IDs', tbCoEsc(c.r)) + (!c.l && !c.r ? row('Identifier', '<span style="color:var(--accent);">none recorded yet</span>') : '') +
-        row('Registered address', addr) + row('Head office', hq) + row('Parent', parent) +
+        row('Registered address', addr) + row('Head office', hq) + row('LinkedIn', li) + row('Parent', parent) +
         (subs.length ? row('Subsidiaries in the register', subs.map(x => '<a href="#/company/' + encodeURIComponent(x.s) + '" onclick="tbOpenCompany(\'' + tbCoEsc(x.s) + '\');return false;" style="color:var(--accent2);">' + tbCoEsc(x.n) + '</a>').join('<br>')) : '') +
         row('Also known as', (c.o || []).map(tbCoEsc).join('<br>')) + row('Name history', rels) +
         row('Register ID', '<span class="co-mono">' + tbCoEsc(c.id) + '</span>') +
