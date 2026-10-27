@@ -1,5 +1,9 @@
 [build]
-  publish = "."
+  # Only the files the site needs are published. Everything else in the repo
+  # (seeders with the full terminal data, Docs/ registers, scripts, notes) stays
+  # out of the deployed site. Add a file here only if index.html loads it.
+  command = "rm -rf dist && mkdir dist && cp index.html logo.png world.jpg dist/"
+  publish = "dist"
   functions = "netlify/functions"
   [build.environment]
     # The Firebase web apiKey is public by design (it identifies the project and
