@@ -95,5 +95,8 @@ for r in range(2, ows.max_row+1):
     f['oilprod'] = num(f['oilprod']) if f['oilprod'] is not None else None
     f['lat'], f['lng'], f['wkt'] = la, lo, ows.cell(row=r,column=OH['Field outline (WKT)']).value
     fields.append(f)
+# Value chain: rigs, platforms and oil and gas fields are Upstream by definition.
+for r in rigs: r['sg'] = 'Upstream'
+for f in fields: f['sg'] = 'Upstream'
 json.dump({'rigs':rigs,'basins':basins,'fields':fields,'totalRigs':539}, open(out_json,'w'), separators=(',',':'), ensure_ascii=False)
 print(f"Basins total {total} | surveyed {ns} | hull {nh} | bbox {nb} | resolved {ns+nh+nb} | rigs {len(rigs)} | fields {len(fields)}")
