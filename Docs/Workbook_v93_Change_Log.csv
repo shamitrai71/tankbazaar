@@ -1,8 +1,0 @@
-﻿Kind,Key,Name,Field / country,GEM unit / position source,Axess row
-NEW FIELD,FLD-491,Layang Field (Block SK10),Malaysia,L100000312036,
-NEW RIG,FLD-491-R01,FPSO Helang,Layang Field (Block SK10),field position,AX-181
-NEW FIELD,FLD-492,Golfinho Field,Brazil,L100000300194,
-NEW RIG,FLD-492-R01,FPSO Cidade de Vitória,Golfinho Field,field position,AX-062
-NEW FIELD,FLD-493,Espadarte Field,Brazil,L100000300145,
-NEW RIG,FLD-493-R01,FPSO Cidade do Rio de Janeiro MV14,Espadarte Field,field position,AX-058
-NEW RIG,FLD-415-R02,Visund Nord subsea templates,Visund Field,field position,AX-411

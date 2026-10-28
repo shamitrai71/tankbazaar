@@ -105,6 +105,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Registration details (registered legal names, LEIs, registry IDs, registered
+    // addresses, sources), written by the companies-and-bundles seeder (V442+).
+    // Internal verification only: the admin may read and write, nobody else.
+    match /registryPrivate/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // Edit markers: a terminal saved in the app since the last bundle rebuild.
     // Document id = terminal id. The admin, or the terminal's owner (the same
     // people who may update that terminal), may leave a marker.

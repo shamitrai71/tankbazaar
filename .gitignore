@@ -1,1 +1,6 @@
 dist/
+seed-*.html
+*PRIVATE*
+*.xlsx
+*.csv
+*.gpkg
