@@ -148,10 +148,13 @@ exports.handler = async function (event) {
       ? (now - new Date(cache.lastGlobalFetch)) / 3600000
       : Infinity;
     const hoursSinceFail = cache.lastFailedAttempt ? (now - new Date(cache.lastFailedAttempt)) / 3600000 : Infinity;
-    const dueForRefresh = hoursSinceLastFetch >= REFRESH_INTERVAL_HOURS && hoursSinceFail >= 1;
+    const cacheShipCount = Object.values(cache.byTerminal || {}).reduce((n, e) => n + ((e && e.ships) ? e.ships.length : 0), 0);
+    const cacheEmpty = cacheShipCount === 0;
+    // An empty cache is always due (a failed earlier cycle must not block 24h); throttled to 1/hour after a failure.
+    const dueForRefresh = (hoursSinceLastFetch >= REFRESH_INTERVAL_HOURS || cacheEmpty) && hoursSinceFail >= 1;
 
     let didRefresh = false, didDetailsRefresh = false;
-    let okCalls = 0; const callErrors = [];
+    let okCalls = 0; const callErrors = []; const callInfo = [];
 
     // 1) Position rotation batch (unchanged approach, smaller batch to leave
     // room for destination/ETA lookups within the same monthly budget).
@@ -177,7 +180,8 @@ exports.handler = async function (event) {
           }
           okCalls++;
           const data = await res.json();
-          const list = data.vessels || data.vesselPositions || [];
+          const list = data.vessels || data.vesselPositions || data.positions || data.data || [];
+          callInfo.push({ terminal: t.id, keys: Object.keys(data).slice(0, 8), n: Array.isArray(list) ? list.length : -1 });
           cache.byTerminal[t.id] = { ships: list, fetchedAt: now.toISOString() };
         } catch (e) { callErrors.push({ status: 0, terminal: t.id, body: e.message }); }
       }));
@@ -188,6 +192,7 @@ exports.handler = async function (event) {
       if (callErrors.length) {
         cache.lastError = { at: now.toISOString(), status: callErrors[0].status, body: callErrors[0].body, failed: callErrors.length };
       } else { cache.lastError = null; }
+      if (callInfo.length) cache.lastCallInfo = callInfo;
       if (okCalls > 0) { cache.cycleCount = (cache.cycleCount || 0) + 1; didRefresh = true; }
       else { cache.lastFailedAttempt = now.toISOString(); }
     }
@@ -294,7 +299,8 @@ exports.handler = async function (event) {
       else if (le && (le.status === 402 || le.status === 429)) reason = 'VesselAPI quota/rate limit reached (HTTP ' + le.status + '). The free plan resets monthly or needs an upgrade.';
       else if (le) reason = 'VesselAPI call failed (HTTP ' + le.status + '): ' + (le.body || '');
       else if (cache.callsThisMonth + BATCH_SIZE > MONTHLY_BUDGET) reason = 'Local monthly call budget (' + MONTHLY_BUDGET + ') used up; resets next month.';
-      else reason = 'VesselAPI answered OK but returned no vessels near the terminals checked so far.';
+      else if (!dueForRefresh) reason = 'No refresh ran: cache is ' + (cacheEmpty ? 'empty' : 'fresh') + ', last fetch ' + (cache.lastGlobalFetch || 'never') + ', last failed attempt ' + (cache.lastFailedAttempt || 'none') + '.';
+      else reason = 'VesselAPI answered OK but returned no vessels. Response shapes: ' + JSON.stringify(cache.lastCallInfo || callInfo).slice(0, 300);
     }
 
     return {

@@ -2131,8 +2131,10 @@ const DataService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ terminals: pool }),
       });
-      if (!res.ok) { console.warn('[Vessels] proxy HTTP', res.status); return false; }
+      if (!res.ok) { this.shipsReason = 'Proxy function returned HTTP ' + res.status; console.warn('[Vessels] proxy HTTP', res.status); return false; }
       const data = await res.json();
+      this.shipsReason = data.error || null;
+      this.shipsMeta = data.meta || this.shipsMeta || null;
       if (data.error) { console.warn('[Vessels] proxy error:', data.error); return false; }
       if (Array.isArray(data.ships)) {
         ships.length = 0;
@@ -3919,7 +3921,7 @@ async function tbSetShips(on) {
     if (chartsInit && chartsInit.tracking && typeof renderShips === 'function') { try { renderShips(); } catch (e) {} }
   }
   const n = tbShipsWithPos().length;
-  if (!n) toast('No live ship positions available. Check Admin → Data & API (VesselAPI), or press "Refresh Vessels" on the Ship Tracking page.', 'error');
+  if (!n) toast((DataService.shipsReason || 'No live ship positions available.') + ' (Admin → Data & API → VesselAPI)', 'error');
   else toast(`Showing ${n} live ship position${n === 1 ? '' : 's'}.`);
 }
 function toggleShipsEverywhere() { tbSetShips(!tbShipsOn); }
@@ -8960,7 +8962,7 @@ async function testVesselApi() {
     if (typeof renderShipMarkersOnMap === 'function') renderShipMarkersOnMap();
     if (typeof refreshGlobeShips === 'function') refreshGlobeShips();
   } else {
-    if (st) { st.style.color = 'var(--danger)'; st.textContent = '✗ No data yet — check VESSELAPI_KEY is set in Netlify env vars, then redeploy. (Zero vessels found near your terminals right now is also possible and not an error.)'; }
+    if (st) { st.style.color = 'var(--danger)'; st.textContent = '✗ ' + (DataService.shipsReason || 'No data yet — check VESSELAPI_KEY in Netlify env vars, then redeploy.'); }
     toast('VesselAPI test returned no vessels — see status message below the button.', 'error');
   }
 }
