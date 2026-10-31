@@ -147,9 +147,11 @@ exports.handler = async function (event) {
     const hoursSinceLastFetch = cache.lastGlobalFetch
       ? (now - new Date(cache.lastGlobalFetch)) / 3600000
       : Infinity;
-    const dueForRefresh = hoursSinceLastFetch >= REFRESH_INTERVAL_HOURS;
+    const hoursSinceFail = cache.lastFailedAttempt ? (now - new Date(cache.lastFailedAttempt)) / 3600000 : Infinity;
+    const dueForRefresh = hoursSinceLastFetch >= REFRESH_INTERVAL_HOURS && hoursSinceFail >= 1;
 
     let didRefresh = false, didDetailsRefresh = false;
+    let okCalls = 0; const callErrors = [];
 
     // 1) Position rotation batch (unchanged approach, smaller batch to leave
     // room for destination/ETA lookups within the same monthly budget).
@@ -168,16 +170,26 @@ exports.handler = async function (event) {
         const url = `https://api.vesselapi.com/v1/location/vessels/bounding-box?${params.toString()}`;
         try {
           const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
-          if (!res.ok) return;
+          if (!res.ok) {
+            let body = ''; try { body = (await res.text()).slice(0, 200); } catch (e2) {}
+            callErrors.push({ status: res.status, terminal: t.id, body });
+            return;
+          }
+          okCalls++;
           const data = await res.json();
           const list = data.vessels || data.vesselPositions || [];
           cache.byTerminal[t.id] = { ships: list, fetchedAt: now.toISOString() };
-        } catch (e) { /* skip this terminal; try again next cycle */ }
+        } catch (e) { callErrors.push({ status: 0, terminal: t.id, body: e.message }); }
       }));
       cache.rotationIndex = (cache.rotationIndex + BATCH_SIZE) % terminals.length;
-      cache.callsThisMonth += BATCH_SIZE;
-      cache.cycleCount = (cache.cycleCount || 0) + 1;
-      didRefresh = true;
+      // Only count calls that VesselAPI actually answered OK; failed calls
+      // (401/402/429...) must not eat the local budget or block retries.
+      cache.callsThisMonth += okCalls;
+      if (callErrors.length) {
+        cache.lastError = { at: now.toISOString(), status: callErrors[0].status, body: callErrors[0].body, failed: callErrors.length };
+      } else { cache.lastError = null; }
+      if (okCalls > 0) { cache.cycleCount = (cache.cycleCount || 0) + 1; didRefresh = true; }
+      else { cache.lastFailedAttempt = now.toISOString(); }
     }
 
     // Assemble the merged, deduped ship list from whatever's cached per terminal
@@ -244,10 +256,9 @@ exports.handler = async function (event) {
       }
     }
 
-    if (didRefresh || didDetailsRefresh) {
-      cache.lastGlobalFetch = now.toISOString();
-      await writeCache(cache);
-    }
+    if (didRefresh || didDetailsRefresh) cache.lastGlobalFetch = now.toISOString();
+    if (didRefresh || didDetailsRefresh || callErrors.length) await writeCache(cache);
+
 
     const ships = Array.from(vesselMap.values()).map(v => {
       const sog = typeof v.sog === 'number' ? v.sog : 0;
@@ -276,13 +287,23 @@ exports.handler = async function (event) {
     const detailsCoverage = ships.length ? Math.round(ships.filter(s => s.destination !== '—').length / ships.length * 100) : 0;
     const enrichedCoverage = ships.length ? Math.round(ships.filter(s => s.type !== '—').length / ships.length * 100) : 0;
     const terminalsCovered = Object.keys(cache.byTerminal).length;
+    const le = cache.lastError;
+    let reason = null;
+    if (!ships.length) {
+      if (le && (le.status === 401 || le.status === 403)) reason = 'VesselAPI rejected the key (HTTP ' + le.status + '). Generate a new key and update VESSELAPI_KEY in Netlify.';
+      else if (le && (le.status === 402 || le.status === 429)) reason = 'VesselAPI quota/rate limit reached (HTTP ' + le.status + '). The free plan resets monthly or needs an upgrade.';
+      else if (le) reason = 'VesselAPI call failed (HTTP ' + le.status + '): ' + (le.body || '');
+      else if (cache.callsThisMonth + BATCH_SIZE > MONTHLY_BUDGET) reason = 'Local monthly call budget (' + MONTHLY_BUDGET + ') used up; resets next month.';
+      else reason = 'VesselAPI answered OK but returned no vessels near the terminals checked so far.';
+    }
 
     return {
       statusCode: 200, headers,
       body: JSON.stringify({
         ships,
+        error: reason || undefined,
         meta: {
-          didRefresh, didDetailsRefresh,
+          didRefresh, didDetailsRefresh, reason, lastError: le || null,
           fetchedAt: cache.lastGlobalFetch,
           cacheAgeHours: cache.lastGlobalFetch ? Math.round((now - new Date(cache.lastGlobalFetch)) / 3600000 * 10) / 10 : null,
           callsThisMonth: cache.callsThisMonth,

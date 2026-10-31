@@ -2630,7 +2630,7 @@ async function tbShowCompany(slug) {
   const liUrl = /^https:\/\/www\.linkedin\.com\/(company|showcase)\/[^\s"'<>]+$/i.test(full.linkedin || '') ? full.linkedin : '';
   const webUrl = /^https?:\/\/[^\s"'<>]+$/i.test(full.website || '') ? full.website : '';
   const web = webUrl ? '<a href="' + tbCoEsc(webUrl) + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + tbCoEsc(webUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a>' + (full.websiteKind === 'group' ? ' <span class="co-badge">group site</span>' : '') : '';
-  const li = liUrl ? '<a href="' + tbCoEsc(liUrl) + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + tbCoEsc(liUrl.replace(/^https:\/\/www\./, '')) + '</a>' : '';
+  const li = liUrl ? '<a href="' + tbCoEsc(liUrl) + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + tbCoEsc(liUrl.replace(/^https:\/\/www\./, '')) + '</a>' + (full.linkedinKind === 'group' ? ' <span class="co-badge">group page</span>' : '') : '';
   box.innerHTML =
     '<div style="margin-bottom:14px;"><a href="#/companies" style="color:var(--accent2);font-size:12px;">← All companies</a></div>' +
     '<div class="panel-header" style="margin-bottom:14px;"><div class="panel-title">' + tbCoEsc(c.n) + '</div>' +
