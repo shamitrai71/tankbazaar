@@ -1360,6 +1360,7 @@ input[type="range"] {
       <button class="nav-btn" onclick="switchView('prices')">💹 Commodity Prices</button>
       <button class="nav-btn" onclick="switchView('companies')">🏢 Companies</button>
     </div>
+    <div id="sidebar-enrich-view" style="display:none;"><!-- empty on purpose: reserved for future side panel content --></div>
     <div id="sidebar-facilities-view">
     <div id="coFilterChip"><span>🏢</span><span>Facilities of <b id="coFilterName"></b></span><button onclick="tbSetCompanyFilter(null)" title="Show all facilities">✕</button></div>
     <div class="sidebar-section">
@@ -4793,6 +4794,20 @@ function renderFlows() {
 
 let chartsInit = { benchmark: false, market: false, tracking: false, flow: false };
 const VIEW_ORDER = ['globe','map','pipelines','rigs','master','listings','benchmark','market','tracking','flow','prices','companies'];
+// Views whose side panel shows no content. The panel (#sidebar) stays; #sidebar-enrich-view is the empty slot kept for future content.
+const TB_SIDE_EMPTY_VIEWS = ['globe','market','prices','companies','benchmark','listings','tracking','flow'];
+function tbSyncSidebar(view) {
+  const facSide = document.getElementById('sidebar-facilities-view');
+  const pipeSide = document.getElementById('sidebar-pipelines-view');
+  const rigSide = document.getElementById('sidebar-rigs-view');
+  const enrichSide = document.getElementById('sidebar-enrich-view');
+  if (!facSide || !pipeSide || !rigSide) return;
+  const empty = TB_SIDE_EMPTY_VIEWS.indexOf(view) >= 0;
+  facSide.style.display = (view === 'pipelines' || view === 'rigs' || empty) ? 'none' : '';
+  pipeSide.style.display = (view === 'pipelines') ? '' : 'none';
+  rigSide.style.display = (view === 'rigs') ? '' : 'none';
+  if (enrichSide) enrichSide.style.display = empty ? '' : 'none';
+}
 let _tbCoOpening = false; // set while a #/company/<slug> route opens, so switchView does not show the list
 
 function switchView(view, _fromRoute) {
@@ -4803,14 +4818,7 @@ function switchView(view, _fromRoute) {
 
   // Show the matching sidebar content for this view - pipelines gets its own
   // filters/list, every other view keeps the shared facility sidebar.
-  const facSide = document.getElementById('sidebar-facilities-view');
-  const pipeSide = document.getElementById('sidebar-pipelines-view');
-  const rigSide = document.getElementById('sidebar-rigs-view');
-  if (facSide && pipeSide && rigSide) {
-    facSide.style.display = (view === 'pipelines' || view === 'rigs') ? 'none' : '';
-    pipeSide.style.display = (view === 'pipelines') ? '' : 'none';
-    rigSide.style.display = (view === 'rigs') ? '' : 'none';
-  }
+  tbSyncSidebar(view);
 
   // Highlight the matching nav button in BOTH the header nav and the drawer nav.
   const idx = VIEW_ORDER.indexOf(view);
@@ -5784,6 +5792,7 @@ async function startApp() {
     } catch (e) { console.warn('startApp: auth resolution wait failed', e); }
     try { updateDataSourceStatus(); } catch (e) { console.warn('startApp: updateDataSourceStatus failed', e); }
     try { DataService.startAutoRefresh(); } catch (e) { console.warn('startApp: startAutoRefresh failed', e); }
+    try { tbSyncSidebar('globe'); } catch (e) { console.warn('startApp: tbSyncSidebar failed', e); }
     // Globe is the default landing view; build it (or queue until Three.js loads).
     try { onGlobeShown(); } catch (e) { console.warn('startApp: onGlobeShown failed', e); }
     // Deep link: if the URL already names a terminal (#terminal-<id>), open it.
