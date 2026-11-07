@@ -546,6 +546,9 @@ input[type="range"] {
 .co-row:hover td { background: var(--surface2); }
 .co-mono { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; color: var(--text-muted); word-break: break-all; }
 .co-badge { display: inline-block; font-size: 9.5px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); margin-left: 4px; vertical-align: middle; }
+.tb-mk { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border: 1px solid currentColor; border-radius: 4px; font-size: 10px; font-weight: 700; line-height: 1; margin-left: 4px; vertical-align: middle; cursor: help; }
+.tb-mk.r { color: var(--text-muted); } .tb-mk.c { color: var(--accent2); } .tb-mk.v { color: var(--gold); } .tb-mk.p { color: #b48cff; }
+.tb-mk-key { color: var(--text-dim); font-size: 10px; margin-top: 10px; line-height: 1.7; }
 .co-btn { background: var(--surface2); border: 1px solid var(--accent2); color: var(--accent3); border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer; font-family: inherit; }
 .co-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; }
 @media (max-width: 900px) { .co-grid { grid-template-columns: minmax(0, 1fr); } .co-table th:nth-child(5), .co-table td:nth-child(5) { display: none; } }
@@ -2029,14 +2032,14 @@ input[type="range"] {
           <input id="co-search" type="search" placeholder="Search name…" oninput="tbCompanyFilterChanged()">
           <select id="co-country" onchange="tbCompanyFilterChanged()"><option value="">All countries</option></select>
           <select id="co-idkind" onchange="tbCompanyFilterChanged()">
-            <option value="">All companies</option><option value="verified">Verified</option><option value="unverified">Not verified yet</option>
+            <option value="">All companies</option><option value="verified">Registered (R)</option><option value="unverified">Not registered yet</option>
           </select>
           <select id="co-sort" onchange="tbCompanyFilterChanged()">
             <option value="facilities">Most facilities</option><option value="name">Name A–Z</option><option value="country">Country</option>
           </select>
         </div>
         <div class="chart-card" style="padding:0;overflow:auto;">
-          <table class="co-table"><thead><tr><th>Company</th><th>Country</th><th>Verified</th><th style="text-align:right;">Facilities</th><th>Parent</th></tr></thead>
+          <table class="co-table"><thead><tr><th>Company</th><th>Country</th><th>Status</th><th style="text-align:right;">Facilities</th><th>Parent</th></tr></thead>
           <tbody id="co-list-body"></tbody></table>
         </div>
       </div>
@@ -2577,12 +2580,12 @@ function tbRenderCompanyList() {
   tbFillCountryOptions();
   const all = CompanyStore.list, list = tbCompanyListFiltered();
   const nVer = all.filter(c => c.v).length;
-  if (sum) sum.textContent = all.length.toLocaleString() + ' companies · ' + nVer.toLocaleString() + ' verified against an official register · ' + (all.length - nVer).toLocaleString() + ' not verified yet · showing ' + list.length.toLocaleString();
+  if (sum) sum.textContent = all.length.toLocaleString() + ' companies · ' + (tbIsAdminUser() ? nVer.toLocaleString() + ' registered · ' + (all.length - nVer).toLocaleString() + ' not registered yet · ' : '') + 'showing ' + list.length.toLocaleString();
   const rows = list.slice(0, _tbCoShown).map(c => {
     return '<tr class="co-row" onclick="tbOpenCompany(\'' + tbCoEsc(c.s) + '\')">' +
       '<td><a href="#/company/' + encodeURIComponent(c.s) + '" onclick="event.preventDefault();" style="color:var(--text);font-weight:600;">' + tbCoEsc(c.n) + '</a>' + '</td>' +
       '<td>' + tbCoEsc(tbCountryName(c.c)) + '</td>' +
-      '<td>' + (c.v ? '<span style="color:var(--accent2);">✓ Verified</span>' : '<span style="color:var(--text-dim);">not yet</span>') + '</td>' +
+      '<td>' + (tbCoMarks(c) || '<span style="color:var(--text-dim);">–</span>') + '</td>' +
       '<td style="text-align:right;">' + c.f.length + '</td>' +
       '<td>' + tbCoEsc(c.p || '') + '</td></tr>';
   });
@@ -2639,7 +2642,7 @@ async function tbShowCompany(slug) {
     '<div class="panel-subtitle">' + tbCoEsc(tbCountryName(c.c)) + ' · ' + facs.length + ' facilit' + (facs.length === 1 ? 'y' : 'ies') + ' in TankBazaar</div></div>' +
     '<div class="co-grid">' +
       '<div class="chart-card"><div class="chart-title">Company</div>' +
-        row('Verified', c.v ? '<span style="color:var(--accent2);">✓ Matched to an official company register</span>' : '<span style="color:var(--text-dim);">Not verified yet</span>') +
+        row('Status', (tbCoMarks({ v: c.v, claimed: full.claimed || c.cl, ownerVerified: full.ownerVerified || c.ov, premium: full.premium || c.pm }) || '<span style="color:var(--text-dim);">–</span>')) +
         row('Head office', hq) + row('Website', web) + row('LinkedIn', li) + row('Value chain', segTxt ? tbCoEsc(segTxt) + ' <span style="color:var(--text-dim);font-size:10px;">from its TankBazaar facilities</span>' : '') + row('Parent', parent) +
         (subs.length ? row('Subsidiaries in the register', subs.map(x => '<a href="#/company/' + encodeURIComponent(x.s) + '" onclick="tbOpenCompany(\'' + tbCoEsc(x.s) + '\');return false;" style="color:var(--accent2);">' + tbCoEsc(x.n) + '</a>').join('<br>')) : '') +
         row('Also known as', (c.o || []).map(tbCoEsc).join('<br>')) +
@@ -2653,7 +2656,7 @@ async function tbShowCompany(slug) {
         (missing > 0 ? '<div style="color:var(--text-dim);font-size:10.5px;margin-top:6px;">' + missing + ' linked facilit' + (missing === 1 ? 'y is' : 'ies are') + ' not in the loaded terminal list.</div>' : '') +
       '</div>' +
     '</div>' +
-    '<div style="color:var(--text-dim);font-size:10px;margin-top:10px;">Verified means TankBazaar matched this company to an official company register. Registration details are kept for internal checks and are not shown.</div>';
+    '<div class="tb-mk-key"><span class="tb-mk r">R</span> Registered &nbsp; <span class="tb-mk c">C</span> Claimed by the company &nbsp; <span class="tb-mk v">V</span> Verified by the owner &nbsp; <span class="tb-mk p">P</span> Premium member</div>';
 }
 function tbOpenFacility(id) {
   const t = findTerminalById(id);
@@ -4061,14 +4064,23 @@ function tbOpenCredits(focus) {
 }
 function tbCloseCredits() { const m = document.getElementById('creditsModal'); if (m) m.classList.add('hidden'); }
 
-function tbVerifiedMark(v) { return v ? ' <span class="co-badge" title="Verified: matched to an official company register" style="color:var(--accent2);border-color:var(--accent2);">✓ Verified</span>' : ''; }
+function tbCoMarks(o) {
+  o = o || {};
+  const m = [];
+  if (o.v) m.push('<span class="tb-mk r" title="R: Registered company">R</span>');
+  if (o.claimed || o.cl) m.push('<span class="tb-mk c" title="C: Claim successful. This page is owned by the company">C</span>');
+  if (o.ownerVerified || o.ov) m.push('<span class="tb-mk v" title="V: All details verified by the owner of this page">V</span>');
+  if (o.premium || o.pm) m.push('<span class="tb-mk p" title="P: Premium member (can post listings)">P</span>');
+  return m.join('');
+}
+function tbVerifiedMark(v) { return v ? ' ' + tbCoMarks({ v: v }) : ''; }
 function tbIsAdminUser() { return !!(currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')); }
 function tbLegalHtml(t, full) {
   const cos = (typeof CompanyStore !== 'undefined') ? CompanyStore.forTerminal(t) : [];
-  if (!cos.length) return (t && t.verified) ? (full ? '<div>Operator verified against an official company register.</div>' : 'Operator verified against an official company register') : '';
+  if (!cos.length) return (t && t.verified && tbIsAdminUser()) ? (full ? '<div>Operator matched to an official company register.</div>' : 'Operator matched to an official company register') : '';
   if (!full) return 'Company: ' + cos.map(c => tbCompanyLink(c) + tbVerifiedMark(c.v)).join('; ');
   return '<div>' + cos.map(c => '<b>' + tbCompanyLink(c) + '</b>' + tbVerifiedMark(c.v)).join('<br>') + '</div>'
-    + '<div style="color:var(--text-dim);font-size:10px;">Verified means the company was matched to an official company register. Open the company for its facilities.</div>'
+    + '<div style="color:var(--text-dim);font-size:10px;">R = registered company. Open the company for its facilities.</div>'
     + (tbIsAdminUser() ? '<div id="fs-admin-reg" style="margin-top:6px;"><button class="co-btn" onclick="tbAdminRegistry(\'t\',' + JSON.stringify(String(t.id)).replace(/"/g, '&quot;') + ',\'fs-admin-reg\')">Registration details (admin only)</button></div>' : '');
 }
 
@@ -9484,7 +9496,7 @@ function openPipePopup(idx, lngLat) {
     const cos = (p.ci || []).map(id => CompanyStore.byId.get(id)).filter(Boolean);
     ppl.style.display = (cos.length || p.v) ? 'block' : 'none';
     ppl.innerHTML = cos.length ? 'Company: ' + cos.map(c => tbCompanyLink(c) + tbVerifiedMark(c.v)).join('; ')
-      : (p.v ? 'Operator verified against an official company register' : '');
+      : ((p.v && tbIsAdminUser()) ? 'Operator matched to an official company register' : '');
   }
   document.getElementById('pp-length').textContent = p.km ? Math.round(p.km).toLocaleString() + ' km' : '—';
   document.getElementById('pp-cap').textContent = p.mt ? p.mt + ' MMTPA' : '—';
