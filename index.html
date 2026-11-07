@@ -4979,7 +4979,7 @@ function toggleGlobeLegend() {
 function globeDestinations() {
   // Respect the globe's own type segment; other filters (region/capacity/products)
   // come from the sidebar via filteredTerminals when set.
-  const base = (typeof filteredTerminals === 'function') ? filteredTerminals() : terminals;
+  const base = !tbIsMember() ? tbShowpieceList() : ((typeof filteredTerminals === 'function') ? filteredTerminals() : terminals);
   return base
     .filter(t => globeTypeFilter === 'all' || terminalType(t) === globeTypeFilter)
     .filter(t => categoryVisible[facilityCategory(t)] !== false)
@@ -7039,7 +7039,8 @@ loadScript(
         <div class="admin-table-card">
           <div class="admin-table-header">
             <span class="admin-table-title">All Terminals (<span id="termDataCount"></span>)</span>
-            <button class="btn-admin primary" onclick="adminNav('addterminal', null)">+ Add Terminal</button>
+            <span style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-admin" id="republishGlobeBtn" onclick="tbRepublishGlobe()" title="Rewrite the public Globe showpiece (names, positions, counts) from the current terminal data">&#8635; Republish globe</button>
+            <button class="btn-admin primary" onclick="adminNav('addterminal', null)">+ Add Terminal</button></span>
           </div>
           <table class="admin-table"><thead><tr>
             <th>Terminal</th><th>Country</th><th>Type</th><th>Capacity (kbd)</th><th>Tanks</th><th>Berths</th><th>Operator</th><th>Products</th><th>Actions</th>
@@ -7457,20 +7458,56 @@ async function tbLoadPublicCounts() {
     if (r.ok) { const d = await r.json(); _tbPublicStats = FS_REST.fromFields(d.fields); }
   } catch (e) { /* counts stay as dashes */ }
   tbUpdateCounts();
+  if (_tbPublicStats && _tbPublicStats.chunks && !_tbShowpiece) {
+    try {
+      const parts = await Promise.all(Array.from({ length: +_tbPublicStats.chunks }, (_, i) =>
+        fetch(FS_REST.base() + '/public/globe-' + i).then(r => r.ok ? r.json() : null)
+          .then(d => d ? JSON.parse(FS_REST.fromFields(d.fields).d) : [])));
+      _tbShowpiece = [].concat.apply([], parts).map(r => ({
+        id: -1, name: r[0], lat: r[1], lng: r[2], type: r[3], cap: 0,
+        facilityClass: r[4] === 'storage' ? ['storage'] : ['process'], processType: r[4] === 'storage' ? [] : [r[4]],
+      }));
+      if (typeof refreshGlobe === 'function') refreshGlobe();
+    } catch (e) { console.warn('globe showpiece not loaded:', e && e.message); }
+  }
+}
+let _tbShowpiece = null;
+function tbShowpieceList() { return _tbShowpiece || []; }
+// Public showpiece records: name, rounded position, type and category only (no other facility data).
+async function tbRepublishGlobe() {
+  if (!currentUser || !isSuperAdmin(currentUser.email)) { toast('Only the super admin can republish the globe.', 'error'); return; }
+  const btn = document.getElementById('republishGlobeBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
+  try {
+    const co = CompanyStore.list ? CompanyStore.list.length : ((_tbPublicStats && _tbPublicStats.companies) || 0);
+    const sp = await tbPublishShowpiece();
+    await FS_REST.setMerge('public', 'stats', { facilities: terminals.length, companies: co, chunks: sp.chunks, shown: sp.shown, updated: new Date() });
+    _tbPublicStats = { facilities: terminals.length, companies: co, chunks: sp.chunks };
+    tbUpdateCounts();
+    toast('Globe republished: ' + sp.shown.toLocaleString() + ' facilities in ' + sp.chunks + ' parts.');
+  } catch (e) { toast('Republish failed: ' + (e && e.message ? e.message : e), 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = '&#8635; Republish globe'; } }
+}
+async function tbPublishShowpiece() {
+  const recs = terminals.filter(t => Number.isFinite(t.lat) && Number.isFinite(t.lng))
+    .map(t => [t.name, +t.lat.toFixed(3), +t.lng.toFixed(3), terminalType(t), facilityCategory(t)]);
+  const n = Math.ceil(recs.length / 1500);
+  for (let i = 0; i < n; i++) await FS_REST.setMerge('public', 'globe-' + i, { d: JSON.stringify(recs.slice(i * 1500, (i + 1) * 1500)) });
+  return { chunks: n, shown: recs.length };
 }
 function tbUpdateCounts() {
   let fac = null, co = null;
   if (tbIsMember()) {
     if (typeof terminals !== 'undefined' && terminals.length) fac = terminals.length;
     if (CompanyStore.list) co = CompanyStore.list.length;
-    // The super admin's browser keeps the public figures record current (visitors read it).
+    // The super admin's browser keeps the public figures and the Globe showpiece dataset current (visitors read them).
     try {
-      if (fac && co && currentUser && isSuperAdmin(currentUser.email) && firebaseReady &&
-          (!_tbPublicStats || _tbPublicStats.facilities !== fac || _tbPublicStats.companies !== co) && !window._tbStatsWriting) {
+      if (fac && co && currentUser && isSuperAdmin(currentUser.email) && firebaseReady && !window._tbStatsWriting &&
+          (!_tbPublicStats || _tbPublicStats.facilities !== fac || _tbPublicStats.companies !== co || !_tbPublicStats.chunks)) {
         window._tbStatsWriting = true;
-        FS_REST.setMerge('public', 'stats', { facilities: fac, companies: co, updated: new Date() })
-          .then(() => { _tbPublicStats = { facilities: fac, companies: co }; })
-          .catch(e => console.warn('public/stats not written (rules?):', e && e.message))
+        tbPublishShowpiece().then(sp => FS_REST.setMerge('public', 'stats', { facilities: fac, companies: co, chunks: sp.chunks, shown: sp.shown, updated: new Date() })
+            .then(() => { _tbPublicStats = { facilities: fac, companies: co, chunks: sp.chunks }; }))
+          .catch(e => console.warn('public stats/globe not written (rules?):', e && e.message))
           .finally(() => { window._tbStatsWriting = false; });
       }
     } catch (e) { /* non-critical */ }
@@ -7998,6 +8035,7 @@ function userLogout() {
     currentUser = null;
     applyLoggedOutUI();
     toast('Signed out.');
+    setTimeout(() => location.reload(), 400);
   });
 }
 
