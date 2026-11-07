@@ -5230,7 +5230,17 @@ function initGlobe() {
     let dist=Math.max(FIT_R/tanV, FIT_R/tanH)*margin; dist=Math.max(dist,16);
     const headroom=Math.max(0, dist*tanV-FIT_R);
     const yOffset=Math.min(headroom*0.55, FIT_R*0.16);
-    camera.position.set(0,yOffset,dist); camera.updateProjectionMatrix();
+    camera.position.set(0,yOffset,dist);
+    // On narrow screens the filter chips cover the top of the view: shift the picture down so the globe sits in the free area below them.
+    let shiftPx = 0;
+    if (w < 768) {
+      const ov = document.querySelector('.globe-overlay-top');
+      const topEdge = ov ? ov.offsetTop + ov.offsetHeight + 8 : 0;
+      const botEdge = Math.max(topEdge + 100, h - 96);          // leave room for the Terminal network legend
+      shiftPx = Math.max(0, Math.round((topEdge + botEdge) / 2 - h / 2));
+    }
+    if (shiftPx) camera.setViewOffset(w, h, 0, -shiftPx, w, h); else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
     if (scene.fog){ scene.fog.near=dist; scene.fog.far=dist+24; }
   }
   addEventListener('resize', resize); resize();
