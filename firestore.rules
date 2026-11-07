@@ -130,6 +130,13 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Public figures for the Globe page (facility and company counts only).
+    // Anyone may read; only the admin writes (the admin's browser keeps it current).
+    match /public/{doc} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     // Everything not listed above is closed.
     match /{document=**} {
       allow read, write: if false;

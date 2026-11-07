@@ -209,6 +209,26 @@ nav {
   overflow: hidden;
 }
 
+
+/* ── LOGIN-AS-GLOBE: only approved members see the nav, data pills and app views ── */
+body:not(.tb-member) header > nav,
+body:not(.tb-member) .drawer-nav,
+body:not(.tb-member) .live-badge,
+body:not(.tb-member) .stat-pill,
+body:not(.tb-member) #userPill,
+body:not(.tb-member) .status-bar { display: none !important; }
+#sidebar-enrich-view { overflow-y: auto; flex: 1 1 0; min-height: 0; }
+#tbsForm .logo-icon, #tbsForm h2, #tbsPending .logo-icon { display: none; }
+#tbsForm p { display: none; }
+#tbAuthPanel { padding: 18px 16px 24px; }
+#tbAuthPanel .tbs-counts { display: flex; gap: 10px; margin-bottom: 18px; }
+#tbAuthPanel .tbs-count { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 10px; text-align: center; }
+#tbAuthPanel .tbs-count b { display: block; font-family: var(--font-display); font-size: 24px; color: var(--accent); line-height: 1.1; }
+#tbAuthPanel .tbs-count span { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); }
+#tbAuthPanel .tbs-note { font-size: 11px; color: var(--text-muted); line-height: 1.5; text-align: center; margin-bottom: 14px; }
+#tbAuthPanel [hidden] { display: none !important; }
+#tbAuthPanel .sso-btn, #tbAuthPanel .login-submit { width: 100%; }
+
 /* ── SIDEBAR ── */
 .sidebar {
   width: var(--sidebar-w);
@@ -1360,7 +1380,7 @@ input[type="range"] {
       <button class="nav-btn" onclick="switchView('prices')">💹 Commodity Prices</button>
       <button class="nav-btn" onclick="switchView('companies')">🏢 Companies</button>
     </div>
-    <div id="sidebar-enrich-view" style="display:none;"><!-- empty on purpose: reserved for future side panel content --></div>
+    <div id="sidebar-enrich-view" style="display:none;"><!-- the account panel is mounted here by tbMountAuthPanel(); other content can be added later --></div>
     <div id="sidebar-facilities-view">
     <div id="coFilterChip"><span>🏢</span><span>Facilities of <b id="coFilterName"></b></span><button onclick="tbSetCompanyFilter(null)" title="Show all facilities">✕</button></div>
     <div class="sidebar-section">
@@ -3342,6 +3362,7 @@ function tbApplyRoute() {
   const m = /^#\/([a-z]+)(?:\/(.+))?$/.exec(location.hash || '');
   if (!m) return false;
   const name = m[1];
+  if (!tbIsMember() && name !== 'globe') { _tbPendingRoute = location.hash; return true; } // resumes after sign-in
   let arg = null;
   if (m[2]) { try { arg = decodeURIComponent(m[2]); } catch (e) { arg = m[2]; } }
   if (TB_ROUTE_VIEWS.indexOf(name) >= 0 && !arg) { tbCloseOverlays(); switchView(name, true); return true; }
@@ -3402,11 +3423,13 @@ function openTerminalFromHash() {
 }
 
 function showPopup(t) {
+  if (!tbIsMember()) { tbPromptSignIn(); return; }
   pushModalHistory(t.id);
   renderPopup(t);
 }
 
 function renderPopup(t) {
+  if (!tbIsMember()) return;
   selectedTerminal = t;
   document.getElementById('p-name').textContent = t.name;
   const ty = TERMINAL_TYPES[terminalType(t)];
@@ -4275,6 +4298,7 @@ function renderTerminalList(list) {
   const pc = document.getElementById('pillCountries');
   const ss = document.getElementById('statusScope');
   if (pf) pf.textContent = list.length.toLocaleString();
+  try { tbUpdateCounts(); } catch (e) { /* panel not mounted yet */ }
   if (pc) pc.textContent = new Set(list.map(t => t.country)).size;
   if (ss) ss.textContent = `${list.length} facilities · ${new Set(list.map(t => t.country)).size} countries`;
   // The sidebar list starts empty (0) and only lists terminals once a filter is set.
@@ -4811,6 +4835,7 @@ function tbSyncSidebar(view) {
 let _tbCoOpening = false; // set while a #/company/<slug> route opens, so switchView does not show the list
 
 function switchView(view, _fromRoute) {
+  if (!tbIsMember() && view !== 'globe') { view = 'globe'; if (!_fromRoute) tbPromptSignIn(); }
   document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
   const panel = document.getElementById(view+'-panel');
   if (panel) panel.classList.add('active');
@@ -5170,7 +5195,11 @@ function initGlobe() {
       setPointer(e); const cm=cityHit();
       if (cm) {
         const d=cm.userData.dest;
-        if (d.terminal && typeof showPopup==='function') {
+        if (d.terminal && !tbIsMember()) {
+          showTip(d.name || d.terminal.name, e.clientX, e.clientY); clearTimeout(tipT); tipT=setTimeout(hideTip,2200);
+          tbPromptSignIn();
+        }
+        else if (d.terminal && typeof showPopup==='function') {
           const col = getTypeColor(d.terminal);
           if (typeof globeFlyTo === 'function') globeFlyTo(d.terminal.lat, d.terminal.lng, col);
           showPopup(d.terminal);
@@ -5796,7 +5825,7 @@ async function startApp() {
     // Globe is the default landing view; build it (or queue until Three.js loads).
     try { onGlobeShown(); } catch (e) { console.warn('startApp: onGlobeShown failed', e); }
     // Deep link: if the URL already names a terminal (#terminal-<id>), open it.
-    try { openTerminalFromHash(); } catch (e) { console.warn('startApp: openTerminalFromHash failed', e); }
+    try { if (tbIsMember()) openTerminalFromHash(); } catch (e) { console.warn('startApp: openTerminalFromHash failed', e); }
     // Deep link to a view / profile / admin / pipeline / rig (#/...). Auth has resolved by now.
     try { if (!/^#terminal-/.test(location.hash)) tbApplyRoute(); } catch (e) { console.warn('startApp: tbApplyRoute failed', e); }
     _tbRouterReady = true;
@@ -7378,6 +7407,85 @@ function isAdminEmail(email) { return ADMIN_EMAILS.map(e=>e.toLowerCase()).inclu
 function isSuperAdmin(email) { return (email||'').toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase(); }
 function roleForEmail(email) { return isSuperAdmin(email) ? 'superadmin' : isAdminEmail(email) ? 'admin' : 'member'; }
 
+// ── LOGIN-AS-GLOBE: account panel, access state, counts ──
+window.tbAccess = 'visitor'; // visitor | pending | suspended | error | member
+function tbActiveView() { const a = document.querySelector('.view-panel.active'); return a ? a.id.replace(/-panel$/, '') : 'globe'; }
+function tbIsMember() { return window.tbAccess === 'member'; }
+function tbMountAuthPanel() {
+  const host = document.getElementById('sidebar-enrich-view');
+  if (!host || document.getElementById('tbAuthPanel')) return;
+  host.innerHTML = '<div id="tbAuthPanel">' +
+    '<div class="tbs-counts"><div class="tbs-count"><b id="tbsFac">—</b><span>Facilities</span></div>' +
+    '<div class="tbs-count"><b id="tbsCo">—</b><span>Companies</span></div></div>' +
+    '<div id="tbsForm"></div><div id="tbsPending" hidden></div>' +
+    '<div id="tbsMember" hidden><div class="tbs-note" id="tbsWelcome"></div></div></div>';
+  const mv = (srcSel, dstId) => { const src = document.querySelector(srcSel), dst = document.getElementById(dstId); if (src && dst) while (src.firstChild) dst.appendChild(src.firstChild); };
+  mv('#loginGate .login-box', 'tbsForm');
+  mv('#pendingGate .login-box', 'tbsPending');
+  const note = document.createElement('div'); note.className = 'tbs-note';
+  note.textContent = 'Create an account or sign in. Access to the facility, company and market data opens once an administrator approves your account.';
+  const form = document.getElementById('tbsForm'); if (form) form.insertBefore(note, form.children[1] || null);
+}
+function tbSetAccess(state) {
+  window.tbAccess = state;
+  tbMountAuthPanel();
+  document.body.classList.toggle('tb-member', state === 'member');
+  const form = document.getElementById('tbsForm'), pend = document.getElementById('tbsPending'), mem = document.getElementById('tbsMember');
+  if (form) form.hidden = state !== 'visitor';
+  if (pend) pend.hidden = !(state === 'pending' || state === 'suspended' || state === 'error');
+  if (mem) mem.hidden = state !== 'member';
+  const lg = document.getElementById('loginGate'), pg = document.getElementById('pendingGate');
+  if (lg) lg.classList.add('hidden'); if (pg) pg.classList.add('hidden');
+  if (state === 'member') {
+    const w = document.getElementById('tbsWelcome');
+    if (w && currentUser) w.textContent = 'Signed in as ' + (currentUser.name || currentUser.email || 'member') + '. Use the menu above to open the app.';
+    if (typeof closeDrawer === 'function') closeDrawer();
+    try { CompanyStore.load().then(tbUpdateCounts); } catch (e) { /* counts fall back to what is loaded */ }
+  } else {
+    try { closeProfilePage(); closeAdminPanel(); } catch (e) { /* overlays not ready */ }
+    if (tbActiveView() !== 'globe') { try { switchView('globe', true); } catch (e) { /* globe not ready */ } }
+    tbLoadPublicCounts();
+  }
+  tbSyncSidebar('globe');
+  tbUpdateCounts();
+}
+let _tbPublicStats = null;
+async function tbLoadPublicCounts() {
+  if (_tbPublicStats || typeof FS_REST === 'undefined') { tbUpdateCounts(); return; }
+  try {
+    const r = await fetch(FS_REST.base() + '/public/stats'); // readable without sign-in (see rules)
+    if (r.ok) { const d = await r.json(); _tbPublicStats = FS_REST.fromFields(d.fields); }
+  } catch (e) { /* counts stay as dashes */ }
+  tbUpdateCounts();
+}
+function tbUpdateCounts() {
+  let fac = null, co = null;
+  if (tbIsMember()) {
+    if (typeof terminals !== 'undefined' && terminals.length) fac = terminals.length;
+    if (CompanyStore.list) co = CompanyStore.list.length;
+    // The super admin's browser keeps the public figures record current (visitors read it).
+    try {
+      if (fac && co && currentUser && isSuperAdmin(currentUser.email) && firebaseReady &&
+          (!_tbPublicStats || _tbPublicStats.facilities !== fac || _tbPublicStats.companies !== co) && !window._tbStatsWriting) {
+        window._tbStatsWriting = true;
+        FS_REST.setMerge('public', 'stats', { facilities: fac, companies: co, updated: new Date() })
+          .then(() => { _tbPublicStats = { facilities: fac, companies: co }; })
+          .catch(e => console.warn('public/stats not written (rules?):', e && e.message))
+          .finally(() => { window._tbStatsWriting = false; });
+      }
+    } catch (e) { /* non-critical */ }
+  } else if (_tbPublicStats) { fac = _tbPublicStats.facilities; co = _tbPublicStats.companies; }
+  const f = document.getElementById('tbsFac'), c = document.getElementById('tbsCo');
+  if (f) f.textContent = fac ? Number(fac).toLocaleString() : '—';
+  if (c) c.textContent = co ? Number(co).toLocaleString() : '—';
+}
+function tbPromptSignIn() {
+  if (window.tbAccess === 'pending') toast('Your account is awaiting approval.', 'info');
+  else if (window.tbAccess === 'suspended') toast('Your account access is suspended.', 'error');
+  else toast('Sign in to open facility details.', 'info');
+  showLoginGate();
+}
+
 // ── ACCESS GATE ──
 // The site now requires (1) sign-in and (2) super-admin verification before
 // any content is shown. Three possible screens: the mandatory sign-in wall,
@@ -7392,13 +7500,12 @@ let _resolveAuthCheck;
 const _authResolved = new Promise(res => { _resolveAuthCheck = res; });
 
 function grantAccess() {
-  document.getElementById('loginGate').classList.add('hidden');
-  document.getElementById('pendingGate').classList.add('hidden');
+  tbSetAccess('member');
   if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
 }
 
 function showMandatorySignIn() {
-  document.getElementById('pendingGate').classList.add('hidden');
+  tbSetAccess('visitor');
   showLoginGate();
   if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
 }
@@ -7424,7 +7531,7 @@ function showPendingGate(kind, err, what) {
     title.textContent = 'Pending Verification';
     msg.textContent = "Your account is awaiting approval. You'll get access as soon as an administrator verifies you.";
   }
-  document.getElementById('pendingGate').classList.remove('hidden');
+  tbSetAccess(kind === 'suspended' ? 'suspended' : (kind === 'error' ? 'error' : 'pending'));
   if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
 }
 
@@ -7439,13 +7546,20 @@ function recheckAccess() {
 }
 
 function showLoginGate() {
-  document.getElementById('loginGate').classList.remove('hidden');
+  // The sign-in form now lives in the side panel on the Globe page (no full-screen wall).
+  tbMountAuthPanel();
   document.getElementById('previewNotice').style.display = isPreviewMode ? 'block' : 'none';
   document.getElementById('ssoButtons').style.opacity = isPreviewMode ? '0.4' : '1';
-  if (!isPreviewMode) { const e = document.getElementById('loginEmail'); if (e) e.focus(); }
+  if (tbActiveView() !== 'globe') switchView('globe', true);
+  const sb = document.getElementById('sidebar');
+  if (sb && window.matchMedia('(max-width: 860px)').matches) {
+    sb.classList.add('open');
+    document.getElementById('drawerBackdrop').classList.add('open');
+    document.getElementById('hamburger').classList.add('open');
+  } else if (!isPreviewMode) { const e = document.getElementById('loginEmail'); if (e && window.tbAccess === 'visitor') e.focus(); }
 }
 function hideLoginGate() {
-  document.getElementById('loginGate').classList.add('hidden');
+  const lg = document.getElementById('loginGate'); if (lg) lg.classList.add('hidden');
   const err = document.getElementById('loginError'); if (err) err.style.display = 'none';
 }
 
@@ -7519,6 +7633,7 @@ function initAuthListener() {
     // against. Show the sign-in button but don't block the app; this is a
     // local/dev fallback, not a production security boundary.
     document.getElementById('signInBtn').style.display = '';
+    tbSetAccess('member');
     if (_resolveAuthCheck) { _resolveAuthCheck(); _resolveAuthCheck = null; }
     return;
   }
