@@ -2649,7 +2649,7 @@ async function tbShowCompany(slug) {
   const parentC = full.parent && full.parent.id ? CompanyStore.byId.get(full.parent.id) : null;
   const parent = parentC ? '<a href="#/company/' + encodeURIComponent(parentC.s) + '" onclick="tbOpenCompany(\'' + tbCoEsc(parentC.s) + '\');return false;" style="color:var(--accent2);">' + tbCoEsc(parentC.n) + '</a>' : tbCoEsc(c.p || '');
   const subs = (CompanyStore.list || []).filter(x => x.id !== c.id && (x.pi ? x.pi === c.id : (x.p && x.p === c.n))).slice(0, 40);
-  const hq = [full.hqCity, tbCountryName(full.hqCountry || c.c)].filter(Boolean).map(tbCoEsc).join(', ');
+  const hq = [full.hqCity, tbCountryName(full.countryCode || full.hqCountry || c.c)].filter(Boolean).map(tbCoEsc).join(', ');
   const facRows = facs.map(t => '<tr class="co-row" onclick="tbOpenFacility(' + JSON.stringify(String(t.id)).replace(/"/g, '&quot;') + ')"><td>' + tbCoEsc(t.name) + '</td><td>' + tbCoEsc([t.city, t.country].filter(Boolean).join(', ')) + '</td><td>' + tbCoEsc(typeof facilityRoleLabel === 'function' ? facilityRoleLabel(t) : (t.primaryClass || '')) + '</td><td>' + tbCoEsc(roles[String(t.id)] || '') + '</td></tr>').join('');
   const missing = (c.f || []).length - facs.length;
   const segC = full.segmentCounts || {};
@@ -3342,6 +3342,17 @@ function tbCloseOverlays() {
   try { hideFactSheetOnly(); hidePopupOnly(); } catch (e) { /* terminal modals not ready yet */ }
 }
 
+// T3 (17 Nov 2026): #/facility/<terminal id> opens a facility on the map once terminals have loaded.
+// Tankonomics location records link here (externalUrl).
+function tbOpenFacilityWhenReady(id) {
+  let tries = 0;
+  const iv = setInterval(function () {
+    tries++;
+    const t = (typeof findTerminalById === 'function') ? findTerminalById(id) : null;
+    if (t) { clearInterval(iv); tbOpenFacility(id); }
+    else if (tries > 80) { clearInterval(iv); switchView('map', true); }
+  }, 150);
+}
 function tbOpenDetailWhenReady(kind, key) {
   const isPipe = kind === 'pipeline';
   switchView(isPipe ? 'pipelines' : 'rigs', true);
@@ -3375,6 +3386,7 @@ function tbApplyRoute() {
     return true;
   }
   if ((name === 'pipeline' || name === 'rig') && arg) { tbCloseOverlays(); tbOpenDetailWhenReady(name, arg); return true; }
+  if (name === 'facility' && arg) { tbCloseOverlays(); tbOpenFacilityWhenReady(arg); return true; }
   if (name === 'company' && arg) { tbCloseOverlays(); _tbCoOpening = true; switchView('companies', true); tbShowCompany(arg); return true; }
   return false;
 }

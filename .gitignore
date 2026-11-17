@@ -4,3 +4,8 @@ seed-*.html
 *.xlsx
 *.csv
 *.gpkg
+
+# T3 merge export (17 Nov 2026): local only, never committed or deployed
+*_Merge_Private_*.json
+*_Merge_Public_*.json
+*_Merge_Checks_*.json

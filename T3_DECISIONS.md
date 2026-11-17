@@ -3,7 +3,7 @@
 The single record of cross-app decisions for the three T3 apps. The same file
 sits at the root of all three repos; when it changes, copy it to all three.
 
-- **Last updated:** 18 Oct 2026.
+- **Last updated:** 17 Nov 2026 (section 13 added from the TankBazaar repo).
 - **Status words:**
   - **Decided** means Shamit decided it.
   - **Proposed** means a design waiting for review.
@@ -310,6 +310,98 @@ until this preparation is done.
   location schema.
 - Place IDs for newly added locations.
 
+## 13. T3 Common Company Schema — TankBazaar side — Decided (17 Nov 2026)
+
+Source: "T3 Common Company Schema" (17 Nov 2026). This section records the
+TankBazaar implementation (section 8 of that document) and the decisions it
+follows. Note: this repo's copy of the file had no section 12; if another
+repo's copy has one, merge the two before copying this file across.
+
+**Decided (kept to exactly)**
+
+- Registration details are never public in any app: legal name, LEI,
+  registry IDs, PAN, GSTIN, Udyam number, legal form and register source.
+  In TankBazaar they stay admin-only in `registryPrivate`, which is now also
+  keyed by slug (`companiesBySlug`) with the schema's section 3 field names
+  (legalName, legalNameSource, registrationId, registryIds, lei, legalForm,
+  jurisdiction, registryStatus, notes).
+- The registered-office address is not a registration detail; it is a public
+  location. `TB_registration_privacy.md` is updated.
+- MSME category, sectors served, email and phone are admin-only in all apps
+  (TankBazaar holds none of them yet; the private export carries them empty).
+- Location fields are the same in TWI and TankBazaar: address, city, state,
+  countryCode, country, lat, lng, googlePlaceId. TankBazaar fills city and
+  country only; address and state stay blank for company owners to add.
+- Facility types map to the shared list: port → port-terminal, inland →
+  inland-terminal, floating → floating-facility. Location ids are
+  `tb-{facilityId}`; `tbTerminalId` and `role` (owner, operator,
+  owner-operator) are exported. `externalUrl` is
+  `https://tankbazaar.com/#/facility/{id}` (new route in index.html).
+- Field renames on the company document (V566 seeder): `hqCountry` →
+  `countryCode` (ISO-2; the old mix of US/USA and UK is normalised), plus
+  `country` (English name); `verified` → `registryVerified`; `aka` →
+  `aliases`. The old fields are removed by the seeder's update mask. The lean
+  bundle keeps its short keys (`s`, `c`, `v`, `o`) but now reads them from the
+  new fields.
+- Parent: `parentSlug` and `parentRelationship` (subsidiary, or joint-venture
+  where the company is recorded as a JV) are added. The internal `parent`
+  {id, name} stays on the TankBazaar document because the app's company page
+  uses it; it is not exported. Alias slugs (`slugAliases`, bundle `a`) are for
+  `slugRedirects` in Tankonomics.
+- New public fields: slug, name, description, categoryIds, companyTypes,
+  sources = ["TankBazaar"], formerNames (names only; empty for now), brands
+  (empty), stockist (false).
+- `categoryIds` come from the company's facilities (storage-terminals;
+  process-industries plus the processType slugs). A company with no
+  facilities of its own takes them from its subsidiaries' facilities.
+  `companyTypes` is `oper` for facility owners and operators (direct or
+  through subsidiaries) and `nonsup` otherwise.
+- Descriptions are built only from the facility records ("Operates 3 storage
+  terminals in Spain."). They never contain notes, sources or tagging
+  reasons; research notes stay in the private `notes` field. The export checks
+  this.
+- Only registry-verified companies go into the merge.
+- Facility detail stays in TankBazaar (schema section 6) and is reached by the
+  location's externalUrl. Rigs and pipelines come to Tankonomics much later.
+- Claim fields (claimed, ownerVerified, premium) stay with Tankonomics and are
+  not exported.
+- Slugs are not displayed and were not changed; no new slugs were created.
+
+**Delivered**
+
+- `scripts/t3_common_fields.py`: shared field logic (country tables, role and
+  type mapping, categories, descriptions, check patterns).
+- `scripts/t3_merge_export.py`: writes `TankBazaar_Merge_Public_{date}.json`
+  and `TankBazaar_Merge_Private_{date}.json` (local only; `.gitignore`
+  excludes it) from the local seeder pages and runs the section 7 checks
+  (`TankBazaar_Merge_Checks_{date}.json`).
+- `index.html`: company page reads `countryCode` (falls back to the old
+  field); new `#/facility/{id}` route.
+- Seeder V566 writes the new fields to `companies/CO#####` and
+  `companiesBySlug` to `registryPrivate`.
+
+**First export (V566, 17 Nov 2026):** 2,657 registry-verified companies,
+7,434 locations. 1,580 companies pass every section 7 check; 1,077 fail:
+968 have no hqCity (no head-office or registered-office city on record) and
+162 have no category (no facilities of their own or through subsidiaries;
+mostly holding, pipeline and trading companies). All other checks pass:
+slug, name, country, description, company type, registryVerified, slug
+format and uniqueness, no registration or contact field in the public file,
+clean descriptions, and every location's id, type, city, country and
+coordinates. Four facility links with roles that are neither owner nor
+operator (terminal users) are not exported as locations.
+
+**Open (not decided here)**
+
+- The slug rule for renamed companies (schema section 11/12): TankBazaar has
+  not changed any slug. The slug checker round is still to run.
+- How to fill the 968 missing HQ cities (research, or allow the
+  registered-office city from the private register now that it is public).
+- Whether companies with no facilities and no category should be exported,
+  and which category or company type they get.
+- Tankonomics is seeded with TWI first; TankBazaar follows when its export
+  passes the checks.
+
 ## 11. Change log
 
 - **17 Oct 2026:** first version. Covers the data placement, sign-in bridge,
@@ -319,3 +411,6 @@ until this preparation is done.
   from the plan in §4, the single-file build exposure in §9, and the database
   location note in §7. The plan now lives in the TankBazaar repo at
   `docs/TB_DATA_MOVE_PLAN.md`.
+- **17 Nov 2026:** added §13 (T3 Common Company Schema, TankBazaar side):
+  field renames, private store keyed by slug, merge export script and first
+  check results.
