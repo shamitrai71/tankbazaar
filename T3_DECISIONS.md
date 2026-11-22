@@ -391,14 +391,32 @@ clean descriptions, and every location's id, type, city, country and
 coordinates. Four facility links with roles that are neither owner nor
 operator (terminal users) are not exported as locations.
 
+**Decided 19 Nov 2026**
+
+- Companies with no facilities stay in the merge. They are exported with
+  `categoryIds: []` and `companyTypes: ["nonsup"]`; an empty category is no
+  longer a failing check (the export reports it as `noCategory`).
+- HQ city resolution: the registered-office or head-office city is public, so
+  it fills `hqCity`. Order of sources: the address already on record in the
+  private register (city only is copied), then the company's own website,
+  annual report or official register, each with its source in the private
+  notes. No city is guessed from a facility location.
+- Duplicate company records are merged into the record that keeps its slug;
+  the retired record's slug goes into `slugAliases` (no new slug is made).
+  V574: CO00692 Shell Malaysia into CO00693 Shell Malaysia Trading Sdn Bhd,
+  CO01669 into CO02112 Mineraloelraffinerie Oberrhein (MiRO).
+
+**Export at V574 (20 Nov 2026):** 2,727 registry-verified companies, 7,671
+locations. 2,686 pass every check; 41 fail only on hqCity (no city found, or
+the only source was weak; listed in the private Low findings file). 181
+companies have no category (no facilities) and are exported as allowed.
+
 **Open (not decided here)**
 
 - The slug rule for renamed companies (schema section 11/12): TankBazaar has
   not changed any slug. The slug checker round is still to run.
-- How to fill the 968 missing HQ cities (research, or allow the
-  registered-office city from the private register now that it is public).
-- Whether companies with no facilities and no category should be exported,
-  and which category or company type they get.
+- Filling the remaining missing HQ cities (41 at V574, 78 at V580 after
+  new companies were added): continuing under the decision above.
 - Tankonomics is seeded with TWI first; TankBazaar follows when its export
   passes the checks.
 
@@ -414,3 +432,6 @@ operator (terminal users) are not exported as locations.
 - **17 Nov 2026:** added §13 (T3 Common Company Schema, TankBazaar side):
   field renames, private store keyed by slug, merge export script and first
   check results.
+- **19 Nov 2026:** §13 decisions: companies with no facilities stay in the
+  merge; HQ city resolution rules; duplicate company merges keep the slug as
+  an alias.

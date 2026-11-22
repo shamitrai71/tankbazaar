@@ -143,10 +143,11 @@ def build(terms, comps, rp, retired, now):
 
 def check(public, private):
     """Section 7 checks. Returns (report dict, failing slugs per check)."""
-    fails = {k: [] for k in ('slug', 'name', 'countryCode', 'country', 'hqCity', 'description', 'category', 'companyType',
+    fails = {k: [] for k in ('slug', 'name', 'countryCode', 'country', 'hqCity', 'description', 'companyType',
                              'registryVerified', 'slugFormat', 'slugUnique', 'noRegistrationFields', 'descriptionClean',
                              'locationId', 'locationType', 'locationCity', 'locationCountry', 'locationLatLng')}
     seen = set()
+    no_category = []
     loc_total = 0
     for c in public:
         s = c.get('slug', '')
@@ -154,7 +155,7 @@ def check(public, private):
             if not c.get(k):
                 fails[k].append(s)
         if not c.get('categoryIds'):
-            fails['category'].append(s)
+            no_category.append(s)  # allowed (decided 19 Nov 2026): no facilities yet
         if not c.get('companyTypes'):
             fails['companyType'].append(s)
         if c.get('registryVerified') is not True:
@@ -189,6 +190,7 @@ def check(public, private):
         'companies': len(public), 'locations': loc_total, 'privateRecords': len(private),
         'companiesPassingAllChecks': len(public) - len(bad_companies), 'companiesFailing': len(bad_companies),
         'failCounts': {k: len(v) for k, v in fails.items()},
+        'noCategory (allowed, no facilities)': len(no_category),
     }
     return report, fails
 
