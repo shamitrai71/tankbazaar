@@ -98,7 +98,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Data bundles (terminals-N, companies-N, manifest), written by the
+    // Pipelines (V581, document id = PL#####), written by the companies-and-bundles
+    // seeder. Same approval-gated read as terminals; only the admin writes.
+    match /pipelines/{doc} {
+      allow read:  if isAdmin() || isApprovedUser();
+      allow write: if isAdmin();
+    }
+
+    // Data bundles (terminals-N, companies-N, pipelines-N, manifest), written by the
     // companies-and-bundles seeder. Same approval-gated read as terminals.
     match /bundles/{doc} {
       allow read:  if isAdmin() || isApprovedUser();
