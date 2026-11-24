@@ -411,6 +411,36 @@ locations. 2,686 pass every check; 41 fail only on hqCity (no city found, or
 the only source was weak; listed in the private Low findings file). 181
 companies have no category (no facilities) and are exported as allowed.
 
+**Decided 22 Nov 2026: pipelines**
+
+- Pipelines move out of `index.html` into Firestore: the companies-and-bundles
+  seeder writes each pipeline to `pipelines/PL#####` (id assigned in the old
+  file order, so the app's pipeline URL keys do not change) and packs all of
+  them into `bundles/pipelines-N` (listed in `bundles/manifest`). Read access
+  is the same approval-gated rule as terminals; only the admin writes. The app
+  loads them through `PipeStore`; `index.html` no longer carries the data.
+- A pipeline's `ci` lists the TB companies that own or operate it and `cr`
+  (optional) each company's role. Links come from the operator text (exact
+  name match: High; part of a joint-operator text: Medium) and from research
+  batches by region.
+- In the merge export every linked pipeline is a location of each linked
+  company: `id: tb-PL#####`, `type: "pipeline"`, `lat/lng` = start point,
+  `endLat/endLng`, `route` (list of [lat, lng]), `countries`,
+  `pipelineCategory` (gas, crude, product, lpg, other), `status`, `lengthKm`,
+  `capacityMtpa`, `origin`, `destination`, `externalUrl`
+  (`https://tankbazaar.com/#/pipeline/{key}`). City stays empty for pipelines.
+  This extends the section 4 location fields; Tankonomics and TWI need to
+  accept the `pipeline` type and the extra fields.
+- New company category `pipelines`: a company with a linked pipeline (its own
+  or a subsidiary's) gets it, and counts as an operating company.
+- Export at V581 (24 Nov 2026): 2,799 registry-verified companies, 9,065
+  locations of which 1,268 are pipelines; 2,719 pass every check, 80 fail only
+  on hqCity; 159 have no category. 1,364 of 1,401 pipelines are linked to
+  companies (281 new pipeline companies; only those with an LEI or registry ID
+  count as registry-verified and are exported).
+- CO03137 SS&C GIDS Inc and CO03138 SS&C Technologies Holdings Inc retired
+  (financial software, not oil, gas or chemical companies).
+
 **Open (not decided here)**
 
 - The slug rule for renamed companies (schema section 11/12): TankBazaar has
@@ -432,6 +462,8 @@ companies have no category (no facilities) and are exported as allowed.
 - **17 Nov 2026:** added §13 (T3 Common Company Schema, TankBazaar side):
   field renames, private store keyed by slug, merge export script and first
   check results.
+- **22 Nov 2026:** §13 pipelines decision: pipelines in Firestore, pipeline
+  locations and the `pipelines` category in the merge export.
 - **19 Nov 2026:** §13 decisions: companies with no facilities stay in the
   merge; HQ city resolution rules; duplicate company merges keep the slug as
   an alias.

@@ -26,6 +26,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import t3_common_fields as F  # noqa: E402
 
 FACILITY_URL = 'https://tankbazaar.com/#/facility/{}'
+PIPE_URL = 'https://tankbazaar.com/#/pipeline/{}'
+PIPE_KEYS = {}  # pipeline id -> app URL key (same rule as tbUniqueKeys in index.html)
+
+
+def pipe_keys(pipes):
+    seen, out = {}, {}
+    for p in sorted(pipes, key=lambda x: x['id']):
+        base = re.sub(r'^-+|-+$', '', re.sub(r'[^a-z0-9]+', '-', str(p.get('n') or '').lower())) or 'item'
+        seen[base] = seen.get(base, 0) + 1
+        out[p['id']] = base if seen[base] == 1 else f'{base}-{seen[base]}'
+    return out
 REG_KEYS = ('legalName', 'legalNameSource', 'registrationId', 'registryIds', 'lei', 'legalForm',
             'jurisdiction', 'registryStatus', 'udyamNumber', 'notes')
 CONTACT_KEYS = ('email', 'phone', 'phoneDialCode', 'msmeCategory', 'sectors')
@@ -52,10 +63,14 @@ def load(term_html, co_html):
         retired = set(_const(ch, 'RETIRED_IDS'))
     except SystemExit:
         retired = set()
-    return terms, comps, rp, retired
+    try:
+        pipes = _const(ch, 'PIPELINES')
+    except SystemExit:
+        pipes = []
+    return terms, comps, rp, retired, pipes
 
 
-def build(terms, comps, rp, retired, now):
+def build(terms, comps, rp, retired, now, pipes=()):
     T = {int(t['id']): t for t in terms}
     comps = [c for c in comps if c['id'] not in retired]
     byid = {c['id']: c for c in comps}
@@ -65,6 +80,22 @@ def build(terms, comps, rp, retired, now):
         if pid in byid:
             kids.setdefault(pid, []).append(c['id'])
     regc = rp.get('companies', {})
+    # Pipelines (22 Nov 2026): a pipeline's "ci" lists the TB companies that own or operate it;
+    # "cr" (optional) gives each company's role. Each linked pipeline is exported as a location.
+    pipes_by_co = {}
+    for i, p in enumerate(pipes):
+        for cid in p.get('ci') or []:
+            pipes_by_co.setdefault(cid, []).append(p)
+
+    def descendants_pipes(cid, seen):
+        out = []
+        for k in kids.get(cid, []):
+            if k in seen:
+                continue
+            seen.add(k)
+            out += pipes_by_co.get(k, [])
+            out += descendants_pipes(k, seen)
+        return out
 
     def descendants_facilities(cid, seen):
         out = []
@@ -94,9 +125,12 @@ def build(terms, comps, rp, retired, now):
             for k in F.facility_categories(t):
                 if k not in cats:
                     cats.append(k)
+        own_pipes = pipes_by_co.get(c['id'], [])
+        if own_pipes or descendants_pipes(c['id'], {c['id']}):
+            cats.append(F.PIPELINE_CATEGORY)
         parent = c.get('parent') or {}
         pslug = byid[parent['id']]['slug'] if parent.get('id') in byid else ''
-        desc = c.get('description') or F.describe(c['name'], facs, [byid[k]['name'] for k in kids.get(c['id'], [])], cc)
+        desc = c.get('description') or F.add_pipelines(F.describe(c['name'], facs, [byid[k]['name'] for k in kids.get(c['id'], [])], cc), facs, own_pipes)
         locs, plocs = [], {}
         for role, t in facs:
             r = F.location_role(role)
@@ -117,6 +151,23 @@ def build(terms, comps, rp, retired, now):
             })
             if t.get('infoSrc') or t.get('infoDate'):
                 plocs[lid] = {'sourceUrl': t.get('infoSrc', ''), 'sourceDate': t.get('infoDate', '')}
+        for p in own_pipes:
+            w = p.get('w') or []
+            if not w:
+                continue
+            r = F.location_role((p.get('cr') or {}).get(c['id'], 'Operator')) or 'operator'
+            pcc = p.get('cc') or ''
+            locs.append({
+                'id': 'tb-' + p['id'], 'tbPipelineId': p['id'], 'role': r, 'type': 'pipeline', 'name': p.get('n', ''),
+                'address': '', 'city': '', 'state': '', 'countryCode': pcc, 'country': F.country_name(pcc),
+                'lat': w[0][1], 'lng': w[0][0], 'endLat': w[-1][1], 'endLng': w[-1][0],
+                'route': [[pt[1], pt[0]] for pt in w], 'routeApproximate': bool(p.get('ra')),
+                'countries': sorted({x for x in (p.get('cc'), p.get('cc2')) if x}),
+                'pipelineCategory': p.get('cat', ''), 'status': p.get('st', ''), 'lengthKm': p.get('km'),
+                'capacityMtpa': p.get('mt'), 'origin': p.get('o', ''), 'destination': p.get('d', ''),
+                'googlePlaceId': '', 'facilityClass': [], 'processType': [], 'primaryClass': 'pipeline',
+                'externalUrl': PIPE_URL.format(PIPE_KEYS.get(p['id'], '')),
+            })
         rel = c.get('parentRelationship') or ('joint-venture' if c.get('kind') == 'joint venture' else 'subsidiary')
         public.append({
             'slug': slug, 'name': c['name'], 'tbCompanyId': c['id'], 'sources': ['TankBazaar'],
@@ -124,7 +175,7 @@ def build(terms, comps, rp, retired, now):
             'aliases': list(c.get('aliases', c.get('aka', [])) or []), 'formerNames': list(c.get('formerNames', []) or []),
             'brands': list(c.get('brands', []) or []), 'description': desc,
             'website': c.get('website', '') or '', 'linkedin': c.get('linkedin', '') or '', 'logo': '',
-            'categoryIds': cats, 'companyTypes': c.get('companyTypes') or (['oper'] if scope else ['nonsup']),
+            'categoryIds': cats, 'companyTypes': (['oper'] if (scope or own_pipes) else (c.get('companyTypes') or ['nonsup'])),
             'stockist': False, 'registryVerified': True,
             'parentSlug': pslug, 'parentRelationship': rel if pslug else '',
             'createdAt': now, 'updatedAt': now, 'locations': locs,
@@ -173,11 +224,11 @@ def check(public, private):
             loc_total += 1
             if PUBLIC_FORBIDDEN & set(l.keys()):
                 fails['noRegistrationFields'].append(s + '/' + l.get('id', '?'))
-            if not re.match(r'^tb-\d+$', l.get('id', '')):
+            if not re.match(r'^tb-(\d+|PL\d{5})$', l.get('id', '')):
                 fails['locationId'].append(s + '/' + str(l.get('id')))
             if l.get('type') not in F.TYPE_MAP.values():
                 fails['locationType'].append(l.get('id'))
-            if not l.get('city'):
+            if not l.get('city') and l.get('type') != 'pipeline':
                 fails['locationCity'].append(l.get('id'))
             if not l.get('countryCode'):
                 fails['locationCountry'].append(l.get('id'))
@@ -191,6 +242,7 @@ def check(public, private):
         'companiesPassingAllChecks': len(public) - len(bad_companies), 'companiesFailing': len(bad_companies),
         'failCounts': {k: len(v) for k, v in fails.items()},
         'noCategory (allowed, no facilities)': len(no_category),
+        'pipelineLocations': sum(1 for c in public for l in c['locations'] if l.get('type') == 'pipeline'),
     }
     return report, fails
 
@@ -201,8 +253,9 @@ def main():
     out = sys.argv[3] if len(sys.argv) > 3 else '.'
     now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     day = now[:10]
-    terms, comps, rp, retired = load(sys.argv[1], sys.argv[2])
-    public, private, skipped = build(terms, comps, rp, retired, now)
+    terms, comps, rp, retired, pipes = load(sys.argv[1], sys.argv[2])
+    PIPE_KEYS.update(pipe_keys(pipes))
+    public, private, skipped = build(terms, comps, rp, retired, now, pipes)
     report, fails = check(public, private)
     report['locationLinksSkipped (not owner/operator roles)'] = skipped
     report['exportedAt'] = now

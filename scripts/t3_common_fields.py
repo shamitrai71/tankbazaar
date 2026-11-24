@@ -549,7 +549,10 @@ PROCESS_LABEL = {
     'gas-processing-lng-lpg': ('gas processing, LNG or LPG plant', 'gas processing, LNG or LPG plants'),
     'offshore-production': ('offshore production facility', 'offshore production facilities'),
 }
-TYPE_MAP = {'port': 'port-terminal', 'inland': 'inland-terminal', 'floating': 'floating-facility'}
+TYPE_MAP = {'port': 'port-terminal', 'inland': 'inland-terminal', 'floating': 'floating-facility', 'pipeline': 'pipeline'}
+# Category for companies that own or operate a pipeline (added 22 Nov 2026 with pipeline locations).
+PIPELINE_CATEGORY = 'pipelines'
+PIPE_LABEL = ('pipeline', 'pipelines')
 RELATIONSHIPS = ('subsidiary', 'joint-venture', 'division', 'brand-of')
 SLUG_RE = re.compile(r'^[a-z0-9]+(-[a-z0-9]+)*$')
 # Words that mark research notes, sources or tagging reasons. A public description must contain none.
@@ -657,3 +660,15 @@ def describe(name, facilities, child_names, country):
         return f"Parent company of {k} {'company' if k == 1 else 'companies'} in the TankBazaar register, including {eg}."
     cn = country_name(country)
     return f"Company in the oil, gas and chemical storage and processing sector{(' based in ' + cn) if cn else ''}."
+
+
+def add_pipelines(desc, facilities, pipes):
+    """Extend a company description with the pipelines it owns or operates (pipes: pipeline records)."""
+    if not pipes:
+        return desc
+    phrase = _count_phrase(len(pipes), PIPE_LABEL)
+    if facilities:
+        return desc[:-1] + f', and owns or operates {phrase}.'
+    pcs = sorted({country_name(p.get('cc')) for p in pipes if p.get('cc')})
+    where = (' in ' + pcs[0]) if len(pcs) == 1 else (f' in {len(pcs)} countries' if len(pcs) > 1 else '')
+    return f'Owns or operates {phrase}{where}.'
