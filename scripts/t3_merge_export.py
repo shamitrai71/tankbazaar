@@ -25,7 +25,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import t3_common_fields as F  # noqa: E402
 
-FACILITY_URL = 'https://tankbazaar.com/#/facility/{}'
+# Facility links use #terminal-<id>, the form Tankonomics reads (decided 27 Nov 2026).
+FACILITY_URL = 'https://tankbazaar.com/#terminal-{}'
 PIPE_URL = 'https://tankbazaar.com/#/pipeline/{}'
 PIPE_KEYS = {}  # pipeline id -> app URL key (same rule as tbUniqueKeys in index.html)
 
@@ -141,7 +142,7 @@ def build(terms, comps, rp, retired, now, pipes=()):
             lid = f"tb-{t['id']}"
             locs.append({
                 'id': lid, 'tbTerminalId': int(t['id']), 'role': r,
-                'type': F.TYPE_MAP.get(t.get('type'), 'inland-terminal'), 'name': t.get('name', ''),
+                'type': F.location_type(t), 'name': t.get('name', ''),
                 'address': '', 'city': t.get('city', ''), 'state': '',
                 'countryCode': tcc, 'country': F.country_name(tcc),
                 'lat': t.get('lat'), 'lng': t.get('lng'), 'googlePlaceId': t.get('placeId', '') or '',
@@ -226,7 +227,7 @@ def check(public, private):
                 fails['noRegistrationFields'].append(s + '/' + l.get('id', '?'))
             if not re.match(r'^tb-(\d+|PL\d{5})$', l.get('id', '')):
                 fails['locationId'].append(s + '/' + str(l.get('id')))
-            if l.get('type') not in F.TYPE_MAP.values():
+            if l.get('type') not in F.LOCATION_TYPES:
                 fails['locationType'].append(l.get('id'))
             if not l.get('city') and l.get('type') != 'pipeline':
                 fails['locationCity'].append(l.get('id'))

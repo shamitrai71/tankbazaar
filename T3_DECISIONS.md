@@ -426,7 +426,7 @@ Tankonomics.
   Navigator-type product) comes only after the pages are substantially
   claimed and their data accepted or updated by the owners.
 
-**Proposed (15 Nov, from `T3_Schema_Field_Check_2026-11-15.xlsx`)** — replaced by the schema below once it is approved.
+**Proposed (15 Nov, from `T3_Schema_Field_Check_2026-11-15.xlsx`)** — replaced by the decided schema below (27 Nov 2026).
 
 - Add to the Tankonomics company document before the seed: `countryCode`
   (ISO-2) and `country` (name), `hqCity`, `aliases[]`, `formerNames[]`,
@@ -446,11 +446,13 @@ Tankonomics.
 - Facility detail (capacity, tanks, berths, products, operator, metrics) stays
   in TankBazaar and is reached by link.
 
-**Company schema — for approval (27 Nov 2026)**
+**Company schema — Decided (27 Nov 2026)**
 
 Built from the 15 Nov field check and `docs/DATA_MODEL_V2.md`, checked against
-the TWI roster `TWI_companies_2026-11-26c_8805` and the Tankonomics code at
-`8b7ba82`. Field names follow the live Tankonomics code where one exists, so
+the TWI roster `TWI_companies_2026-11-26c_8805`, the Tankonomics code at
+`8b7ba82`, and the TankBazaar merge export (`scripts/t3_merge_export.py` and
+`scripts/t3_common_fields.py`, "T3 Common Company Schema 17 Nov 2026") at
+`9b9ba1d`. Where the two exports differ, the choice is marked below. Field names follow the live Tankonomics code where one exists, so
 the app needs fewer changes. TWI → Tankonomics renames are done by the export.
 
 *Company page: `companies/{slug}`, readable by approved members*
@@ -461,7 +463,7 @@ the app needs fewer changes. TWI → Tankonomics renames are done by the export.
 | `name` | `name` | Registered legal name style, as in TWI |
 | `twiId` | `id` | Numeric TWI id |
 | `tbCompanyId` | — | TankBazaar register id, when the company is in both |
-| `sources` | — | `twi`, `tb` or `both` |
+| `sources` | — | List: `TWI`, `TankBazaar` or both (as the TankBazaar export writes it) |
 | `country`, `countryCode` | `country` | Name and ISO-2 |
 | `hqCity`, `hqState` | HQ location | For the company picker and search |
 | `description` | `desc` | One text field; the old `aboutUs` is dropped |
@@ -469,9 +471,10 @@ the app needs fewer changes. TWI → Tankonomics renames are done by the export.
 | `linkedin` | `linkedin` | The only social link; shown as a labelled LinkedIn button on the company page, as in TWI; `socialLinks` is dropped |
 | `logo`, `heroImage` | `logo` | Cover images are seeded later |
 | `categoryIds` | `cats` | Leaf slugs of the shared tree; replaces the old single `categoryId` |
+| `companyTypes`, `stockist` | derived from `cats` | Shared codes: `mfr`, `dist`, `contr`, `svc`, `cons`, `rent`, `oper`, `nonsup`. TWI derives them from its categories; TankBazaar stores them |
 | `aliases`, `formerNames`, `brands` | same | Lists of text |
 | `registryVerified` | `registered` | True for every seeded company; kept for later additions |
-| `parentSlug`, `relationship` | `parent` | Copy of the link; the full set lives in `companyRelationships` |
+| `parentSlug`, `parentRelationship` | `parent` | Copy of the link; the full set lives in `companyRelationships`. One relationship list: `subsidiary`, `division`, `joint-venture`, `affiliate`, `associate`, `owned-by`, `brand-of` (TWI has the first six, TankBazaar adds `brand-of`) |
 | `externalDirectoryUrl`, `externalDirectoryName` | — | Link to the TWI or TankBazaar listing (who sees it is a business-model decision) |
 | `isClaimed`, `ownerUid`, `plan`, `planSince`, `isFeatured` | — | Empty or false at seed |
 | `locationCount`, `followerCount` | — | Kept current by the server |
@@ -479,11 +482,14 @@ the app needs fewer changes. TWI → Tankonomics renames are done by the export.
 
 *Admin-only store: `companies/{slug}/private/admin`*
 
-- `legalName`, `registrationId`, `lei`, `legalNameSource` (from the TWI
-  private registry);
+- registry: `legalName`, `legalNameSource`, `registrationId`, `registryIds`,
+  `lei`, `legalForm`, `jurisdiction`, `registryStatus` (the TankBazaar set);
+  TWI adds `gstin`, `pan`, `constitution`, `otherIds`, `nameHistory`,
+  `websiteHistory`;
 - `email`, `phone`, `phoneDialCode` (admin-only, as in TWI);
-- `sectors`, `msme` (`category`, `udyamNumber`), `delivery`;
-- research notes and source links.
+- `sectors`, `msmeCategory`, `udyamNumber` (flat, as the TankBazaar export
+  writes them), `delivery`;
+- `notes`, and per location `sourceUrl` and `sourceDate`.
 
 None of this is on the company page, which every approved member can read.
 
@@ -493,7 +499,8 @@ None of this is on the company page, which every approved member can read.
   facilities, so a re-seed updates in place.
 - **Fields:** `type`, `name`, `address`, `city`, `state`, `country`,
   `countryCode`, `lat`, `lng`, `googlePlaceId` (TWI `placeId`); TankBazaar
-  facilities also carry `facilityClass`, `processType`, `primaryClass`,
+  facilities also carry `tbTerminalId`, `role` (`owner`, `operator`,
+  `owner-operator`), `facilityClass`, `processType`, `primaryClass`,
   `externalUrl`; ownership `ownerUid`, `ownerSource`, `assignedBy`,
   `assignedAt`. `sourceUrl` and `sourceDate` go to the admin-only store.
 - **Country:** filled from the company when a TWI location has none (most
@@ -501,8 +508,30 @@ None of this is on the company page, which every approved member can read.
 - **One type list for all three apps:** `head-office`, `registered-office`,
   `regional-office`, `branch-office`, `plant`, `service-centre`,
   `r&d-centre`, `warehouse`, `port-terminal`, `inland-terminal`,
-  `process-facility`, `floating-facility`. TWI's legacy types are mapped:
-  `headquarters` → `head-office`, `office` and `branch` → `branch-office`.
+  `process-facility`, `floating-facility`, `pipeline`. TWI's legacy types are
+  mapped: `headquarters` → `head-office`, `office` and `branch` →
+  `branch-office`.
+
+*Differences found in the TankBazaar export (27 Nov 2026), settled the same day*
+
+- **Facility link form.** The export writes `externalUrl` as
+  `tankbazaar.com/#/facility/{N}`, but Tankonomics reads only
+  `#terminal-{N}` (`src/lib/tbLocationId.ts`), so stable location ids and
+  merged-id redirects would fail for exported records. **Decided:** store
+  `#terminal-{N}` everywhere; the export is changed, and Tankonomics reads
+  both forms.
+- **Process facilities typed as terminals.** The export maps every facility
+  that is not `port` or `floating` to `inland-terminal`, refineries included.
+  **Decided:** `process-facility` when the facility class is process only
+  (export changed).
+- **Pipelines.** Since 22 Nov the export includes pipelines as locations
+  (`type: pipeline`, with `tbPipelineId`, route, length and capacity).
+  **Decided:** pipelines are connected to their owners before the merge, and
+  some of them go in with the first seed as locations; the rest follow
+  later. This updates the 17 Nov note that pipelines come much later.
+- **Names.** `parentRelationship` (not `relationship`), `sources` as a list,
+  and flat `msmeCategory` / `udyamNumber` are taken from the TankBazaar
+  export above.
 
 *Links between the apps (checked 27 Nov 2026; to fix before the merge)*
 
@@ -539,10 +568,14 @@ companies), `companyRelationships/{from}__{type}__{to}`,
 `subCategoryId`, `aboutUs`, `socialLinks` and the free-text company
 `address`.
 
-*To change in Tankonomics once approved:* the security rule for companies
-(require `categoryIds`, not `categoryId`, and add the admin-only store); the
-company page and Admin screens; and the TWI export, which produces a
-validation report and is rehearsed on `tankonomics-staging` first.
+*Done 27 Nov 2026:* Tankonomics security rule (company page no longer
+needs the single `categoryId`, refuses registration and contact fields, and
+the admin-only `private` store is added); Tankonomics reads both TankBazaar
+link forms; the TankBazaar export writes `#terminal-{N}` and
+`process-facility`.
+
+*Still to do:* the company page and Admin screens for the new fields, and the
+TWI export (validation report first, rehearsed on `tankonomics-staging`).
 
 **Open**
 
@@ -632,4 +665,8 @@ validation report and is rehearsed on `tankonomics-staging` first.
   later, once pages are substantially claimed); company schema for approval
   (company page, admin-only store, locations, one location-type list);
   LinkedIn button; links between the apps checked, with fixes listed
-  (TankBazaar side checked and fixed the same day).
+  (TankBazaar side checked and fixed the same day); schema reconciled with
+  the TankBazaar merge export, with three differences to settle.
+- **27 Nov 2026 (later):** §13 company schema decided, with the three
+  TankBazaar export differences settled (link form, process facilities,
+  pipelines in part at the first seed); rule and export changes done.

@@ -550,6 +550,20 @@ PROCESS_LABEL = {
     'offshore-production': ('offshore production facility', 'offshore production facilities'),
 }
 TYPE_MAP = {'port': 'port-terminal', 'inland': 'inland-terminal', 'floating': 'floating-facility', 'pipeline': 'pipeline'}
+# Location type values allowed in the export (T3 section 13, decided 27 Nov 2026).
+LOCATION_TYPES = ('port-terminal', 'inland-terminal', 'floating-facility', 'process-facility', 'pipeline')
+
+
+def location_type(t):
+    """T3 location type for one facility record. A process-only site (no storage class)
+    is a process-facility, not a terminal (decided 27 Nov 2026)."""
+    cls = t.get('facilityClass') or []
+    raw = t.get('type')
+    if raw == 'floating':
+        return 'floating-facility'
+    if 'process' in cls and 'storage' not in cls:
+        return 'process-facility'
+    return TYPE_MAP.get(raw, 'inland-terminal')
 # Category for companies that own or operate a pipeline (added 22 Nov 2026 with pipeline locations).
 PIPELINE_CATEGORY = 'pipelines'
 PIPE_LABEL = ('pipeline', 'pipelines')
