@@ -560,6 +560,91 @@ None of this is on the company page, which every approved member can read.
   company shows its Tankonomics address (`/business/{slug}`) as text only, and
   it never links to TWI (§11).
 
+**Products and owner edits — Decided (27 Nov 2026)**
+
+- **One home.** Products live in Tankonomics, under each company:
+  `companies/{slug}/products/{id}`. They are added and changed only there.
+- **Copied to TWI and TankBazaar.** A Tankonomics server function copies each
+  published product to the same company in TWI and, where the company is also
+  in TankBazaar, in TankBazaar (matched by slug, and by `tbCompanyId` for
+  TankBazaar). The copies are read-only: only the server function writes them.
+  Removing a product, or the company losing its owner, removes or hides the
+  copies the same way. An "Edit products" button in TWI or TankBazaar opens
+  the editor in Tankonomics.
+- **Company owners only.** A product can be written only by the company owner
+  (`ownerUid` on the company) or an admin. Location and facility owners cannot
+  add or change products; products are not attached to locations. Owners who
+  need help ask an admin.
+- **One owner across the three apps.** When an admin approves a claim in
+  Tankonomics, the same server function marks the company as claimed, with
+  its owner, in TWI and TankBazaar wherever it exists. TWI and TankBazaar run
+  no claim process of their own. Withdrawing ownership clears it everywhere.
+- **Everything an owner edits follows the same rule.** Description, logo,
+  contacts and other owner-editable fields are edited in Tankonomics and
+  copied to TWI and TankBazaar. TWI stays the system of record only for what
+  TWI researches itself. (This updates the earlier note that profile data
+  flows TWI → Tankonomics.)
+- **Product fields — Decided (27 Nov 2026, night).**
+  - *Required to publish:* `name`, `categoryId` (a leaf of the shared tree),
+    `images` (at least one; a few, stored once in Tankonomics) and
+    `description`. Everything else is optional, so companies are not put off.
+  - *Optional:* `brand`; `modelNumber` (model or part number); `specs` (rows
+    of `{label, value}`, later with a starter set per category);
+    `productPageUrl` (the product on the company's own website); `standards`
+    (list, e.g. API 650, API 2000, ATEX, PESO, EIL vendor list, OISD; shown as
+    "as stated by the company"); `supplyRole` and `makerSlug` (below);
+    `countryOfOrigin`; `availability` (`stock` / `made-to-order` /
+    `lead-time`, with `leadTimeWeeks`); `documents` (list of
+    `{type: datasheet|brochure|manual|drawing|other, title, url}`, replacing
+    the single `datasheetUrl`); `applications` (`tankTypes`: external
+    floating roof, internal floating roof, fixed roof, sphere, bullet …; and
+    `productsStored`); `videoUrl` (YouTube only); `shipsFrom` (ids of the
+    company's own locations, never free text: city, state, country and pin
+    code are read from the location record, so buyers can filter by place).
+  - *System:* `status` (`draft` / `published`; only published products are
+    copied), `sortOrder`, `hidden` (admin moderation), `makerVerified` (set
+    only by the server function), `updatedBy`, `updatedAt`.
+  - *Not stored:* price and minimum order (left to enquiries); ratings and
+    reviews (member endorsements do this; they stay in Tankonomics and are not
+    copied).
+- **Made by or supplied by — Decided (27 Nov 2026, night).** This keeps
+  manufacturers apart from distributors and agents.
+  - Each product is either `supplyRole: made-by` (the company has the `mfr`
+    type) or `supplied-by` (the company has the `dist` type, which covers
+    distributors, stockists and agents).
+  - A supplied product names its maker by `makerSlug`: the brand links to the
+    maker's company page in all three apps. A maker not yet in the directory
+    is shown as plain brand text, with no link.
+- **Verified by the manufacturer — Decided (27 Nov 2026, night).**
+  - A supplier asks for verification from the product editor. The request
+    goes to the owner of the maker's company page in Tankonomics.
+  - When the maker's owner approves, the supplier is recorded as authorised at
+    `companies/{makerSlug}/authorisedSuppliers/{supplierSlug}` (`role`:
+    distributor / agent / stockist, `approvedBy`, `approvedAt`). The server
+    function then sets `makerVerified` on that supplier's products from this
+    maker, which show "Verified by {maker}" in all three apps. The maker's
+    page lists its authorised distributors and agents.
+  - The maker's owner sees every product the supplier lists under the maker
+    and can remove the badge from any one, or withdraw the authorisation
+    altogether. The badge clears by itself if the supplier changes the
+    product's maker.
+  - If the maker's page is not yet claimed, the product shows "Supplied by"
+    with no badge, and the request waits until the page is claimed. Admins do
+    not approve on a maker's behalf.
+  - This badge is the manufacturer's own confirmation. It is separate from
+    the company "verified" badge, which stays off until it can be added with
+    confidence.
+- **Send enquiry — Decided (27 Nov 2026, night).** An action on each product,
+  not a stored field. It goes through Tankonomics messages to the company
+  owner, since email and phone stay admin-only. The form carries the product
+  automatically and asks for quantity, required-by date, delivery location
+  and a message. In TWI and TankBazaar the button opens the Tankonomics
+  enquiry (sign-in needed). Unclaimed pages cannot receive enquiries; the
+  button there invites the company to claim its page.
+- **Timing.** Built after the Big Merge (no users before then). The seed
+  creates the empty `products` list under each company so the structure is
+  in place.
+
 *Other collections:* `organizations/{slug}` (parents that are not listed
 companies), `companyRelationships/{from}__{type}__{to}`,
 `slugRedirects/{oldSlug}`.
@@ -579,6 +664,8 @@ TWI export (validation report first, rehearsed on `tankonomics-staging`).
 
 **Open**
 
+- Products: whether a maker's authorisation can be limited to regions or
+  given an end date; the starter specification rows per category.
 - How a company links to its rigs and pipelines in Tankonomics.
 - The Tankonomics admin action that empties company data before the seed.
 - Fixes in TWI before export: legacy location types, text-only parents,
@@ -670,3 +757,9 @@ TWI export (validation report first, rehearsed on `tankonomics-staging`).
 - **27 Nov 2026 (later):** §13 company schema decided, with the three
   TankBazaar export differences settled (link form, process facilities,
   pipelines in part at the first seed); rule and export changes done.
+- **27 Nov 2026 (evening):** §13 products and owner edits decided (products
+  live in Tankonomics and are copied to TWI and TankBazaar; company owners
+  only; one owner across the apps; owner edits made in Tankonomics).
+- **27 Nov 2026 (night):** §13 product fields decided (required: name,
+  category, image, description; optional fields listed), made by or supplied
+  by, verified by the manufacturer, and Send enquiry.
