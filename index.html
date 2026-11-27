@@ -3367,8 +3367,11 @@ function tbCloseOverlays() {
 }
 
 // T3 (17 Nov 2026): #/facility/<terminal id> opens a facility on the map once terminals have loaded.
-// Tankonomics location records link here (externalUrl).
+// Tankonomics location records link with #terminal-<id> (externalUrl); both forms open the same facility.
 function tbOpenFacilityWhenReady(id) {
+  // Merged facility ids open the surviving record, as #terminal-<id> links do.
+  const n = parseInt(id, 10);
+  if (!isNaN(n) && TB_ID_REDIRECT[n]) id = TB_ID_REDIRECT[n];
   let tries = 0;
   const iv = setInterval(function () {
     tries++;
@@ -3418,7 +3421,8 @@ function tbApplyPendingRoute() {
   if (!_tbPendingRoute) return;
   const h = _tbPendingRoute;
   _tbPendingRoute = null;
-  if (location.hash === h) tbApplyRoute();
+  if (location.hash !== h) return;
+  if (/^#terminal-\d+/.test(h)) openTerminalFromHash(); else tbApplyRoute();
 }
 
 window.addEventListener('popstate', (ev) => {
@@ -5872,7 +5876,8 @@ async function startApp() {
     // Globe is the default landing view; build it (or queue until Three.js loads).
     try { onGlobeShown(); } catch (e) { console.warn('startApp: onGlobeShown failed', e); }
     // Deep link: if the URL already names a terminal (#terminal-<id>), open it.
-    try { if (tbIsMember()) openTerminalFromHash(); } catch (e) { console.warn('startApp: openTerminalFromHash failed', e); }
+    // Signed out: keep the link and open the facility once the person has signed in.
+    try { if (tbIsMember()) openTerminalFromHash(); else if (/^#terminal-\d+/.test(location.hash)) _tbPendingRoute = location.hash; } catch (e) { console.warn('startApp: openTerminalFromHash failed', e); }
     // Deep link to a view / profile / admin / pipeline / rig (#/...). Auth has resolved by now.
     try { if (!/^#terminal-/.test(location.hash)) tbApplyRoute(); } catch (e) { console.warn('startApp: tbApplyRoute failed', e); }
     _tbRouterReady = true;

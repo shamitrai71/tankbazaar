@@ -3,16 +3,20 @@
 The single record of cross-app decisions for the three T3 apps. The same file
 sits at the root of all three repos; when it changes, copy it to all three.
 
-- **Last updated:** 17 Nov 2026 (section 13 added from the TankBazaar repo).
+- **Last updated:** 27 Nov 2026.
 - **Status words:**
   - **Decided** means Shamit decided it.
   - **Proposed** means a design waiting for review.
   - **Open** means not yet decided.
-- **Based on** Tankonomics at commit `4a13ce9` (11 Sep 2026), TankWorldIndia at
-  `e2711f9` (15 Oct 2026) and TankBazaar seed V399 (8,027 terminals).
-- **Fuller working version:** `docs/TB_DATA_MOVE_PLAN.md` in the TankBazaar
-  repo ("TankBazaar data move to Firestore — plan", 17 Oct), which has the
-  reasoning, costs, phase checks and the per-app build notes.
+- **Based on** Tankonomics at commit `7f26806` (15 Nov 2026), TankBazaar at
+  `c338c9a`, and the TankWorldIndia roster `TWI_companies_2026-11-15g_8826`
+  with the 429-node category tree of the `TWI_Deploy_2026-11-14b_CCTV` build.
+- **Fuller working versions:** `docs/TB_DATA_MOVE_PLAN.md` in the TankBazaar
+  repo (data move, 17 Oct); `docs/TWI_Relationships_and_Brands_Spec.md` in the
+  Tankonomics repo (corporate links and brands); the TWI working folder's
+  `Rules_And_Decisions/Standing_Rules_and_Open_Items.md` (day-to-day TWI
+  clean-up rules); `T3_Schema_Field_Check_2026-11-15.xlsx` (field mapping for
+  the Big Merge).
 
 Where this file disagrees with an older doc in any repo, this file wins. The
 older docs carry a note pointing here.
@@ -23,14 +27,24 @@ older docs carry a note pointing here.
 
 | | Tankonomics | TankBazaar | TankWorldIndia |
 |---|---|---|---|
-| Role | Hub: members, companies, feeds, jobs, events, groups | Asset data: terminals, refineries, plants, pipelines, rigs, fields, basins | Supplier and service-company directory |
-| Firebase project | `tankonomics` | `tankbazaar` | `tankworldindia-t5` |
+| Role | Hub ("mother ship"): members, companies, feeds, jobs, events, groups | Asset data: terminals, refineries, plants, floating facilities, pipelines, rigs, fields, basins | Supplier and service-company directory |
+| Firebase project | `tankonomics` (+ `tankonomics-staging` for seed rehearsals) | `tankbazaar` | `tankworldindia-t5` |
 | Firestore database | `(default)` | named `tankbazaar` | `(default)` |
-| Hosting | Firebase Hosting + Cloud Run `tankonomics` (asia-south1) | Netlify (auto-deploy from `main`) | Firebase Hosting, moving to Cloud Run |
+| Hosting | Firebase Hosting + Cloud Run `tankonomics` (asia-south1) | Netlify (auto-deploy from `main`) | Firebase Hosting (Blaze), moving to Cloud Run |
 | Approved status in `users` | `approved` (or no status field) | `active` | `approved` (or no status field) |
 | Admin check | `admins/{uid}`, esraigroup@, petrodeksystems@ | esraigroup@ (by email) | esraigroup@, petrodeksystems@ (by email) |
+| Size (15 Nov) | Company data to be emptied and fresh-seeded (§13) | about 8,000 facilities | 8,826 companies, 429 categories |
 
-ASTSPARES and TankProtocol are not part of T3 and are not linked to Tankonomics.
+- ASTSPARES and TankProtocol are not part of T3 and are not linked to
+  Tankonomics. AstSpares is a captive Petrodek Systems project (its own and
+  its partners' products), not a directory category.
+- **Users — Decided.** None of the three apps has users or claimants, and
+  they stay that way until after the Big Merge. Launch target: India Energy
+  Week, 27–30 Jan 2027 (Goa). Every sign-up needs admin approval before the
+  public launch.
+- **Later naming — Decided.** Much later, TankBazaar is split into three
+  modules in one app: "TankBazaar", "Other Facilities" and "Pipeline
+  Tracker". TankBazaar itself is not renamed.
 
 ## 2. Data placement — Decided (17 Oct)
 
@@ -134,39 +148,40 @@ Each Firebase project has its own sign-in system, so the apps need a bridge.
 
 ## 5. Company identity across the apps — Decided principle, mapping to build
 
-- **The Tankonomics slug is the shared company key.** Never rename a slug
-  after seeding.
+- **The Tankonomics slug is the shared company key.** Once a company is seeded
+  into Tankonomics its slug never changes.
+- **Before the Big Merge, TankWorldIndia slugs follow the name — Decided
+  (replaces the 18 Oct rule "slugs never change").** When a company is renamed
+  in the clean-up (to its registered or corrected name), it gets a new slug
+  matching the new name, and the old slug is recorded in `TWI_RETIRED_SLUGS.csv`
+  as `renamed`, with the old name kept in `aliases`. The TWI app cannot
+  redirect old company links. This matches the 26 Oct decision to rename slugs
+  more accurately across all three apps before the fresh seed.
+- **Category slugs never change.** A renamed category keeps its slug; a merged
+  category's slug is listed in the category redirect files (§12).
+- **Slugs are internal.** They are never shown on a public page (hero,
+  headings, cards) for any entity.
 - **A mapping table links each slug** to the TankBazaar register Company ID
-  (legal name, LEI or national registry number) and to the TankWorldIndia slug.
-  - First pass: `TB_Tankonomics_Link_Check.xlsx`, which matched 858 Tankonomics
-    companies: 163 exact, 120 through TankBazaar names (to check), 5 weak, 570
-    no match.
+  (`CO#####`) and to the TankWorldIndia slug. Reviewed matches live in
+  `src/lib/companyRegistryMap.ts` in the Tankonomics repo (data only, not yet
+  read by the app); held, rejected and unmatched slugs are in
+  `TB_Tankonomics_Link_Check_Reviewed.xlsx`.
 - **Match on registry IDs, not names.** TankWorldIndia records carry
   `legalName` and `registrationId` (CIN/LLPIN, Companies House, KVK, HRB,
   SIREN, ABN and so on, with the LEI in front where one exists), taken from the
-  official register. Use these as the first matching key against the
-  TankBazaar register and Tankonomics; fall back to names only where no ID
-  exists. The first name-based pass left 570 of 858 Tankonomics companies
-  unmatched.
-- **Retired TankWorldIndia slugs.** The TankWorldIndia clean-up merges
-  duplicates and deletes companies that are no longer active, which retires
-  their slugs. Every retired slug is recorded in `TWI_RETIRED_SLUGS.csv` in the
-  TankWorldIndia repo, with its survivor slug or "deleted". The mapping table
-  and any link to a TankWorldIndia slug must resolve through that file. A
-  surviving record never changes its slug.
+  official register. Use these as the first matching key; fall back to names
+  only where no ID exists.
+- **Retired TankWorldIndia slugs.** Every merged, deleted or renamed company
+  slug is recorded in `TWI_RETIRED_SLUGS.csv` (with the dated
+  `TWI_RETIRED_SLUGS_additions_*.csv` files of each round), with its survivor
+  slug or "deleted". The mapping table and any link to a TankWorldIndia slug
+  must resolve through that file.
 - **A facility is an asset, not a company.** TankBazaar owns facility records;
   TankWorldIndia lists suppliers to those facilities.
-- **Six Tankonomics location links point at TankBazaar duplicates** that were
-  deleted. Change them to the replacement ids:
-
-  | Old id | New id |
-  |---|---|
-  | 74 | 3406 |
-  | 419 | 3406 (to confirm) |
-  | 420 | 3414 |
-  | 521 | 76 |
-  | 551 | 6434 |
-  | 96 | 685 |
+- **TankBazaar facility ids are never reused.** Merged facility ids are listed
+  in `TB_ID_REDIRECTS` (`src/lib/tbLocationId.ts`, Tankonomics repo), and
+  Tankonomics location documents use the stable id `tb-<N>`. This replaces the
+  table of six links in the 18 Oct version.
 
 ## 6. Database choice — Decided (17 Oct)
 
@@ -252,10 +267,8 @@ in the code at `4a13ce9`:
 
 ## 10. TankWorldIndia company data and locations — Decided
 
-These rules govern how TankWorldIndia data is prepared for the merge into
-Tankonomics. The hold on seeding company data into Tankonomics (§3 of
-`TankBazaar_Tankonomics_Merge_Discussion.md` in the TankWorldIndia repo) stands
-until this preparation is done.
+These rules govern how TankWorldIndia data is prepared for the Big Merge into
+Tankonomics.
 
 **Company identity**
 
@@ -263,19 +276,38 @@ until this preparation is done.
   legal name, registered address and registration ID. For Indian companies
   that is the MCA register: the display name is the MCA registered name, and
   the MCA registered address and CIN/LLPIN are carried on the record.
-- **Slugs never change.** A rename changes the display name and keeps the old
-  name in `aliases`.
+- **Display name (restated 4 Nov).** For Private Limited, Limited, LLC/LLP and
+  partnership firms the display name equals the legal name in full style
+  ("Limited", not "Ltd"). Proprietorships keep their trade name. Indian
+  companies need a legal suffix (Private Limited, Limited or LLP).
+- **Registration details are internal.** Legal name, registry IDs, PAN, GSTIN
+  and Udyam are for verification only and never appear on any public page of
+  any T3 app. TWI keeps them in a private registry file, away from the app.
+  One GSTIN per company, matching its registered address; it is the registry
+  ID for proprietorships and partnerships.
+- **Contact data is admin-only (decided 2 Nov).** Company email and phone are
+  visible only to admins, in TWI and in Tankonomics.
 - **Records sharing one registry ID are merged.** The duplicate's slug is
-  retired and recorded in `TWI_RETIRED_SLUGS.csv`.
+  retired and recorded in `TWI_RETIRED_SLUGS.csv`; real locations of the
+  duplicate are carried over to the survivor.
 - **Same name in different countries stays separate**: they are separate
-  legal entities.
+  legal entities. A foreign company gets one record, plus a separate India
+  record only when it is a real operating branch.
 - **Subsidiaries are separate records** with `parent: { name, slug,
-  relationship }`. Plants, works, divisions and offices that are not separately
-  incorporated become locations of their company.
+  relationship }`. Unlisted parents are organization records. Plants, works,
+  divisions and offices that are not separately incorporated become locations
+  of their company. Holding, IP and shell entities with no operations of their
+  own are merged into their operating company (Round 19, 15 Nov).
 - **Status.** Companies the register shows as not active are held; a company
-  confirmed as liquidated, dissolved or struck off is deleted.
+  confirmed as liquidated, dissolved or struck off is deleted, not held.
+- **Websites.** A website that belongs to another business is replaced with
+  the right one, or cleared when the right one cannot be found.
+- **Not stored:** Google Places business status (Google is not authoritative);
+  vendor-list strings (discovery only; never shown or searchable); service
+  types / delivery models (removed from TWI before the Big Merge).
 - **Changes are tiered and approved.** Research is tiered (1 High to 4 not
-  found), and only approved tiers are applied, with an applied log.
+  found), only approved tiers are applied, and every round has an applied log.
+  Research lists sent out for validation exclude companies already verified.
 - **The "R" and "V" signal squares are TankWorldIndia only**; they do not
   carry over to Tankonomics.
 
@@ -283,8 +315,8 @@ until this preparation is done.
 
 - **Locations of a supplier live on its TankWorldIndia company page**: head
   office, registered office, plants, regional and branch offices, service
-  centres, R&D centres and warehouses. They are added before the merge
-  because they feed the Tankonomics jobs section.
+  centres, R&D centres and warehouses. Every MCA-matched company carries its
+  MCA registered address. Locations feed the Tankonomics jobs section.
 - **Terminals and process facilities live only in Tankonomics**, as
   locations linked to TankBazaar (`tankbazaar.com/#terminal-N`). They are not
   added to TankWorldIndia.
@@ -294,163 +326,286 @@ until this preparation is done.
   `state`, `country`, `lat`, `lng`, `placeId`, `sourceUrl`, `sourceDate`. Types:
   `head-office`, `registered-office`, `plant`, `regional-office`,
   `branch-office`, `service-centre`, `r&d-centre`, `warehouse` (legacy
-  `headquarters`, `office`, `branch`, `facility` still read).
+  `headquarters`, `office`, `branch` still read). Only the Place ID is loaded
+  from Google; the Place ID Finder tool may only add Place IDs.
 
-**Readiness (18 Oct 2026)**
+**Readiness (15 Nov 2026)**
 
-- About 9,450 companies; about 3,850 carry a verified legal name and
-  registration ID.
-- About 5,600 in 90 countries are still being verified, country by country,
-  from the "TWI Companies enrichment" work folder.
-- Locations have been researched company by company (BHEL, Thermax so far).
+- 8,826 companies (down from about 9,450 on 18 Oct after merges and
+  deletions); 6,001 carry a legal name and 5,191 a registration ID; 5,147 are
+  marked registry-verified.
+- Category misfit rounds 1–19 are done (every section, plus the companies that
+  had no category); 146 decisions are still open
+  (`TWI_Pending_Decisions_2026-11-15.xlsx`).
+- About 7,867 locations still use the legacy `headquarters` type; 43 parent
+  links are plain text and 6 point at retired slugs.
+
+## 11. What belongs in which app — Decided
+
+- **TankBazaar holds process and storage entities only**: refineries,
+  terminals, petrochemical, fertiliser and gas-processing plants, floating
+  structures (FPSO/FSO/FSRU and LNG export terminals as asset owners), with oil
+  rigs and pipelines growing. It holds no service companies. TankBazaar
+  companies are the registered owners of their facilities.
+- **TankWorldIndia holds suppliers and service companies.** Operators and
+  facility owners (e.g. GAIL, IOCL, HPCL, Sikka Ports), storage and depot
+  operators, and power producers and utilities do not belong in TWI. E&P
+  operators are the owner's call, case by case.
+- **No double listing.** TankBazaar never links to TWI and nothing is added to
+  TWI from TankBazaar. Companies currently in both get a deep-dive round to
+  settle where each belongs.
+- **Stay in TWI:** upstream service companies and contract drillers (the UP
+  section links all three apps); customs and forwarding brokers; rental firms
+  (the RT section is a Tankonomics revenue line, kept separate from services).
+- **Sector groups that never live in TWI:** Process Industries, Natural
+  Resources & Upstream and Storage Terminals (Tankonomics and TankBazaar only).
+  News, Media & Associations is part of TWI.
+
+## 12. Category trees — Decided (15 Nov 2026)
+
+- **TankWorldIndia's `CATEGORY_TREE` is the source of truth for supplier
+  categories**: 429 nodes in 21 sections, each with a code (e.g. `FT-07.4`) and
+  a slug. The tree was frozen on 8 Nov and extended since with UE-14 HVAC, EC-02.4
+  shop-built tanks, the Piping & Pipeline Systems section (PP), UE-15 Cooling
+  Towers, FS-17 Air Pollution Control and IA-06.1 CCTV & Video Surveillance.
+- **Tankonomics' category tree matches TWI exactly** (same slugs, names,
+  parents and order) and adds the TankBazaar categories below. It lives in
+  `src/lib/categorySeed.ts` (439 nodes); retired Tankonomics slugs and their
+  replacements are in `CATEGORY_REDIRECTS` in the same file.
+- **TankBazaar categories:** Storage Terminals (no sub-categories); Process
+  Industries with Refineries, Petrochemicals, Chemicals, Fertilizer Plants,
+  Gas Processing and Offshore Production; Oil Rigs & Platforms (`oil-rigs`);
+  Pipelines (`pipelines`). The Natural Resources branch and the other process
+  categories (industrial gases, biofuels, edible oils, food, pharma,
+  lubricants & bitumen) were dropped.
+- **Attributes, not categories:** captive/independent (`access`), sole/JV
+  ownership, port/inland/floating terminal type, rig type and pipeline
+  commodity. TankBazaar facility records still need the `oil-rigs` and
+  `pipelines` slugs when rigs and pipelines get categories there.
+- **Category redirects:** `Category_Slug_Redirects_2026-11-08.csv` (TWI) and
+  `CATEGORY_REDIRECTS` (Tankonomics).
+- **Placement rules used in the misfit rounds** (details in the TWI standing
+  rules): tags only for makers and specialist distributors; general traders
+  MR-11; pipe stockists PP-01.6; plastic, GRE and FRP pipe MM-11; repair firms
+  FT-31 (rotating) or AX-23 (valves); certification and third-party inspection
+  AX-30; coating contractors EC-11, coating makers AX-04.1; boilers and burners
+  UE-11; cooling towers UE-15; HVAC UE-14; air pollution control FS-17; crane
+  hire RT-03; SPM/CALM buoys FT-19; EC-01 only for whole-project EPC; AX is
+  services only (equipment makers go to IE or their product category); parent
+  tags only where the sub-type is unclear.
+
+## 13. The Big Merge into Tankonomics
+
+**Decided**
+
+- **Fresh seed (26 Oct).** Tankonomics company data is emptied and re-seeded
+  with completely validated companies and locations only, with location ids.
+  Required fields are checked per category. Logos and cover images are seeded
+  later.
+- **Only registry-verified companies go in.** The company claim process lives
+  in Tankonomics.
+- **TWI first.** TWI and TankBazaar companies are kept separate inside
+  Tankonomics, and only TWI is synced for now. TankBazaar follows after its
+  category and field work.
+- **Data flows one way:** TWI → Tankonomics and TankBazaar → Tankonomics. TWI
+  stays the system of record for suppliers, TankBazaar for facilities.
+- **Companies in both apps** are shown as "both". Logo and banner precedence:
+  Tankonomics upload, then TWI, then TankBazaar.
+- **LinkedIn is the only company social link** (Facebook, Instagram, X
+  removed).
+- **Expected size:** about 20,000 companies including locations.
+- **Business model** (e.g. whether the link through to a TWI or TankBazaar
+  listing is for all claimed companies or premium only) is deferred until
+  after the Big Merge.
+- **Company pages, not a directory (27 Nov 2026).** Tankonomics has no
+  company directory for users; the list of companies is for admins only.
+  Companies live as pages that members reach by search, posts, jobs, events
+  and links from TWI or TankBazaar. Each page is claimed by a user linked to
+  the company, through the admin approval process.
+- **Directory later (27 Nov 2026).** A user-facing directory (a Sales
+  Navigator-type product) comes only after the pages are substantially
+  claimed and their data accepted or updated by the owners.
+
+**Proposed (15 Nov, from `T3_Schema_Field_Check_2026-11-15.xlsx`)** — replaced by the schema below once it is approved.
+
+- Add to the Tankonomics company document before the seed: `countryCode`
+  (ISO-2) and `country` (name), `hqCity`, `aliases[]`, `formerNames[]`,
+  `brands[]`, `registryVerified`, `sources` (TWI / TankBazaar / both),
+  `twiId`, `tbCompanyId`. Rename the seed's phone dial-code field to
+  `phoneDialCode`.
+- Keep email, phone, legal name, registration ID, Udyam number and research
+  sources in an admin-only private store (the public company document is
+  readable by every approved user).
+- Corporate links as `organizations/{slug}` and
+  `companyRelationships/{from}__{type}__{to}`; old slugs as
+  `slugRedirects/{oldSlug}` (Relationships and Brands spec).
+- Add to locations: `address`, `state`, `lat`, `lng`, `tbTerminalId`, and
+  admin-only `sourceUrl`/`sourceDate`; rename `placeId` to `googlePlaceId` on
+  export; one location-type list for all three apps (TWI's hyphenated types
+  plus `port-terminal`, `inland-terminal`, `floating-facility`).
+- Facility detail (capacity, tanks, berths, products, operator, metrics) stays
+  in TankBazaar and is reached by link.
+
+**Company schema — for approval (27 Nov 2026)**
+
+Built from the 15 Nov field check and `docs/DATA_MODEL_V2.md`, checked against
+the TWI roster `TWI_companies_2026-11-26c_8805` and the Tankonomics code at
+`8b7ba82`. Field names follow the live Tankonomics code where one exists, so
+the app needs fewer changes. TWI → Tankonomics renames are done by the export.
+
+*Company page: `companies/{slug}`, readable by approved members*
+
+| Field | From TWI | Notes |
+|---|---|---|
+| doc id = `slug` | `slug` | Never changes once in Tankonomics |
+| `name` | `name` | Registered legal name style, as in TWI |
+| `twiId` | `id` | Numeric TWI id |
+| `tbCompanyId` | — | TankBazaar register id, when the company is in both |
+| `sources` | — | `twi`, `tb` or `both` |
+| `country`, `countryCode` | `country` | Name and ISO-2 |
+| `hqCity`, `hqState` | HQ location | For the company picker and search |
+| `description` | `desc` | One text field; the old `aboutUs` is dropped |
+| `website` | `site` | |
+| `linkedin` | `linkedin` | The only social link; shown as a labelled LinkedIn button on the company page, as in TWI; `socialLinks` is dropped |
+| `logo`, `heroImage` | `logo` | Cover images are seeded later |
+| `categoryIds` | `cats` | Leaf slugs of the shared tree; replaces the old single `categoryId` |
+| `aliases`, `formerNames`, `brands` | same | Lists of text |
+| `registryVerified` | `registered` | True for every seeded company; kept for later additions |
+| `parentSlug`, `relationship` | `parent` | Copy of the link; the full set lives in `companyRelationships` |
+| `externalDirectoryUrl`, `externalDirectoryName` | — | Link to the TWI or TankBazaar listing (who sees it is a business-model decision) |
+| `isClaimed`, `ownerUid`, `plan`, `planSince`, `isFeatured` | — | Empty or false at seed |
+| `locationCount`, `followerCount` | — | Kept current by the server |
+| `createdAt`, `updatedAt`, `seedVersion` | — | Set by the seeder |
+
+*Admin-only store: `companies/{slug}/private/admin`*
+
+- `legalName`, `registrationId`, `lei`, `legalNameSource` (from the TWI
+  private registry);
+- `email`, `phone`, `phoneDialCode` (admin-only, as in TWI);
+- `sectors`, `msme` (`category`, `udyamNumber`), `delivery`;
+- research notes and source links.
+
+None of this is on the company page, which every approved member can read.
+
+*Locations: `companies/{slug}/locations/{id}`*
+
+- **Ids:** `twi-{n}` for TWI sites, `tb-{facilityId}` for TankBazaar
+  facilities, so a re-seed updates in place.
+- **Fields:** `type`, `name`, `address`, `city`, `state`, `country`,
+  `countryCode`, `lat`, `lng`, `googlePlaceId` (TWI `placeId`); TankBazaar
+  facilities also carry `facilityClass`, `processType`, `primaryClass`,
+  `externalUrl`; ownership `ownerUid`, `ownerSource`, `assignedBy`,
+  `assignedAt`. `sourceUrl` and `sourceDate` go to the admin-only store.
+- **Country:** filled from the company when a TWI location has none (most
+  TWI locations carry no country of their own).
+- **One type list for all three apps:** `head-office`, `registered-office`,
+  `regional-office`, `branch-office`, `plant`, `service-centre`,
+  `r&d-centre`, `warehouse`, `port-terminal`, `inland-terminal`,
+  `process-facility`, `floating-facility`. TWI's legacy types are mapped:
+  `headquarters` → `head-office`, `office` and `branch` → `branch-office`.
+
+*Links between the apps (checked 27 Nov 2026; to fix before the merge)*
+
+- **Tankonomics → TWI:** `externalDirectoryUrl` points at
+  `https://tankworldindia.com/#/company/{slug}`. The TWI app answers on
+  `tankworldindia-t5.web.app`; the custom domain must be confirmed as live
+  before the seed, or the export uses the address that works.
+- **Retired TWI slugs:** TWI has no redirect for deleted or merged company
+  slugs, so a link to one shows "No company at this URL". TWI needs a redirect
+  from each merged slug to the company it was merged into (from
+  `TWI_RETIRED_SLUGS.csv`), and Tankonomics gets the same list as
+  `slugRedirects`.
+- **TWI → Tankonomics:** TWI's category tiles link "Companies on Tankonomics"
+  to `tankonomics.web.app/directory?category=…`. That directory is admin-only,
+  so the link fails for everyone else. Remove it until there is a user-facing
+  page to link to.
+- **Tankonomics → TankBazaar (checked):** locations link to
+  `https://tankbazaar.com/#terminal-{N}`, which opens the facility for
+  signed-in members. Merged facility ids redirect on both sides, and the two
+  lists match (43 ids in `TB_ID_REDIRECT` in TankBazaar and in
+  `src/lib/tbLocationId.ts`); keep them in step. Fixed 27 Nov in TankBazaar:
+  a signed-out visitor's `#terminal-N` link now opens after sign-in, and the
+  `#/facility/{N}` form also follows merged ids. `#terminal-N` stays the form
+  Tankonomics stores.
+- **TankBazaar → Tankonomics and TWI:** TankBazaar has no links out; a
+  company shows its Tankonomics address (`/business/{slug}`) as text only, and
+  it never links to TWI (§11).
+
+*Other collections:* `organizations/{slug}` (parents that are not listed
+companies), `companyRelationships/{from}__{type}__{to}`,
+`slugRedirects/{oldSlug}`.
+
+*Not carried over:* the R and V squares; the legacy `categoryId`,
+`subCategoryId`, `aboutUs`, `socialLinks` and the free-text company
+`address`.
+
+*To change in Tankonomics once approved:* the security rule for companies
+(require `categoryIds`, not `categoryId`, and add the admin-only store); the
+company page and Admin screens; and the TWI export, which produces a
+validation report and is rehearsed on `tankonomics-staging` first.
 
 **Open**
 
-- Mapping of TankWorldIndia location types and fields to the Tankonomics
-  location schema.
-- Place IDs for newly added locations.
+- How a company links to its rigs and pipelines in Tankonomics.
+- The Tankonomics admin action that empties company data before the seed.
+- Fixes in TWI before export: legacy location types, text-only parents,
+  parent links to retired slugs.
 
-## 13. T3 Common Company Schema — TankBazaar side — Decided (17 Nov 2026)
+## 14. Releases and costs — Decided
 
-Source: "T3 Common Company Schema" (17 Nov 2026). This section records the
-TankBazaar implementation (section 8 of that document) and the decisions it
-follows. Note: this repo's copy of the file had no section 12; if another
-repo's copy has one, merge the two before copying this file across.
+- **TWI release order:** push and deploy the hosting build first, then publish
+  the roster JSON in Admin, then run the orphan scan and delete only what the
+  removal archives explain.
+- **TWI files:** roster and master changes come as `ROSTER_ONLY_*` zips (the
+  master `index.html` in them is never deployed); app changes come only as
+  `TWI_Deploy_*` builds. Repo updates come as a zip of the changed files in
+  their repo paths.
+- **Descriptions:** the published roster JSON is the source of truth; edits
+  are copied into the app master, never the other way round.
+- **Hosting cost:** TWI is on the Blaze plan and each hosting deploy caused a
+  usage spike, so deploys are kept rare and the app is to be redesigned to cut
+  that cost.
+- **Search:** Typesense for Tankonomics (decided); other options for TWI and
+  TankBazaar.
 
-**Decided (kept to exactly)**
+## 15. Tankonomics jobs and salary data — Decided (26 Nov 2026)
 
-- Registration details are never public in any app: legal name, LEI,
-  registry IDs, PAN, GSTIN, Udyam number, legal form and register source.
-  In TankBazaar they stay admin-only in `registryPrivate`, which is now also
-  keyed by slug (`companiesBySlug`) with the schema's section 3 field names
-  (legalName, legalNameSource, registrationId, registryIds, lei, legalForm,
-  jurisdiction, registryStatus, notes).
-- The registered-office address is not a registration detail; it is a public
-  location. `TB_registration_privacy.md` is updated.
-- MSME category, sectors served, email and phone are admin-only in all apps
-  (TankBazaar holds none of them yet; the private export carries them empty).
-- Location fields are the same in TWI and TankBazaar: address, city, state,
-  countryCode, country, lat, lng, googlePlaceId. TankBazaar fills city and
-  country only; address and state stay blank for company owners to add.
-- Facility types map to the shared list: port → port-terminal, inland →
-  inland-terminal, floating → floating-facility. Location ids are
-  `tb-{facilityId}`; `tbTerminalId` and `role` (owner, operator,
-  owner-operator) are exported. `externalUrl` is
-  `https://tankbazaar.com/#/facility/{id}` (new route in index.html).
-- Field renames on the company document (V566 seeder): `hqCountry` →
-  `countryCode` (ISO-2; the old mix of US/USA and UK is normalised), plus
-  `country` (English name); `verified` → `registryVerified`; `aka` →
-  `aliases`. The old fields are removed by the seeder's update mask. The lean
-  bundle keeps its short keys (`s`, `c`, `v`, `o`) but now reads them from the
-  new fields.
-- Parent: `parentSlug` and `parentRelationship` (subsidiary, or joint-venture
-  where the company is recorded as a JV) are added. The internal `parent`
-  {id, name} stays on the TankBazaar document because the app's company page
-  uses it; it is not exported. Alias slugs (`slugAliases`, bundle `a`) are for
-  `slugRedirects` in Tankonomics.
-- New public fields: slug, name, description, categoryIds, companyTypes,
-  sources = ["TankBazaar"], formerNames (names only; empty for now), brands
-  (empty), stockist (false).
-- `categoryIds` come from the company's facilities (storage-terminals;
-  process-industries plus the processType slugs). A company with no
-  facilities of its own takes them from its subsidiaries' facilities.
-  `companyTypes` is `oper` for facility owners and operators (direct or
-  through subsidiaries) and `nonsup` otherwise.
-- Descriptions are built only from the facility records ("Operates 3 storage
-  terminals in Spain."). They never contain notes, sources or tagging
-  reasons; research notes stay in the private `notes` field. The export checks
-  this.
-- Only registry-verified companies go into the merge.
-- Facility detail stays in TankBazaar (schema section 6) and is reached by the
-  location's externalUrl. Rigs and pipelines come to Tankonomics much later.
-- Claim fields (claimed, ownerVerified, premium) stay with Tankonomics and are
-  not exported.
-- Slugs are not displayed and were not changed; no new slugs were created.
+- **No levels.fyi.** Levels.fyi is not used for the Tankonomics jobs section.
+  It covers mainly software and big-tech pay, has little data on tank,
+  terminal and process-industry roles in India or the Gulf, sells salary
+  data rather than job postings, and is enterprise-priced with unclear
+  display rights.
+- **Jobs come from verified companies.** Jobs are posted by claimed,
+  verified companies, in line with the claim and verification model; no
+  imported job feeds at launch.
+- **Own salary data later, through Surveys.** Tankonomics builds its own pay
+  data through the Surveys section, for example an annual **"Tank & Terminal
+  Industry Salary Survey"** for members. The data belongs to Tankonomics and
+  is specific to the industry, which levels.fyi cannot offer. It can become a
+  paid report or a lead magnet.
 
-**Delivered**
+## 16. Tender board — Decided (26 Nov 2026)
 
-- `scripts/t3_common_fields.py`: shared field logic (country tables, role and
-  type mapping, categories, descriptions, check patterns).
-- `scripts/t3_merge_export.py`: writes `TankBazaar_Merge_Public_{date}.json`
-  and `TankBazaar_Merge_Private_{date}.json` (local only; `.gitignore`
-  excludes it) from the local seeder pages and runs the section 7 checks
-  (`TankBazaar_Merge_Checks_{date}.json`).
-- `index.html`: company page reads `countryCode` (falls back to the old
-  field); new `#/facility/{id}` route.
-- Seeder V566 writes the new fields to `companies/CO#####` and
-  `companiesBySlug` to `registryPrivate`.
+- **It lives in Tankonomics, not TWI.** The tender board is part of the
+  interactive Tankonomics app, where it is worth using for members. TWI does
+  not carry it.
+- **A curated board, built by us.** Government and public-sector tenders are
+  public notices. Admins post a short summary of each relevant tender: title,
+  authority, closing date and value, with a link to the official notice. The
+  tender documents themselves are not copied. This fits the verified-data
+  approach used across the T3 apps.
+- **How entries are added.** Admins add entries by hand, or use official
+  feeds where a portal offers one. No automated scraping: most portals have
+  CAPTCHAs and rules against it.
+- **No third-party tender-data feed for now.** TenderKosh (API) was reviewed
+  and not adopted: its terms ban republishing and limit use to internal
+  business use, its operator is not named, and its portal coverage is not
+  listed. Any paid feed would need a written right to display the tenders
+  and a named company behind it.
+- **Replaces the earlier note.** This settles the "tenders via partners or
+  own app" item: the board is our own, inside Tankonomics.
 
-**First export (V566, 17 Nov 2026):** 2,657 registry-verified companies,
-7,434 locations. 1,580 companies pass every section 7 check; 1,077 fail:
-968 have no hqCity (no head-office or registered-office city on record) and
-162 have no category (no facilities of their own or through subsidiaries;
-mostly holding, pipeline and trading companies). All other checks pass:
-slug, name, country, description, company type, registryVerified, slug
-format and uniqueness, no registration or contact field in the public file,
-clean descriptions, and every location's id, type, city, country and
-coordinates. Four facility links with roles that are neither owner nor
-operator (terminal users) are not exported as locations.
-
-**Decided 19 Nov 2026**
-
-- Companies with no facilities stay in the merge. They are exported with
-  `categoryIds: []` and `companyTypes: ["nonsup"]`; an empty category is no
-  longer a failing check (the export reports it as `noCategory`).
-- HQ city resolution: the registered-office or head-office city is public, so
-  it fills `hqCity`. Order of sources: the address already on record in the
-  private register (city only is copied), then the company's own website,
-  annual report or official register, each with its source in the private
-  notes. No city is guessed from a facility location.
-- Duplicate company records are merged into the record that keeps its slug;
-  the retired record's slug goes into `slugAliases` (no new slug is made).
-  V574: CO00692 Shell Malaysia into CO00693 Shell Malaysia Trading Sdn Bhd,
-  CO01669 into CO02112 Mineraloelraffinerie Oberrhein (MiRO).
-
-**Export at V574 (20 Nov 2026):** 2,727 registry-verified companies, 7,671
-locations. 2,686 pass every check; 41 fail only on hqCity (no city found, or
-the only source was weak; listed in the private Low findings file). 181
-companies have no category (no facilities) and are exported as allowed.
-
-**Decided 22 Nov 2026: pipelines**
-
-- Pipelines move out of `index.html` into Firestore: the companies-and-bundles
-  seeder writes each pipeline to `pipelines/PL#####` (id assigned in the old
-  file order, so the app's pipeline URL keys do not change) and packs all of
-  them into `bundles/pipelines-N` (listed in `bundles/manifest`). Read access
-  is the same approval-gated rule as terminals; only the admin writes. The app
-  loads them through `PipeStore`; `index.html` no longer carries the data.
-- A pipeline's `ci` lists the TB companies that own or operate it and `cr`
-  (optional) each company's role. Links come from the operator text (exact
-  name match: High; part of a joint-operator text: Medium) and from research
-  batches by region.
-- In the merge export every linked pipeline is a location of each linked
-  company: `id: tb-PL#####`, `type: "pipeline"`, `lat/lng` = start point,
-  `endLat/endLng`, `route` (list of [lat, lng]), `countries`,
-  `pipelineCategory` (gas, crude, product, lpg, other), `status`, `lengthKm`,
-  `capacityMtpa`, `origin`, `destination`, `externalUrl`
-  (`https://tankbazaar.com/#/pipeline/{key}`). City stays empty for pipelines.
-  This extends the section 4 location fields; Tankonomics and TWI need to
-  accept the `pipeline` type and the extra fields.
-- New company category `pipelines`: a company with a linked pipeline (its own
-  or a subsidiary's) gets it, and counts as an operating company.
-- Export at V581 (24 Nov 2026): 2,799 registry-verified companies, 9,065
-  locations of which 1,268 are pipelines; 2,719 pass every check, 80 fail only
-  on hqCity; 159 have no category. 1,364 of 1,401 pipelines are linked to
-  companies (281 new pipeline companies; only those with an LEI or registry ID
-  count as registry-verified and are exported).
-- CO03137 SS&C GIDS Inc and CO03138 SS&C Technologies Holdings Inc retired
-  (financial software, not oil, gas or chemical companies).
-
-**Open (not decided here)**
-
-- The slug rule for renamed companies (schema section 11/12): TankBazaar has
-  not changed any slug. The slug checker round is still to run.
-- Filling the remaining missing HQ cities (41 at V574, 78 at V580 after
-  new companies were added): continuing under the decision above.
-- Tankonomics is seeded with TWI first; TankBazaar follows when its export
-  passes the checks.
-
-## 11. Change log
+## 17. Change log
 
 - **17 Oct 2026:** first version. Covers the data placement, sign-in bridge,
   company identity, database choice and scale review above.
@@ -459,11 +614,22 @@ companies have no category (no facilities) and are exported as allowed.
   from the plan in §4, the single-file build exposure in §9, and the database
   location note in §7. The plan now lives in the TankBazaar repo at
   `docs/TB_DATA_MOVE_PLAN.md`.
-- **17 Nov 2026:** added §13 (T3 Common Company Schema, TankBazaar side):
-  field renames, private store keyed by slug, merge export script and first
-  check results.
-- **22 Nov 2026:** §13 pipelines decision: pipelines in Firestore, pipeline
-  locations and the `pipelines` category in the merge export.
-- **19 Nov 2026:** §13 decisions: companies with no facilities stay in the
-  merge; HQ city resolution rules; duplicate company merges keep the slug as
-  an alias.
+- **15 Nov 2026:** brought up to date with the work since 18 Oct. §1 sizes,
+  users and module naming; §5 slug rule changed (renamed TWI companies get a
+  new slug before the merge; frozen once in Tankonomics), registry map and TB
+  facility redirects; §10 data rules added since (display names, private
+  registration and contact data, websites, things not stored, readiness);
+  new §11 app placement, §12 category trees (Tankonomics now matches TWI and
+  TankBazaar), §13 the Big Merge (decided rules and the proposed field
+  additions), §14 releases and costs.
+- **26 Nov 2026:** new §15 (Tankonomics jobs and salary data: no levels.fyi,
+  jobs from verified companies, own salary survey through Surveys); change
+  log moved to §16.
+- **26 Nov 2026 (later):** new §16 (tender board: lives in Tankonomics, curated
+  by admins with links to the official notices, no scraping, TenderKosh not
+  adopted); change log moved to §17.
+- **27 Nov 2026:** §13 — company pages, not a user directory (directory
+  later, once pages are substantially claimed); company schema for approval
+  (company page, admin-only store, locations, one location-type list);
+  LinkedIn button; links between the apps checked, with fixes listed
+  (TankBazaar side checked and fixed the same day).
